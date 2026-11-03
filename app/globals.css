@@ -9,3 +9,35 @@ body {
   font-family: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Preview workspace: a quiet, animated dotted canvas that keeps the post in focus. */
+.snap-preview-stage {
+  position: relative;
+  isolation: isolate;
+  background-color: #fbfaf8;
+  background-image:
+    radial-gradient(circle, rgba(120, 113, 108, 0.24) 1px, transparent 1.2px),
+    radial-gradient(circle, rgba(217, 119, 6, 0.07) 1px, transparent 1.2px),
+    linear-gradient(135deg, rgba(255,255,255,0.96), rgba(248,245,239,0.96));
+  background-size: 22px 22px, 66px 66px, 100% 100%;
+  background-position: 0 0, 11px 11px, center;
+  animation: snappost-canvas-drift 34s linear infinite;
+}
+
+.snap-preview-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, rgba(255,255,255,0.12), rgba(120,113,108,0.035) 78%);
+}
+
+@keyframes snappost-canvas-drift {
+  from { background-position: 0 0, 11px 11px, center; }
+  to { background-position: 44px 44px, -55px 77px, center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snap-preview-stage { animation: none; }
+}
