@@ -17,7 +17,7 @@ const THEMES = {
   dark: { card: "#000000", text: "#e7e9ea", muted: "#71767b", border: "#2f3336" },
 };
 
-const RADIUS: Record<Settings["corners"], number> = { sharp: 0, soft: 24, round: 52 };
+const RADIUS: Record<Settings["corners"], number> = { sharp: 0, soft: 20, round: 38 };
 
 type Theme = (typeof THEMES)["light"];
 type OpenMedia = (images: string[], index: number) => void;
@@ -611,7 +611,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
                 </div>
                 <div style={{ fontSize: nameSize, color: t.muted }}>@{tweet.username || "username"}</div>
               </div>
-              <Logo kind={settings.logo} size={Math.round(fs * 0.85)} color={t.text} />
+              <Logo kind={settings.logo} size={Math.round(fs * 1.2)} color={t.text} />
             </div>
 
             {/* Text */}
