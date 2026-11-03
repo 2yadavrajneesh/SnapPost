@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "SnapPost — Turn posts into polished images",
-  description: "A focused canvas for turning social posts into high-resolution images.",
+  description: "Turn X (Twitter) posts into polished, high-resolution images. Customize the layout, preserve photos and video previews, and export as PNG, PDF, or video.",
 };
 
 export const viewport: Viewport = {
