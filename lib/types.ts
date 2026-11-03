@@ -1,27 +1,35 @@
 export type VideoData = {
-  url: string;
+  /** Playable MP4 URLs, best first. */
+  sources: string[];
+  /** HLS playlist: a last resort that only some browsers (Safari) can play natively. */
+  hls: string | null;
   poster: string | null;
   width: number;
   height: number;
   gif: boolean;
 };
 
-export type QuoteData = {
+/** A post as returned by the API: the main tweet, a quoted tweet, or one tweet of a thread. */
+export type PostData = {
+  id: string;
   name: string;
   username: string;
   avatar: string;
   verified: boolean;
   text: string;
   timestamp: number | null;
-  image: string | null;
+  photos: string[];
   video: VideoData | null;
   replies: number;
   reposts: number;
   likes: number;
   views: number;
-  quote: QuoteData | null;
+  quote: PostData | null;
 };
 
+export type QuoteData = PostData;
+
+/** The main tweet being edited on screen (time and date are display strings you can change). */
 export type TweetData = {
   name: string;
   username: string;
@@ -34,10 +42,13 @@ export type TweetData = {
   reposts: number;
   likes: number;
   views: number;
-  image: string | null;
+  photos: string[];
   video: VideoData | null;
-  quote: QuoteData | null;
+  quote: PostData | null;
 };
+
+/** Which screenshot to produce when a tweet is part of a thread. */
+export type ShotMode = "single" | "thread";
 
 export type RatioKey = "auto" | "compact" | "standard" | "wide" | "story" | "square" | "portrait";
 
@@ -81,7 +92,7 @@ export const DEFAULT_TWEET: TweetData = {
   reposts: 1400,
   likes: 12000,
   views: 486000,
-  image: null,
+  photos: [],
   video: null,
   quote: null,
 };

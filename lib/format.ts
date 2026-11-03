@@ -27,6 +27,12 @@ export function relativeTime(ts: number | null): string {
   return d.toLocaleDateString("en-US", sameYear ? { month: "short", day: "numeric" } : { month: "short", day: "numeric", year: "numeric" });
 }
 
+/** Routes a video through our streaming proxy so it plays same-origin (no hotlink/CORS problems). */
+export function videoSrc(src: string): string {
+  if (!src || src.startsWith("blob:") || src.startsWith("data:") || src.startsWith("/")) return src;
+  return `/api/video?url=${encodeURIComponent(src)}`;
+}
+
 /** Routes remote images through our proxy so canvas export isn't blocked by CORS. */
 export function proxied(src: string | null | undefined): string {
   if (!src) return "";

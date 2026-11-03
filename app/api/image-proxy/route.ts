@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAllowedMediaUrl } from "@/lib/media-hosts";
 
 export const runtime = "nodejs";
 
-// Only proxy images from known tweet CDNs (prevents use as an open proxy / SSRF).
-const ALLOWED_HOSTS = ["twimg.com", "fxtwitter.com", "fixupx.com"];
-const MAX_BYTES = 12 * 1024 * 1024;
-
-function isAllowed(u: URL) {
-  if (u.protocol !== "https:") return false;
-  return ALLOWED_HOSTS.some((d) => u.hostname === d || u.hostname.endsWith(`.${d}`));
-}
+const MAX_BYTES = 25 * 1024 * 1024; // original-resolution photos can be several MB
 
 export async function GET(req: NextRequest) {
   const raw = req.nextUrl.searchParams.get("url");
@@ -21,15 +15,15 @@ export async function GET(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Invalid url" }, { status: 400 });
   }
-  if (!isAllowed(target)) {
+  if (!isAllowedMediaUrl(target)) {
     return NextResponse.json({ error: "Host not allowed" }, { status: 403 });
   }
 
   try {
     const upstream = await fetch(target, {
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(15_000),
       redirect: "error",
-      headers: { "User-Agent": "SnapPost/0.1" },
+      headers: { "User-Agent": "SnapPost/0.2" },
     });
     if (!upstream.ok) return NextResponse.json({ error: "Upstream error" }, { status: 502 });
 

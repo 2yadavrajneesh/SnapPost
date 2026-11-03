@@ -1,35 +1,70 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import AppearanceTiles from "@/components/AppearanceTiles";
+import Lightbox from "@/components/Lightbox";
 import TweetCard from "@/components/TweetCard";
 import { Label, Section, Segmented, Slider, TextField, Toggle } from "@/components/ui";
 import { formatDate, formatTime } from "@/lib/format";
 import { copyPngToClipboard, downloadBlob, downloadUrl, renderPdf, renderPng, renderVideo } from "@/lib/export";
+import { parseTweetUrl } from "@/lib/parse";
 import {
   DEFAULT_SETTINGS,
   DEFAULT_TWEET,
   FRAME_W,
   MAX_EXPORT_WIDTH,
   RATIOS,
+  type PostData,
   type RatioKey,
   type Settings,
+  type ShotMode,
   type TweetData,
 } from "@/lib/types";
 
 type Format = "png" | "pdf" | "mp4";
+type ThreadState = "idle" | "checking" | "found" | "none";
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 3;
 const ZOOM_STEP = 1.25;
 const STAGE_PAD = 8; // breathing room around the card inside the preview window
+const AUTO_FETCH_KEY = "snappost:autoFetch";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function toTweet(j: any): TweetData {
+  const ts = typeof j.timestamp === "number" ? j.timestamp : Date.now();
+  return {
+    name: j.name,
+    username: j.username,
+    avatar: j.avatar,
+    verified: j.verified,
+    text: j.text,
+    time: formatTime(ts),
+    date: formatDate(ts),
+    replies: j.replies,
+    reposts: j.reposts,
+    likes: j.likes,
+    views: j.views,
+    photos: j.photos ?? [],
+    video: j.video ?? null,
+    quote: j.quote ?? null,
+  };
+}
 
 export default function Home() {
   const [tweet, setTweet] = useState<TweetData>(DEFAULT_TWEET);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [link, setLink] = useState("");
+  const [autoFetch, setAutoFetch] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showEdit, setShowEdit] = useState(false);
+
+  const [thread, setThread] = useState<PostData[] | null>(null);
+  const [threadState, setThreadState] = useState<ThreadState>("idle");
+  const [shot, setShot] = useState<ShotMode>("single");
+
+  const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
   const [format, setFormat] = useState<Format>("png");
   const [exporting, setExporting] = useState(false);
@@ -39,12 +74,13 @@ export default function Home() {
 
   const frameRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const lastFetched = useRef("");
+  const reqId = useRef(0);
   const [frameH, setFrameH] = useState(600);
   const [stageW, setStageW] = useState(800);
   const [stageH, setStageH] = useState(600);
   const [viewportH, setViewportH] = useState(800);
   const [isDesktop, setIsDesktop] = useState(false);
-  const [overflow, setOverflow] = useState(false);
   const [zoom, setZoom] = useState<number | null>(null); // null = fit to window
 
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) => setSettings((s) => ({ ...s, [key]: value }));
@@ -52,22 +88,37 @@ export default function Home() {
   const setCount = (key: "replies" | "reposts" | "likes" | "views", v: string) =>
     setT(key, Math.max(0, Math.floor(Number(v.replace(/[^\d]/g, "")) || 0)));
 
-  // Re-measure after every render (cheap; setState bails out when unchanged)...
+  const showThread = shot === "thread" && !!thread && thread.length > 1;
+
+  // Remember the Auto fetch choice between visits.
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(AUTO_FETCH_KEY);
+      if (v !== null) setAutoFetch(v === "1");
+    } catch {
+      /* storage unavailable: keep the default */
+    }
+  }, []);
+  const changeAutoFetch = (v: boolean) => {
+    setAutoFetch(v);
+    try {
+      localStorage.setItem(AUTO_FETCH_KEY, v ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  };
+
+  // Re-measure the card after every render (cheap; setState bails out when unchanged)...
   useLayoutEffect(() => {
     const el = frameRef.current;
-    if (!el) return;
-    setFrameH(el.offsetHeight);
-    setOverflow(el.scrollHeight > el.clientHeight + 2);
+    if (el) setFrameH(el.offsetHeight);
   });
 
-  // ...and whenever the frame resizes on its own, e.g. when avatars or images finish loading.
+  // ...and whenever it resizes on its own, e.g. when photos or avatars finish loading.
   useEffect(() => {
     const el = frameRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
-      setFrameH(el.offsetHeight);
-      setOverflow(el.scrollHeight > el.clientHeight + 2);
-    });
+    const ro = new ResizeObserver(() => setFrameH(el.offsetHeight));
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -105,40 +156,61 @@ export default function Home() {
   const outW = MAX_EXPORT_WIDTH;
   const outH = Math.round((frameH / FRAME_W) * MAX_EXPORT_WIDTH);
 
-  async function fetchTweet() {
-    if (!link.trim()) {
+  const fetchTweet = useCallback(async (raw: string) => {
+    const url = raw.trim();
+    if (!url) {
       setFetchError("Paste a tweet link first.");
       return;
     }
+    const id = ++reqId.current;
+    lastFetched.current = url;
     setFetching(true);
     setFetchError(null);
+    setThread(null);
+    setThreadState("idle");
+    setShot("single");
     try {
-      const res = await fetch(`/api/tweet?url=${encodeURIComponent(link.trim())}`);
+      const res = await fetch(`/api/tweet?url=${encodeURIComponent(url)}`);
       const j = await res.json();
+      if (id !== reqId.current) return; // a newer fetch has started
       if (!res.ok) throw new Error(j.error || "Couldn't fetch that tweet.");
-      setTweet({
-        name: j.name,
-        username: j.username,
-        avatar: j.avatar,
-        verified: j.verified,
-        text: j.text,
-        time: formatTime(j.timestamp),
-        date: formatDate(j.timestamp),
-        replies: j.replies,
-        reposts: j.reposts,
-        likes: j.likes,
-        views: j.views,
-        image: j.image,
-        video: j.video ?? null,
-        quote: j.quote ?? null,
-      });
+      setTweet(toTweet(j));
       setZoom(null);
+
+      // Thread detection runs in the background so the tweet itself shows up straight away.
+      if (j.maybeThread) {
+        setThreadState("checking");
+        try {
+          const tr = await fetch(`/api/thread?url=${encodeURIComponent(url)}`);
+          const tj = await tr.json();
+          if (id !== reqId.current) return;
+          if (Array.isArray(tj.posts) && tj.posts.length >= 2) {
+            setThread(tj.posts);
+            setThreadState("found");
+          } else {
+            setThreadState("none");
+          }
+        } catch {
+          if (id === reqId.current) setThreadState("none");
+        }
+      } else {
+        setThreadState("none");
+      }
     } catch (e) {
-      setFetchError(e instanceof Error ? e.message : "Couldn't fetch that tweet.");
+      if (id === reqId.current) setFetchError(e instanceof Error ? e.message : "Couldn't fetch that tweet.");
     } finally {
-      setFetching(false);
+      if (id === reqId.current) setFetching(false);
     }
-  }
+  }, []);
+
+  // Auto fetch: as soon as the box holds a valid tweet link, load it (after a short pause for typing).
+  useEffect(() => {
+    if (!autoFetch) return;
+    const url = link.trim();
+    if (!parseTweetUrl(url) || url === lastFetched.current) return;
+    const timer = setTimeout(() => void fetchTweet(url), 350);
+    return () => clearTimeout(timer);
+  }, [link, autoFetch, fetchTweet]);
 
   function onAvatarFile(file: File | undefined) {
     if (!file) return;
@@ -147,13 +219,17 @@ export default function Home() {
     reader.readAsDataURL(file);
   }
 
+  const openMedia = useCallback((images: string[], index: number) => setLightbox({ images, index }), []);
+  const closeMedia = useCallback(() => setLightbox(null), []);
+  const setMediaIndex = useCallback((index: number) => setLightbox((l) => (l ? { ...l, index } : l)), []);
+
   async function download() {
     const node = frameRef.current;
     if (!node) return;
     setExporting(true);
     setExportError(null);
     setProgress(null);
-    const base = `snappost-${tweet.username || "post"}`;
+    const base = `snappost-${tweet.username || "post"}${showThread ? "-thread" : ""}`;
     try {
       const png = await renderPng(node);
       if (format === "png") {
@@ -199,6 +275,10 @@ export default function Home() {
     label: RATIOS[k].label,
     title: RATIOS[k].note,
   }));
+
+  const hasPhotos = showThread
+    ? !!thread?.some((p) => p.photos.length > 0 || p.quote?.photos.length)
+    : tweet.photos.length > 0 || !!tweet.quote?.photos.length;
 
   const zoomBtn =
     "h-8 w-8 rounded-lg border border-stone-200 bg-white text-base font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-40";
@@ -273,13 +353,13 @@ export default function Home() {
                 <input
                   value={link}
                   onChange={(e) => setLink(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && fetchTweet()}
+                  onKeyDown={(e) => e.key === "Enter" && void fetchTweet(link)}
                   placeholder="https://x.com/user/status/123…"
                   className="min-w-0 flex-1 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-200"
                 />
                 <button
                   type="button"
-                  onClick={fetchTweet}
+                  onClick={() => void fetchTweet(link)}
                   disabled={fetching}
                   className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:opacity-60"
                 >
@@ -293,6 +373,24 @@ export default function Home() {
               )}
             </div>
 
+            <Toggle label="Auto fetch when a link is pasted" checked={autoFetch} onChange={changeAutoFetch} />
+
+            {threadState === "checking" && <p className="text-xs text-stone-500">Checking for a thread…</p>}
+            {thread && (
+              <div>
+                <Label>Screenshot</Label>
+                <Segmented
+                  value={shot}
+                  options={[
+                    { value: "single", label: "This tweet" },
+                    { value: "thread", label: `Full thread (${thread.length})` },
+                  ]}
+                  onChange={setShot}
+                />
+                <p className="mt-1.5 text-[11px] text-stone-500">This tweet is part of a thread.</p>
+              </div>
+            )}
+
             <button
               type="button"
               onClick={() => setShowEdit((v) => !v)}
@@ -305,6 +403,11 @@ export default function Home() {
 
             {showEdit && (
               <div className="space-y-3">
+                {showThread && (
+                  <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    Edits apply to &ldquo;This tweet&rdquo;. Switch back to see them.
+                  </p>
+                )}
                 <label className="block">
                   <Label>Tweet text</Label>
                   <textarea
@@ -340,10 +443,10 @@ export default function Home() {
                         Remove avatar
                       </button>
                     )}
-                    {(tweet.image || tweet.video) && (
+                    {(tweet.photos.length > 0 || tweet.video) && (
                       <button
                         type="button"
-                        onClick={() => setTweet((t) => ({ ...t, image: null, video: null }))}
+                        onClick={() => setTweet((t) => ({ ...t, photos: [], video: null }))}
                         className="text-stone-500 underline hover:text-stone-900"
                       >
                         Remove media
@@ -357,20 +460,16 @@ export default function Home() {
 
           <Section title="Output ratio">
             <Segmented wrap value={settings.ratio} options={ratioOptions} onChange={(v) => set("ratio", v)} />
+            {settings.ratio !== "auto" && (
+              <p className="text-[11px] text-stone-500">Tall posts are scaled down to fit, so nothing is cropped.</p>
+            )}
           </Section>
 
           <Section title="Appearance">
-            <div>
-              <Label>Theme</Label>
-              <Segmented
-                value={settings.theme}
-                options={[
-                  { value: "light", label: "Light" },
-                  { value: "dark", label: "Dark" },
-                ]}
-                onChange={(v) => set("theme", v)}
-              />
-            </div>
+            <AppearanceTiles settings={settings} onChange={set} />
+          </Section>
+
+          <Section title="Layout">
             <div>
               <Label>Style</Label>
               <Segmented
@@ -382,45 +481,6 @@ export default function Home() {
                 onChange={(v) => set("style", v)}
               />
             </div>
-            <div>
-              <Label>Corners</Label>
-              <Segmented
-                value={settings.corners}
-                options={[
-                  { value: "sharp", label: "Sharp" },
-                  { value: "soft", label: "Soft" },
-                  { value: "round", label: "Round" },
-                ]}
-                onChange={(v) => set("corners", v)}
-              />
-            </div>
-            <div>
-              <Label>Font</Label>
-              <Segmented
-                value={settings.font}
-                options={[
-                  { value: "sans", label: "Sans" },
-                  { value: "rounded", label: "Rounded" },
-                  { value: "serif", label: "Serif" },
-                ]}
-                onChange={(v) => set("font", v)}
-              />
-            </div>
-            <div>
-              <Label>Logo</Label>
-              <Segmented
-                value={settings.logo}
-                options={[
-                  { value: "x", label: "X (new)" },
-                  { value: "bird", label: "Bird (old)" },
-                  { value: "none", label: "None" },
-                ]}
-                onChange={(v) => set("logo", v)}
-              />
-            </div>
-          </Section>
-
-          <Section title="Layout">
             <Slider label="Text size" value={settings.textSize} min={24} max={64} suffix="px" onChange={(v) => set("textSize", v)} />
             <Slider label="Padding" value={settings.padding} min={50} max={150} step={5} suffix="%" onChange={(v) => set("padding", v)} />
             <div className="flex gap-2">
@@ -442,6 +502,7 @@ export default function Home() {
                 <h1 className="text-lg font-bold tracking-tight">Screenshot, upgraded.</h1>
                 <p className="text-xs tabular-nums text-stone-500">
                   PNG up to {outW} × {outH} px
+                  {hasPhotos && <span className="font-sans"> · Click an image to enlarge</span>}
                 </p>
               </div>
 
@@ -469,11 +530,6 @@ export default function Home() {
                 {exportError}
               </p>
             )}
-            {overflow && (
-              <p className="mb-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                The content is taller than this ratio and will be cropped. Try a smaller text size, less padding, or a taller ratio.
-              </p>
-            )}
 
             <div
               ref={stageRef}
@@ -483,7 +539,13 @@ export default function Home() {
               <div style={{ margin: "auto", padding: STAGE_PAD, flex: "none" }}>
                 <div style={{ width: FRAME_W * scale, height: frameH * scale, position: "relative", overflow: "hidden" }}>
                   <div style={{ position: "absolute", top: 0, left: 0, transform: `scale(${scale})`, transformOrigin: "top left" }}>
-                    <TweetCard ref={frameRef} tweet={tweet} settings={settings} />
+                    <TweetCard
+                      ref={frameRef}
+                      tweet={tweet}
+                      settings={settings}
+                      thread={showThread ? thread : null}
+                      onOpenMedia={openMedia}
+                    />
                   </div>
                 </div>
               </div>
@@ -495,6 +557,8 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {lightbox && <Lightbox images={lightbox.images} index={lightbox.index} onIndex={setMediaIndex} onClose={closeMedia} />}
     </div>
   );
 }
