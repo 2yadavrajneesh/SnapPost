@@ -512,19 +512,7 @@ export default function Home() {
                 <button key={value} type="button" aria-pressed={settings.ratio === value}
                   onClick={() => set("ratio", value)}
                   className={`min-h-11 rounded-xl border px-2 py-2.5 text-xs font-medium transition ${settings.ratio === value ? "border-[#1b2420] bg-[#1b2420] text-white" : "border-stone-200 bg-[#f7f3ee] text-stone-600 hover:bg-stone-100"}`}>
-                  <span className="flex min-h-5 items-center justify-center gap-2">
-                    {value !== "compact" && value !== "standard" && value !== "wide" && (
-                      <span
-                        aria-hidden="true"
-                        className="inline-block border border-current"
-                        style={{
-                          width: value === "story" ? 10 : value === "square" ? 18 : 14,
-                          height: value === "story" ? 18 : value === "square" ? 18 : 18,
-                        }}
-                      />
-                    )}
-                    {label}
-                  </span>
+                  {label}
                 </button>
               ))}
             </div>
