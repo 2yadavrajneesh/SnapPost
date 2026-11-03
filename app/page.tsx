@@ -59,6 +59,9 @@ export default function Home() {
   const [fetching, setFetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showEdit, setShowEdit] = useState(false);
+  const [showQuote, setShowQuote] = useState(true);
+  const [displayInfo, setDisplayInfo] = useState({ likes: true, reposts: true, replies: true, dateTime: true, views: true });
+  const [removedMedia, setRemovedMedia] = useState<{ photos: string[]; video: TweetData["video"] } | null>(null);
 
   const [thread, setThread] = useState<PostData[] | null>(null);
   const [threadState, setThreadState] = useState<ThreadState>("idle");
@@ -211,6 +214,18 @@ export default function Home() {
     const timer = setTimeout(() => void fetchTweet(url), 350);
     return () => clearTimeout(timer);
   }, [link, autoFetch, fetchTweet]);
+
+  function onMediaFiles(files: FileList | null) {
+    if (!files?.length) return;
+    const selected = Array.from(files).filter((file) => file.type.startsWith("image/"));
+    Promise.all(selected.map((file) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("Could not read the selected image."));
+      reader.readAsDataURL(file);
+    }))).then((images) => setTweet((current) => ({ ...current, photos: [...current.photos, ...images] })))
+      .catch(() => setFetchError("Could not add one or more images."));
+  }
 
   function onAvatarFile(file: File | undefined) {
     if (!file) return;
@@ -432,6 +447,15 @@ export default function Home() {
                   <TextField label="Date" value={tweet.date} onChange={(v) => setT("date", v)} />
                 </div>
                 <Toggle label="Verified badge" checked={tweet.verified} onChange={(v) => setT("verified", v)} />
+                {tweet.quote && <Toggle label="Show quoted post" checked={showQuote} onChange={setShowQuote} />}
+                <div className="space-y-2 rounded-xl border border-stone-200 p-3">
+                  <Label>Show in post</Label>
+                  <Toggle label="Likes" checked={displayInfo.likes} onChange={(v) => setDisplayInfo((s) => ({ ...s, likes: v }))} />
+                  <Toggle label="Reposts" checked={displayInfo.reposts} onChange={(v) => setDisplayInfo((s) => ({ ...s, reposts: v }))} />
+                  <Toggle label="Comments" checked={displayInfo.replies} onChange={(v) => setDisplayInfo((s) => ({ ...s, replies: v }))} />
+                  <Toggle label="Date & time" checked={displayInfo.dateTime} onChange={(v) => setDisplayInfo((s) => ({ ...s, dateTime: v }))} />
+                  <Toggle label="Views" checked={displayInfo.views} onChange={(v) => setDisplayInfo((s) => ({ ...s, views: v }))} />
+                </div>
                 <div className="flex items-center justify-between gap-3">
                   <label className="cursor-pointer rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50">
                     Upload avatar
@@ -446,23 +470,53 @@ export default function Home() {
                     {(tweet.photos.length > 0 || tweet.video) && (
                       <button
                         type="button"
-                        onClick={() => setTweet((t) => ({ ...t, photos: [], video: null }))}
+                        onClick={() => {
+                          setRemovedMedia({ photos: tweet.photos, video: tweet.video });
+                          setTweet((t) => ({ ...t, photos: [], video: null }));
+                        }}
                         className="text-stone-500 underline hover:text-stone-900"
                       >
                         Remove media
                       </button>
                     )}
+                    {removedMedia && tweet.photos.length === 0 && !tweet.video && (
+                      <button type="button" onClick={() => {
+                        setTweet((t) => ({ ...t, photos: removedMedia.photos, video: removedMedia.video }));
+                        setRemovedMedia(null);
+                      }} className="text-stone-500 underline hover:text-stone-900">Restore media</button>
+                    )}
+                    <label className="cursor-pointer text-stone-500 underline hover:text-stone-900">
+                      Add media
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => onMediaFiles(e.target.files)} />
+                    </label>
                   </div>
                 </div>
               </div>
             )}
           </Section>
 
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <button type="button" onClick={bestFit} className="flex items-center justify-center gap-2 rounded-xl border border-stone-500 bg-[#faf7f2] px-3 py-3 text-sm font-semibold text-stone-800 hover:bg-stone-100">
+              <span aria-hidden="true">✣</span> Best fit
+            </button>
+            <button type="button" onClick={() => { setSettings(DEFAULT_SETTINGS); setZoom(null); setShowQuote(true); setDisplayInfo({ likes: true, reposts: true, replies: true, dateTime: true, views: true }); }} className="flex items-center gap-2 rounded-xl border border-stone-200 bg-[#faf7f2] px-3 py-3 text-sm font-medium text-stone-700 hover:bg-stone-100">
+              <span aria-hidden="true">↻</span> Reset
+            </button>
+          </div>
           <Section title="Output ratio">
-            <Segmented wrap value={settings.ratio} options={ratioOptions} onChange={(v) => set("ratio", v)} />
-            {settings.ratio !== "auto" && (
-              <p className="text-[11px] text-stone-500">Tall posts are scaled down to fit, so nothing is cropped.</p>
-            )}
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                ["compact", "Compact"], ["standard", "Standard"], ["wide", "Wide"],
+                ["story", "9:16"], ["square", "1:1"], ["portrait", "4:5"],
+              ] as const).map(([value, label]) => (
+                <button key={value} type="button" aria-pressed={settings.ratio === value}
+                  onClick={() => set("ratio", value)}
+                  className={`min-h-11 rounded-xl border px-2 py-2.5 text-xs font-medium transition ${settings.ratio === value ? "border-[#1b2420] bg-[#1b2420] text-white" : "border-stone-200 bg-[#f7f3ee] text-stone-600 hover:bg-stone-100"}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            {settings.ratio !== "auto" && <p className="text-[11px] text-stone-500">The full post stays visible; content scales to fit the selected ratio.</p>}
           </Section>
 
           <Section title="Appearance">
@@ -483,14 +537,6 @@ export default function Home() {
             </div>
             <Slider label="Text size" value={settings.textSize} min={24} max={64} suffix="px" onChange={(v) => set("textSize", v)} />
             <Slider label="Padding" value={settings.padding} min={50} max={150} step={5} suffix="%" onChange={(v) => set("padding", v)} />
-            <div className="flex gap-2">
-              <button type="button" onClick={bestFit} className={`flex-1 ${pillBtn}`}>
-                Best fit
-              </button>
-              <button type="button" onClick={() => setSettings(DEFAULT_SETTINGS)} className={`flex-1 ${pillBtn}`}>
-                Reset
-              </button>
-            </div>
           </Section>
         </aside>
 
@@ -533,7 +579,7 @@ export default function Home() {
 
             <div
               ref={stageRef}
-              className="flex min-h-[240px] flex-1 overflow-auto rounded-xl bg-[repeating-conic-gradient(#efe9e1_0%_25%,#f7f3ee_0%_50%)] bg-[length:20px_20px] lg:min-h-0"
+              className="snap-preview-stage flex min-h-[240px] flex-1 overflow-auto rounded-xl border border-stone-200 lg:min-h-0"
               style={isDesktop ? undefined : { height: availH, flex: "none" }}
             >
               <div style={{ margin: "auto", padding: STAGE_PAD, flex: "none" }}>
@@ -544,6 +590,8 @@ export default function Home() {
                       tweet={tweet}
                       settings={settings}
                       thread={showThread ? thread : null}
+                      showQuote={showQuote}
+                      displayInfo={displayInfo}
                       onOpenMedia={openMedia}
                     />
                   </div>
@@ -551,9 +599,6 @@ export default function Home() {
               </div>
             </div>
 
-            <p className="mt-2 text-[11px] text-stone-400">
-              Not affiliated with X Corp. Tweets belong to their authors — only capture posts you have the right to share.
-            </p>
           </div>
         </div>
       </main>
