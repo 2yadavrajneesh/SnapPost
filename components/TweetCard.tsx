@@ -451,7 +451,7 @@ function ThreadView({
                   @{p.username}
                   {p.timestamp ? ` · ${relativeTime(p.timestamp)}` : ""}
                 </span>
-                {i === 0 && <Logo kind={logo} size={Math.round(fs * 0.85)} color={t.text} />}
+                {i === 0 && <Logo kind={logo} size={Math.round(fs * 1.15)} color={t.text} />}
               </div>
 
               <div style={{ marginTop: Math.round(fs * 0.3), fontSize: textSize, lineHeight: 1.35, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
@@ -507,6 +507,8 @@ type Props = {
   /** When set (2+ posts), the card shows the whole thread instead of the single tweet. */
   thread?: PostData[] | null;
   onOpenMedia?: OpenMedia;
+  showQuote?: boolean;
+  displayInfo?: { likes: boolean; reposts: boolean; replies: boolean; dateTime: boolean; views: boolean };
 };
 
 /**
@@ -516,7 +518,7 @@ type Props = {
  * With a fixed output ratio the content is scaled down to fit inside the frame when it is
  * taller than the ratio allows, so the whole post and all its media always stay visible.
  */
-const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia }, ref) {
+const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, displayInfo }, ref) {
   const t = THEMES[settings.theme];
   const fs = settings.textSize;
   const p = settings.padding / 100;
@@ -583,6 +585,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
           padding: cardPad,
           background: minimal ? "transparent" : t.card,
           borderRadius: minimal ? 0 : radius,
+          overflow: "hidden",
           boxShadow: minimal
             ? "none"
             : settings.theme === "light"
@@ -629,7 +632,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
             />
 
             {/* Quoted post */}
-            {tweet.quote && <QuoteCard q={tweet.quote} fs={fs} t={t} radius={radius} depth={0} onOpen={onOpenMedia} />}
+            {showQuote && tweet.quote && <QuoteCard q={tweet.quote} fs={fs} t={t} radius={radius} depth={0} onOpen={onOpenMedia} />}
 
             {/* Footer: stats left, time right */}
             <div
@@ -649,20 +652,22 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
                 size={Math.round(fs * 0.58)}
                 gap={Math.round(fs * 1.0)}
                 items={[
-                  ["reply", tweet.replies],
-                  ["repost", tweet.reposts],
-                  ["like", tweet.likes],
+                  ...(displayInfo?.replies !== false ? [["reply", tweet.replies] as [ "reply", number]] : []),
+                  ...(displayInfo?.reposts !== false ? [["repost", tweet.reposts] as ["repost", number]] : []),
+                  ...(displayInfo?.likes !== false ? [["like", tweet.likes] as ["like", number]] : []),
                 ]}
               />
-              <span>
-                {tweet.time} · {tweet.date}
-                {tweet.views > 0 && (
-                  <>
-                    {" · "}
-                    <b style={{ color: t.text }}>{compact(tweet.views)}</b> Views
-                  </>
-                )}
-              </span>
+              {(displayInfo?.dateTime !== false || (displayInfo?.views !== false && tweet.views > 0)) && (
+                <span>
+                  {displayInfo?.dateTime !== false ? `${tweet.time} · ${tweet.date}` : ""}
+                  {displayInfo?.views !== false && tweet.views > 0 && (
+                    <>
+                      {displayInfo?.dateTime !== false ? " · " : ""}
+                      <b style={{ color: t.text }}>{compact(tweet.views)}</b> Views
+                    </>
+                  )}
+                </span>
+              )}
             </div>
           </>
         )}
