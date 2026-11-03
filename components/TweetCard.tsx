@@ -451,7 +451,7 @@ function ThreadView({
                   @{p.username}
                   {p.timestamp ? ` · ${relativeTime(p.timestamp)}` : ""}
                 </span>
-                {i === 0 && <Logo kind={logo} size={Math.round(fs * 1.15)} color={t.text} />}
+                {i === 0 && <Logo kind={logo} size={Math.round(fs * 1.3)} color={t.text} />}
               </div>
 
               <div style={{ marginTop: Math.round(fs * 0.3), fontSize: textSize, lineHeight: 1.35, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
