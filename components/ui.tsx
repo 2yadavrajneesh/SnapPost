@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-2xl border border-stone-200 bg-white/70 p-4 shadow-sm">
-      <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">{title}</h2>
+      <h2 className="mb-3 text-sm font-bold text-stone-900">{title}</h2>
       <div className="space-y-3">{children}</div>
     </section>
   );

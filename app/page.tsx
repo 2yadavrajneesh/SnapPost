@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import AppearanceTiles from "@/components/AppearanceTiles";
 import Lightbox from "@/components/Lightbox";
+import RatioTiles from "@/components/RatioTiles";
 import TweetCard from "@/components/TweetCard";
 import { Label, Section, Segmented, Slider, TextField, Toggle } from "@/components/ui";
 import { formatDate, formatTime } from "@/lib/format";
@@ -512,19 +513,10 @@ export default function Home() {
             </button>
           </div>
           <Section title="Output ratio">
-            <div className="grid grid-cols-3 gap-2">
-              {([
-                ["compact", "Compact"], ["standard", "Standard"], ["wide", "Wide"],
-                ["story", "9:16"], ["square", "1:1"], ["portrait", "4:5"],
-              ] as const).map(([value, label]) => (
-                <button key={value} type="button" aria-pressed={settings.ratio === value}
-                  onClick={() => set("ratio", value)}
-                  className={`min-h-11 rounded-xl border px-2 py-2.5 text-xs font-medium transition ${settings.ratio === value ? "border-[#1b2420] bg-[#1b2420] text-white" : "border-stone-200 bg-[#f7f3ee] text-stone-600 hover:bg-stone-100"}`}>
-                  {label}
-                </button>
-              ))}
-            </div>
-            {settings.ratio !== "auto" && <p className="text-[11px] text-stone-500">The full post stays visible; content scales to fit the selected ratio.</p>}
+            <RatioTiles value={settings.ratio} onChange={(v) => set("ratio", v)} />
+            {settings.ratio !== "auto" && (
+              <p className="text-[11px] text-stone-500">The full post stays visible; content scales to fit. Click the selected tile again for Auto.</p>
+            )}
           </Section>
 
           <Section title="Appearance">
