@@ -3,9 +3,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import AppearanceTiles from "@/components/AppearanceTiles";
 import Lightbox from "@/components/Lightbox";
-import RatioTiles from "@/components/RatioTiles";
-import TweetCard, { ALL_INFO, type DisplayInfo } from "@/components/TweetCard";
-import { Check, Label, Section, Segmented, Slider, TextField, Toggle } from "@/components/ui";
+import TweetCard from "@/components/TweetCard";
+import { Label, Section, Segmented, Slider, TextField, Toggle } from "@/components/ui";
 import { formatDate, formatTime } from "@/lib/format";
 import { copyPngToClipboard, downloadBlob, downloadUrl, renderPdf, renderPng, renderVideo } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
@@ -14,7 +13,9 @@ import {
   DEFAULT_TWEET,
   FRAME_W,
   MAX_EXPORT_WIDTH,
+  RATIOS,
   type PostData,
+  type RatioKey,
   type Settings,
   type ShotMode,
   type TweetData,
@@ -26,9 +27,7 @@ type ThreadState = "idle" | "checking" | "found" | "none";
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 3;
 const ZOOM_STEP = 1.25;
-const PAD_X = 44; // breathing room around the card inside the viewer (room for the viewfinder brackets)
-const PAD_Y = 64; // extra top/bottom room for the status chip and the zoom pill
-const FORMAT_LABEL = { png: "PNG image", pdf: "PDF document", mp4: "MP4 video" } as const;
+const STAGE_PAD = 8; // breathing room around the card inside the preview window
 const AUTO_FETCH_KEY = "snappost:autoFetch";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -61,9 +60,8 @@ export default function Home() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showEdit, setShowEdit] = useState(false);
   const [showQuote, setShowQuote] = useState(true);
-  const [showMedia, setShowMedia] = useState(true);
-  const [displayInfo, setDisplayInfo] = useState<DisplayInfo>(ALL_INFO);
-  const setInfo = (key: keyof DisplayInfo, v: boolean) => setDisplayInfo((s) => ({ ...s, [key]: v }));
+  const [displayInfo, setDisplayInfo] = useState({ likes: true, reposts: true, replies: true, dateTime: true, views: true });
+  const [removedMedia, setRemovedMedia] = useState<{ photos: string[]; video: TweetData["video"] } | null>(null);
 
   const [thread, setThread] = useState<PostData[] | null>(null);
   const [threadState, setThreadState] = useState<ThreadState>("idle");
@@ -153,7 +151,7 @@ export default function Home() {
   const availH = isDesktop ? stageH : Math.round(viewportH * 0.7);
   const fitScale = Math.max(
     MIN_ZOOM,
-    Math.min(1, (stageW - PAD_X * 2) / FRAME_W, (availH - PAD_Y * 2) / frameH),
+    Math.min(1, (stageW - STAGE_PAD * 2) / FRAME_W, (availH - STAGE_PAD * 2) / frameH),
   );
   const scale = zoom ?? fitScale;
   const zoomIn = () => setZoom(Math.min(MAX_ZOOM, scale * ZOOM_STEP));
@@ -180,8 +178,6 @@ export default function Home() {
       if (id !== reqId.current) return; // a newer fetch has started
       if (!res.ok) throw new Error(j.error || "Couldn't fetch that tweet.");
       setTweet(toTweet(j));
-      setShowQuote(true); // quote tweets are detected automatically; untick "Quoted post" to hide it
-      setShowMedia(true);
       setZoom(null);
 
       // Thread detection runs in the background so the tweet itself shows up straight away.
@@ -284,34 +280,25 @@ export default function Home() {
     }
   }
 
-  function resetAll() {
-    setSettings(DEFAULT_SETTINGS);
-    setZoom(null);
-    setShowQuote(true);
-    setShowMedia(true);
-    setDisplayInfo(ALL_INFO);
-  }
-
   function bestFit() {
     setSettings((s) => ({ ...s, ratio: "auto", padding: 100 }));
     setZoom(null);
   }
 
+  const ratioOptions = (Object.keys(RATIOS) as RatioKey[]).map((k) => ({
+    value: k,
+    label: RATIOS[k].label,
+    title: RATIOS[k].note,
+  }));
+
   const hasPhotos = showThread
     ? !!thread?.some((p) => p.photos.length > 0 || p.quote?.photos.length)
     : tweet.photos.length > 0 || !!tweet.quote?.photos.length;
 
-  const posts: PostData[] = showThread && thread ? thread : [];
-  const hasMedia = showThread
-    ? posts.some((p) => p.photos.length > 0 || p.video || p.quote?.photos.length || p.quote?.video)
-    : tweet.photos.length > 0 || !!tweet.video || !!tweet.quote?.photos.length || !!tweet.quote?.video;
-  const hasQuote = showThread ? posts.some((p) => p.quote) : !!tweet.quote;
-  const pct = Math.round(scale * 100);
-  const frameW = FRAME_W * scale;
-  const frameHs = frameH * scale;
-
   const zoomBtn =
-    "flex h-8 w-8 items-center justify-center rounded-full text-base font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-40";
+    "h-8 w-8 rounded-lg border border-stone-200 bg-white text-base font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-40";
+  const pillBtn =
+    "rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-40";
 
   return (
     <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
@@ -325,8 +312,8 @@ export default function Home() {
               </svg>
             </span>
             <div>
-              <h1 className="text-base font-bold leading-none">SnapPost</h1>
-              <div className="mt-1 text-[11px] text-stone-500">Screenshot, upgraded.</div>
+              <div className="text-base font-bold leading-none">SnapPost</div>
+              <div className="mt-1 text-[11px] text-stone-500">Posts to polished images</div>
             </div>
             <span className="ml-1 rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-stone-600">
               Beta
@@ -460,6 +447,15 @@ export default function Home() {
                   <TextField label="Date" value={tweet.date} onChange={(v) => setT("date", v)} />
                 </div>
                 <Toggle label="Verified badge" checked={tweet.verified} onChange={(v) => setT("verified", v)} />
+                {tweet.quote && <Toggle label="Show quoted post" checked={showQuote} onChange={setShowQuote} />}
+                <div className="space-y-2 rounded-xl border border-stone-200 p-3">
+                  <Label>Show in post</Label>
+                  <Toggle label="Likes" checked={displayInfo.likes} onChange={(v) => setDisplayInfo((s) => ({ ...s, likes: v }))} />
+                  <Toggle label="Reposts" checked={displayInfo.reposts} onChange={(v) => setDisplayInfo((s) => ({ ...s, reposts: v }))} />
+                  <Toggle label="Comments" checked={displayInfo.replies} onChange={(v) => setDisplayInfo((s) => ({ ...s, replies: v }))} />
+                  <Toggle label="Date & time" checked={displayInfo.dateTime} onChange={(v) => setDisplayInfo((s) => ({ ...s, dateTime: v }))} />
+                  <Toggle label="Views" checked={displayInfo.views} onChange={(v) => setDisplayInfo((s) => ({ ...s, views: v }))} />
+                </div>
                 <div className="flex items-center justify-between gap-3">
                   <label className="cursor-pointer rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50">
                     Upload avatar
@@ -471,13 +467,26 @@ export default function Home() {
                         Remove avatar
                       </button>
                     )}
-                    {hasMedia && (
-                      <button type="button" onClick={() => setShowMedia((v) => !v)} className="text-stone-500 underline hover:text-stone-900">
-                        {showMedia ? "Remove media" : "Add media back"}
+                    {(tweet.photos.length > 0 || tweet.video) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRemovedMedia({ photos: tweet.photos, video: tweet.video });
+                          setTweet((t) => ({ ...t, photos: [], video: null }));
+                        }}
+                        className="text-stone-500 underline hover:text-stone-900"
+                      >
+                        Remove media
                       </button>
                     )}
+                    {removedMedia && tweet.photos.length === 0 && !tweet.video && (
+                      <button type="button" onClick={() => {
+                        setTweet((t) => ({ ...t, photos: removedMedia.photos, video: removedMedia.video }));
+                        setRemovedMedia(null);
+                      }} className="text-stone-500 underline hover:text-stone-900">Restore media</button>
+                    )}
                     <label className="cursor-pointer text-stone-500 underline hover:text-stone-900">
-                      Upload media
+                      Add media
                       <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => onMediaFiles(e.target.files)} />
                     </label>
                   </div>
@@ -486,52 +495,32 @@ export default function Home() {
             )}
           </Section>
 
-          <div className="grid grid-cols-[1fr_auto] gap-2.5">
-            <button
-              type="button"
-              onClick={bestFit}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl border-2 border-[#1b2420] bg-[#f3ecdf] px-4 text-sm font-bold text-[#1b2420] transition hover:bg-[#ece3d2]"
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9L19 14z" />
-              </svg>
-              Best fit
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <button type="button" onClick={bestFit} className="flex items-center justify-center gap-2 rounded-xl border border-stone-500 bg-[#faf7f2] px-3 py-3 text-sm font-semibold text-stone-800 hover:bg-stone-100">
+              <span aria-hidden="true">✣</span> Best fit
             </button>
-            <button
-              type="button"
-              onClick={resetAll}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-[#f3ecdf]/60 px-5 text-sm font-semibold text-stone-600 transition hover:bg-[#ece3d2]"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
-                <path d="M21 3v5h-5" />
-              </svg>
-              Reset
+            <button type="button" onClick={() => { setSettings(DEFAULT_SETTINGS); setZoom(null); setShowQuote(true); setDisplayInfo({ likes: true, reposts: true, replies: true, dateTime: true, views: true }); }} className="flex items-center gap-2 rounded-xl border border-stone-200 bg-[#faf7f2] px-3 py-3 text-sm font-medium text-stone-700 hover:bg-stone-100">
+              <span aria-hidden="true">↻</span> Reset
             </button>
           </div>
-
           <Section title="Output ratio">
-            <RatioTiles value={settings.ratio} onChange={(v) => set("ratio", v)} />
-            {settings.ratio !== "auto" && (
-              <p className="text-[11px] text-stone-500">The full post stays visible; content scales to fit. Click the selected tile again for Auto.</p>
-            )}
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                ["compact", "Compact"], ["standard", "Standard"], ["wide", "Wide"],
+                ["story", "9:16"], ["square", "1:1"], ["portrait", "4:5"],
+              ] as const).map(([value, label]) => (
+                <button key={value} type="button" aria-pressed={settings.ratio === value}
+                  onClick={() => set("ratio", value)}
+                  className={`min-h-11 rounded-xl border px-2 py-2.5 text-xs font-medium transition ${settings.ratio === value ? "border-[#1b2420] bg-[#1b2420] text-white" : "border-stone-200 bg-[#f7f3ee] text-stone-600 hover:bg-stone-100"}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            {settings.ratio !== "auto" && <p className="text-[11px] text-stone-500">The full post stays visible; content scales to fit the selected ratio.</p>}
           </Section>
 
           <Section title="Appearance">
             <AppearanceTiles settings={settings} onChange={set} />
-          </Section>
-
-          <Section title="Post details">
-            <div className="grid grid-cols-2 gap-2">
-              <Check label="Likes" checked={displayInfo.likes} onChange={(v) => setInfo("likes", v)} />
-              <Check label="Reposts" checked={displayInfo.reposts} onChange={(v) => setInfo("reposts", v)} />
-              <Check label="Comments" checked={displayInfo.replies} onChange={(v) => setInfo("replies", v)} />
-              <Check label="Views" checked={displayInfo.views} onChange={(v) => setInfo("views", v)} />
-              <Check label="Date & time" checked={displayInfo.dateTime} onChange={(v) => setInfo("dateTime", v)} />
-              {hasMedia && <Check label="Media" checked={showMedia} onChange={setShowMedia} />}
-              {hasQuote && <Check label="Quoted post" checked={showQuote} onChange={setShowQuote} />}
-            </div>
-            {hasQuote && <p className="text-[11px] text-stone-500">A quoted post was detected. Untick it to leave it out.</p>}
           </Section>
 
           <Section title="Layout">
@@ -551,74 +540,65 @@ export default function Home() {
           </Section>
         </aside>
 
-        {/* Viewer */}
+        {/* Preview */}
         <div id="canvas" className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">
-          <div
-            className="snap-stage relative flex min-h-[260px] flex-1 overflow-hidden rounded-2xl border border-stone-200 shadow-sm lg:min-h-0"
-            style={isDesktop ? undefined : { height: availH, flex: "none" }}
-          >
-            <div ref={stageRef} className="relative z-[1] flex flex-1 overflow-auto">
-              <div style={{ margin: "auto", padding: `${PAD_Y}px ${PAD_X}px`, flex: "none" }}>
-                {/* Viewfinder brackets around the post */}
-                <div style={{ position: "relative", width: frameW, height: frameHs }}>
-                  {(["tl", "tr", "bl", "br"] as const).map((c) => (
-                    <span key={c} aria-hidden="true" className={`snap-bracket snap-bracket-${c}`} />
-                  ))}
-                  <div style={{ width: frameW, height: frameHs, position: "relative", overflow: "hidden", borderRadius: 0 }}>
-                    <div style={{ position: "absolute", top: 0, left: 0, transform: `scale(${scale})`, transformOrigin: "top left" }}>
-                      <TweetCard
-                        ref={frameRef}
-                        tweet={tweet}
-                        settings={settings}
-                        thread={showThread ? thread : null}
-                        showQuote={showQuote}
-                        showMedia={showMedia}
-                        displayInfo={displayInfo}
-                        onOpenMedia={openMedia}
-                      />
-                    </div>
+          <div className="flex flex-1 flex-col rounded-2xl border border-stone-200 bg-white/70 p-3 shadow-sm lg:min-h-0 sm:p-4">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <div className="flex min-w-0 flex-wrap items-baseline gap-x-3">
+                <h1 className="text-lg font-bold tracking-tight">Screenshot, upgraded.</h1>
+                <p className="text-xs tabular-nums text-stone-500">
+                  PNG up to {outW} × {outH} px
+                  {hasPhotos && <span className="font-sans"> · Click an image to enlarge</span>}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-xs">
+                <button type="button" onClick={zoomOut} disabled={scale <= MIN_ZOOM + 0.001} aria-label="Zoom out" className={zoomBtn}>
+                  −
+                </button>
+                <span className="w-12 text-center tabular-nums text-stone-600" aria-live="polite">
+                  {Math.round(scale * 100)}%
+                </span>
+                <button type="button" onClick={zoomIn} disabled={scale >= MAX_ZOOM - 0.001} aria-label="Zoom in" className={zoomBtn}>
+                  +
+                </button>
+                <button type="button" onClick={() => setZoom(null)} disabled={zoom === null} className={`ml-1 ${pillBtn}`}>
+                  Fit
+                </button>
+                <button type="button" onClick={() => setZoom(1)} className={pillBtn}>
+                  100%
+                </button>
+              </div>
+            </div>
+
+            {exportError && (
+              <p role="alert" className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+                {exportError}
+              </p>
+            )}
+
+            <div
+              ref={stageRef}
+              className="snap-preview-stage flex min-h-[240px] flex-1 overflow-auto rounded-xl border border-stone-200 lg:min-h-0"
+              style={isDesktop ? undefined : { height: availH, flex: "none" }}
+            >
+              <div style={{ margin: "auto", padding: STAGE_PAD, flex: "none" }}>
+                <div style={{ width: FRAME_W * scale, height: frameH * scale, position: "relative", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", top: 0, left: 0, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+                    <TweetCard
+                      ref={frameRef}
+                      tweet={tweet}
+                      settings={settings}
+                      thread={showThread ? thread : null}
+                      showQuote={showQuote}
+                      displayInfo={displayInfo}
+                      onOpenMedia={openMedia}
+                    />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Status chip */}
-            <div className="pointer-events-none absolute left-3 top-3 z-[2] flex items-center gap-2 rounded-full border border-stone-200 bg-white/90 px-3 py-1.5 text-xs font-medium text-stone-700 shadow-sm backdrop-blur">
-              <span className="h-2 w-2 rounded-full bg-accent" aria-hidden="true" />
-              {FORMAT_LABEL[format]} · {zoom === null ? "Fit " : ""}
-              {pct}%
-            </div>
-
-            {/* Output size + hints */}
-            <div className="pointer-events-none absolute right-3 top-3 z-[2] max-w-[50%] text-right text-[11px] tabular-nums text-stone-500">
-              {outW} × {outH} px
-              {hasPhotos && showMedia && <span className="block font-sans">Click an image to enlarge</span>}
-            </div>
-
-            {exportError && (
-              <p role="alert" className="absolute left-1/2 top-14 z-[3] max-w-[90%] -translate-x-1/2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 shadow">
-                {exportError}
-              </p>
-            )}
-
-            {/* Floating zoom pill */}
-            <div className="absolute bottom-4 left-1/2 z-[2] flex -translate-x-1/2 items-center gap-1 rounded-full border border-stone-200 bg-white/95 px-1.5 py-1 text-xs shadow-md backdrop-blur">
-              <button type="button" onClick={zoomOut} disabled={scale <= MIN_ZOOM + 0.001} aria-label="Zoom out" className={zoomBtn}>
-                −
-              </button>
-              <button
-                type="button"
-                onClick={() => setZoom(null)}
-                title="Reset to fit"
-                aria-live="polite"
-                className="w-12 rounded-full py-1 text-center font-semibold tabular-nums text-stone-700 hover:bg-stone-100"
-              >
-                {pct}%
-              </button>
-              <button type="button" onClick={zoomIn} disabled={scale >= MAX_ZOOM - 0.001} aria-label="Zoom in" className={zoomBtn}>
-                +
-              </button>
-            </div>
           </div>
         </div>
       </main>

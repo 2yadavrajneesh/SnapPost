@@ -22,20 +22,6 @@ const RADIUS: Record<Settings["corners"], number> = { sharp: 0, soft: 24, round:
 type Theme = (typeof THEMES)["light"];
 type OpenMedia = (images: string[], index: number) => void;
 
-export type DisplayInfo = { likes: boolean; reposts: boolean; replies: boolean; dateTime: boolean; views: boolean };
-export const ALL_INFO: DisplayInfo = { likes: true, reposts: true, replies: true, dateTime: true, views: true };
-
-type StatItem = [Parameters<typeof Icon>[0]["name"], number];
-/** Which engagement counters are visible, given the "show" checkboxes. */
-function statItems(v: { replies: number; reposts: number; likes: number; views: number }, info: DisplayInfo, withViews: boolean): StatItem[] {
-  return [
-    ...(info.replies ? [["reply", v.replies] as StatItem] : []),
-    ...(info.reposts ? [["repost", v.reposts] as StatItem] : []),
-    ...(info.likes ? [["like", v.likes] as StatItem] : []),
-    ...(withViews && info.views ? [["views", v.views] as StatItem] : []),
-  ];
-}
-
 /* ---------- Icons ---------- */
 
 export const XLOGO =
@@ -96,8 +82,7 @@ function Icon({ name, size }: { name: "reply" | "repost" | "like" | "views"; siz
   }
 }
 
-function Stats({ items, size, gap }: { items: StatItem[]; size: number; gap: number }) {
-  if (!items.length) return null;
+function Stats({ items, size, gap }: { items: [Parameters<typeof Icon>[0]["name"], number][]; size: number; gap: number }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: gap, rowGap: gap / 2 }}>
       {items.map(([name, n]) => (
@@ -150,38 +135,6 @@ function Avatar({ src, name, size }: { src: string; name: string; size: number }
 
 const FILL: React.CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" };
 
-/** Small "enlarge" button over media. Preview-only: left out of exported images. */
-function ExpandBadge({ size, onClick }: { size: number; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      data-no-export=""
-      aria-label="Enlarge image"
-      onClick={onClick}
-      style={{
-        position: "absolute",
-        top: Math.round(size * 0.3),
-        right: Math.round(size * 0.3),
-        width: size,
-        height: size,
-        borderRadius: Math.round(size * 0.28),
-        border: "1px solid rgba(255,255,255,0.35)",
-        background: "rgba(15,20,25,0.62)",
-        color: "#fff",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: "zoom-in",
-        padding: 0,
-      }}
-    >
-      <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-      </svg>
-    </button>
-  );
-}
-
 function Photos({
   photos,
   fs,
@@ -209,23 +162,21 @@ function Photos({
       {columns.map((col, c) => (
         <div key={c} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap }}>
           {col.map(({ src, idx }) => (
-            <div key={idx} style={{ position: "relative" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={proxied(src)}
-                alt=""
-                onClick={onOpen ? () => onOpen(photos, idx) : undefined}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  height: "auto",
-                  borderRadius: radius,
-                  border,
-                  cursor: onOpen ? "zoom-in" : undefined,
-                }}
-              />
-              {onOpen && <ExpandBadge size={Math.round(fs * 1.1)} onClick={() => onOpen(photos, idx)} />}
-            </div>
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={idx}
+              src={proxied(src)}
+              alt=""
+              onClick={onOpen ? () => onOpen(photos, idx) : undefined}
+              style={{
+                display: "block",
+                width: "100%",
+                height: "auto",
+                borderRadius: radius,
+                border,
+                cursor: onOpen ? "zoom-in" : undefined,
+              }}
+            />
           ))}
         </div>
       ))}
@@ -381,8 +332,6 @@ function QuoteCard({
   t,
   radius,
   depth,
-  info,
-  showMedia,
   onOpen,
 }: {
   q: PostData;
@@ -390,13 +339,10 @@ function QuoteCard({
   t: Theme;
   radius: number;
   depth: number;
-  info: DisplayInfo;
-  showMedia: boolean;
   onOpen?: OpenMedia;
 }) {
   const small = Math.round(fs * (depth === 0 ? 0.74 : 0.68));
-  const stats = statItems(q, info, true);
-  const hasStats = stats.length > 0 && q.replies + q.reposts + q.likes + q.views > 0;
+  const hasStats = q.replies + q.reposts + q.likes + q.views > 0;
   return (
     <div
       style={{
@@ -413,7 +359,7 @@ function QuoteCard({
           <span style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{q.name}</span>
           {q.verified && <Badge size={Math.round(small * 1.05)} />}
           <span style={{ color: t.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>@{q.username}</span>
-          {q.timestamp && info.dateTime && <span style={{ color: t.muted, whiteSpace: "nowrap" }}>· {relativeTime(q.timestamp)}</span>}
+          {q.timestamp && <span style={{ color: t.muted, whiteSpace: "nowrap" }}>· {relativeTime(q.timestamp)}</span>}
         </div>
       </div>
 
@@ -421,29 +367,30 @@ function QuoteCard({
         {q.text}
       </div>
 
-      {showMedia && (
-        <Media
-          photos={q.photos}
-          video={q.video}
-          fs={fs}
-          marginTop={Math.round(fs * 0.5)}
-          radius={Math.round(radius * 0.4)}
-          border={`1px solid ${t.border}`}
-          videoMaxHeight={Math.round(fs * 10)}
-          onOpen={onOpen}
-        />
-      )}
+      <Media
+        photos={q.photos}
+        video={q.video}
+        fs={fs}
+        marginTop={Math.round(fs * 0.5)}
+        radius={Math.round(radius * 0.4)}
+        border={`1px solid ${t.border}`}
+        videoMaxHeight={Math.round(fs * 10)}
+        onOpen={onOpen}
+      />
 
-      {q.quote && depth < 1 && (
-        <QuoteCard q={q.quote} fs={fs} t={t} radius={radius} depth={depth + 1} info={info} showMedia={showMedia} onOpen={onOpen} />
-      )}
+      {q.quote && depth < 1 && <QuoteCard q={q.quote} fs={fs} t={t} radius={radius} depth={depth + 1} onOpen={onOpen} />}
 
       {hasStats && depth === 0 && (
         <div style={{ marginTop: Math.round(fs * 0.5), color: t.muted, fontSize: Math.round(fs * 0.55) }}>
           <Stats
             size={Math.round(fs * 0.5)}
             gap={Math.round(fs * 0.9)}
-            items={stats}
+            items={[
+              ["reply", q.replies],
+              ["repost", q.reposts],
+              ["like", q.likes],
+              ["views", q.views],
+            ]}
           />
         </div>
       )}
@@ -459,9 +406,6 @@ function ThreadView({
   t,
   radius,
   logo,
-  info,
-  showMedia,
-  showQuote,
   onOpen,
 }: {
   posts: PostData[];
@@ -469,9 +413,6 @@ function ThreadView({
   t: Theme;
   radius: number;
   logo: Settings["logo"];
-  info: DisplayInfo;
-  showMedia: boolean;
-  showQuote: boolean;
   onOpen?: OpenMedia;
 }) {
   const avatar = Math.round(fs * 1.5);
@@ -483,8 +424,7 @@ function ThreadView({
     <div>
       {posts.map((p, i) => {
         const last = i === posts.length - 1;
-        const stats = statItems(p, info, true);
-        const hasStats = stats.length > 0 && p.replies + p.reposts + p.likes + p.views > 0;
+        const hasStats = p.replies + p.reposts + p.likes + p.views > 0;
         return (
           <div key={p.id || i} style={{ display: "flex", gap: Math.round(fs * 0.5) }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: "none", width: avatar }}>
@@ -509,38 +449,39 @@ function ThreadView({
                 {p.verified && <Badge size={Math.round(nameSize * 1.05)} />}
                 <span style={{ color: t.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
                   @{p.username}
-                  {p.timestamp && info.dateTime ? ` · ${relativeTime(p.timestamp)}` : ""}
+                  {p.timestamp ? ` · ${relativeTime(p.timestamp)}` : ""}
                 </span>
-                {i === 0 && <Logo kind={logo} size={Math.round(fs * 1.35)} color={t.text} />}
+                {i === 0 && <Logo kind={logo} size={Math.round(fs * 1.15)} color={t.text} />}
               </div>
 
               <div style={{ marginTop: Math.round(fs * 0.3), fontSize: textSize, lineHeight: 1.35, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
                 {p.text}
               </div>
 
-              {showMedia && (
-                <Media
-                  photos={p.photos}
-                  video={p.video}
-                  fs={fs}
-                  marginTop={Math.round(fs * 0.5)}
-                  radius={Math.round(radius * 0.55)}
-                  border={`1px solid ${t.border}`}
-                  videoMaxHeight={Math.round(fs * 12)}
-                  onOpen={onOpen}
-                />
-              )}
+              <Media
+                photos={p.photos}
+                video={p.video}
+                fs={fs}
+                marginTop={Math.round(fs * 0.5)}
+                radius={Math.round(radius * 0.55)}
+                border={`1px solid ${t.border}`}
+                videoMaxHeight={Math.round(fs * 12)}
+                onOpen={onOpen}
+              />
 
-              {showQuote && p.quote && (
-                <QuoteCard q={p.quote} fs={fs} t={t} radius={radius} depth={0} info={info} showMedia={showMedia} onOpen={onOpen} />
-              )}
+              {p.quote && <QuoteCard q={p.quote} fs={fs} t={t} radius={radius} depth={0} onOpen={onOpen} />}
 
               {hasStats && (
                 <div style={{ marginTop: Math.round(fs * 0.45), color: t.muted, fontSize: Math.round(fs * 0.5) }}>
                   <Stats
                     size={Math.round(fs * 0.5)}
                     gap={Math.round(fs * 0.9)}
-                    items={stats}
+                    items={[
+                      ["reply", p.replies],
+                      ["repost", p.reposts],
+                      ["like", p.likes],
+                      ["views", p.views],
+                    ]}
                   />
                 </div>
               )}
@@ -549,7 +490,7 @@ function ThreadView({
         );
       })}
 
-      {first?.timestamp && info.dateTime && (
+      {first?.timestamp && (
         <div style={{ marginTop: Math.round(fs * 0.7), color: t.muted, fontSize: Math.round(fs * 0.5) }}>
           {formatTime(first.timestamp)} · {formatDate(first.timestamp)} · {posts.length} posts
         </div>
@@ -567,8 +508,7 @@ type Props = {
   thread?: PostData[] | null;
   onOpenMedia?: OpenMedia;
   showQuote?: boolean;
-  showMedia?: boolean;
-  displayInfo?: DisplayInfo;
+  displayInfo?: { likes: boolean; reposts: boolean; replies: boolean; dateTime: boolean; views: boolean };
 };
 
 /**
@@ -578,7 +518,7 @@ type Props = {
  * With a fixed output ratio the content is scaled down to fit inside the frame when it is
  * taller than the ratio allows, so the whole post and all its media always stay visible.
  */
-const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, showMedia = true, displayInfo = ALL_INFO }, ref) {
+const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, displayInfo }, ref) {
   const t = THEMES[settings.theme];
   const fs = settings.textSize;
   const p = settings.padding / 100;
@@ -591,9 +531,6 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
   const gap = Math.round(fs * 0.7);
   const nameSize = Math.round(fs * 0.8);
   const showThread = !!thread && thread.length > 1;
-  const footerStats = statItems(tweet, displayInfo, false);
-  const showTime = displayInfo.dateTime;
-  const showViews = displayInfo.views && tweet.views > 0;
 
   // Scale the content down (never up) so it fits inside the fixed-ratio frame without cropping.
   const innerRef = useRef<HTMLDivElement>(null);
@@ -630,8 +567,6 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
         alignItems: "center",
         justifyContent: "center",
         overflow: "hidden",
-        // Corners apply to the whole picture (so exports are rounded too), not just the inner card.
-        borderRadius: radius,
         background: minimal
           ? t.card
           : settings.theme === "light"
@@ -661,7 +596,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
         }}
       >
         {showThread ? (
-          <ThreadView posts={thread!} fs={fs} t={t} radius={radius} logo={settings.logo} info={displayInfo} showMedia={showMedia} showQuote={showQuote} onOpen={onOpenMedia} />
+          <ThreadView posts={thread!} fs={fs} t={t} radius={radius} logo={settings.logo} onOpen={onOpenMedia} />
         ) : (
           <>
             {/* Header */}
@@ -676,7 +611,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
                 </div>
                 <div style={{ fontSize: nameSize, color: t.muted }}>@{tweet.username || "username"}</div>
               </div>
-              <Logo kind={settings.logo} size={Math.round(fs * 1.05)} color={t.text} />
+              <Logo kind={settings.logo} size={Math.round(fs * 0.85)} color={t.text} />
             </div>
 
             {/* Text */}
@@ -685,51 +620,55 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
             </div>
 
             {/* Media */}
-            {showMedia && (
-              <Media
-                photos={tweet.photos}
-                video={tweet.video}
-                fs={fs}
-                marginTop={gap}
-                radius={Math.round(radius * 0.55)}
-                border={`1px solid ${t.border}`}
-                videoMaxHeight={Math.round(fs * 14)}
-                onOpen={onOpenMedia}
-              />
-            )}
+            <Media
+              photos={tweet.photos}
+              video={tweet.video}
+              fs={fs}
+              marginTop={gap}
+              radius={Math.round(radius * 0.55)}
+              border={`1px solid ${t.border}`}
+              videoMaxHeight={Math.round(fs * 14)}
+              onOpen={onOpenMedia}
+            />
 
             {/* Quoted post */}
-            {showQuote && tweet.quote && <QuoteCard q={tweet.quote} fs={fs} t={t} radius={radius} depth={0} info={displayInfo} showMedia={showMedia} onOpen={onOpenMedia} />}
+            {showQuote && tweet.quote && <QuoteCard q={tweet.quote} fs={fs} t={t} radius={radius} depth={0} onOpen={onOpenMedia} />}
 
-            {/* Footer: stats left, time right (each part only when its checkbox is on) */}
-            {(footerStats.length > 0 || showTime || showViews) && (
-              <div
-                style={{
-                  marginTop: gap,
-                  display: "flex",
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  columnGap: gap,
-                  rowGap: Math.round(fs * 0.3),
-                  color: t.muted,
-                  fontSize: Math.round(fs * 0.58),
-                }}
-              >
-                <Stats size={Math.round(fs * 0.58)} gap={Math.round(fs * 1.0)} items={footerStats} />
-                {(showTime || showViews) && (
-                  <span style={{ marginLeft: "auto" }}>
-                    {showTime ? `${tweet.time} · ${tweet.date}` : ""}
-                    {showViews && (
-                      <>
-                        {showTime ? " · " : ""}
-                        <b style={{ color: t.text }}>{compact(tweet.views)}</b> Views
-                      </>
-                    )}
-                  </span>
-                )}
-              </div>
-            )}
+            {/* Footer: stats left, time right */}
+            <div
+              style={{
+                marginTop: gap,
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                columnGap: gap,
+                rowGap: Math.round(fs * 0.3),
+                color: t.muted,
+                fontSize: Math.round(fs * 0.58),
+              }}
+            >
+              <Stats
+                size={Math.round(fs * 0.58)}
+                gap={Math.round(fs * 1.0)}
+                items={[
+                  ...(displayInfo?.replies !== false ? [["reply", tweet.replies] as [ "reply", number]] : []),
+                  ...(displayInfo?.reposts !== false ? [["repost", tweet.reposts] as ["repost", number]] : []),
+                  ...(displayInfo?.likes !== false ? [["like", tweet.likes] as ["like", number]] : []),
+                ]}
+              />
+              {(displayInfo?.dateTime !== false || (displayInfo?.views !== false && tweet.views > 0)) && (
+                <span>
+                  {displayInfo?.dateTime !== false ? `${tweet.time} · ${tweet.date}` : ""}
+                  {displayInfo?.views !== false && tweet.views > 0 && (
+                    <>
+                      {displayInfo?.dateTime !== false ? " · " : ""}
+                      <b style={{ color: t.text }}>{compact(tweet.views)}</b> Views
+                    </>
+                  )}
+                </span>
+              )}
+            </div>
           </>
         )}
       </div>
