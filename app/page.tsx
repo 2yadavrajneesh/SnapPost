@@ -484,6 +484,16 @@ export default function Home() {
                   <TextField label="Date" value={tweet.date} onChange={(v) => setT("date", v)} />
                 </div>
                 <Toggle label="Verified badge" checked={tweet.verified} onChange={(v) => setT("verified", v)} />
+                <div className="space-y-2">
+                  <Label>Post details</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Check label="Likes" checked={displayInfo.likes} onChange={(v) => setInfo("likes", v)} />
+                    <Check label="Reposts" checked={displayInfo.reposts} onChange={(v) => setInfo("reposts", v)} />
+                    <Check label="Comments" checked={displayInfo.replies} onChange={(v) => setInfo("replies", v)} />
+                    <Check label="Views" checked={displayInfo.views} onChange={(v) => setInfo("views", v)} />
+                    <Check label="Date & time" checked={displayInfo.dateTime} onChange={(v) => setInfo("dateTime", v)} />
+                  </div>
+                </div>
                 <div className="flex items-center justify-between gap-3">
                   <label className="cursor-pointer rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50">
                     Upload avatar
@@ -543,16 +553,6 @@ export default function Home() {
 
           <Section title="Appearance">
             <AppearanceTiles settings={settings} onChange={set} />
-          </Section>
-
-          <Section title="Post details">
-            <div className="grid grid-cols-2 gap-2">
-              <Check label="Likes" checked={displayInfo.likes} onChange={(v) => setInfo("likes", v)} />
-              <Check label="Reposts" checked={displayInfo.reposts} onChange={(v) => setInfo("reposts", v)} />
-              <Check label="Comments" checked={displayInfo.replies} onChange={(v) => setInfo("replies", v)} />
-              <Check label="Views" checked={displayInfo.views} onChange={(v) => setInfo("views", v)} />
-              <Check label="Date & time" checked={displayInfo.dateTime} onChange={(v) => setInfo("dateTime", v)} />
-            </div>
           </Section>
 
           <Section title="Layout">
