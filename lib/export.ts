@@ -6,9 +6,12 @@ export async function renderPng(node: HTMLElement): Promise<{ dataUrl: string; w
   const w = node.offsetWidth;
   const h = node.offsetHeight;
   const pixelRatio = MAX_EXPORT_WIDTH / w;
+  // includeQueryParams: every proxied image shares the path /api/image-proxy and differs only by its
+  // ?url=… query. Without it html-to-image treats them as one image and reuses the first for all
+  // (e.g. the quoted author's picture showing up on the main post).
   // <video> elements can't be captured from another origin, so they're skipped: the poster image
   // (and play badge) rendered underneath them in the card is what ends up in the exported file.
-  const opts = { pixelRatio, width: w, height: h, cacheBust: false, filter: (n: Node) => n.nodeName !== "VIDEO" && !(n instanceof HTMLElement && n.hasAttribute("data-no-export")) };
+  const opts = { pixelRatio, width: w, height: h, cacheBust: false, includeQueryParams: true, filter: (n: Node) => n.nodeName !== "VIDEO" && !(n instanceof HTMLElement && n.hasAttribute("data-no-export")) };
 
   // Some browsers (notably Safari) miss images on the first pass, so warm up once.
   await toPng(node, opts);

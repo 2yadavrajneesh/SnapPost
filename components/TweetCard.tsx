@@ -656,11 +656,8 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
           background: minimal ? "transparent" : t.card,
           borderRadius: minimal ? 0 : radius,
           overflow: "hidden",
-          boxShadow: minimal
-            ? "none"
-            : settings.theme === "light"
-              ? "0 30px 80px -30px rgba(80,50,20,0.35), 0 0 0 1px rgba(0,0,0,0.04)"
-              : "0 30px 80px -30px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06)",
+          // No drop shadow: the frame is transparent, so a shadow would be clipped into a visible halo.
+          boxShadow: minimal ? "none" : settings.theme === "light" ? "0 0 0 1px rgba(0,0,0,0.06)" : "0 0 0 1px rgba(255,255,255,0.08)",
           transform: fit < 1 ? `scale(${fit})` : undefined,
           transformOrigin: "center center",
         }}
