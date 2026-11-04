@@ -178,6 +178,7 @@ export default function Home() {
       if (id !== reqId.current) return; // a newer fetch has started
       if (!res.ok) throw new Error(j.error || "Couldn't fetch that tweet.");
       setTweet(toTweet(j));
+      setShowQuote(true); // quote tweets are detected automatically; untick the checkbox to hide one
       setZoom(null);
 
       // Thread detection runs in the background so the tweet itself shows up straight away.
@@ -291,6 +292,7 @@ export default function Home() {
     title: RATIOS[k].note,
   }));
 
+  const hasQuote = showThread ? !!thread?.some((p) => p.quote) : !!tweet.quote;
   const hasPhotos = showThread
     ? !!thread?.some((p) => p.photos.length > 0 || p.quote?.photos.length)
     : tweet.photos.length > 0 || !!tweet.quote?.photos.length;
@@ -406,6 +408,13 @@ export default function Home() {
               </div>
             )}
 
+            {hasQuote && (
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700">
+                <input type="checkbox" checked={showQuote} onChange={(e) => setShowQuote(e.target.checked)} className="h-4 w-4 accent-stone-900" />
+                Include quoted post <span className="text-stone-400">(detected)</span>
+              </label>
+            )}
+
             <button
               type="button"
               onClick={() => setShowEdit((v) => !v)}
@@ -447,7 +456,6 @@ export default function Home() {
                   <TextField label="Date" value={tweet.date} onChange={(v) => setT("date", v)} />
                 </div>
                 <Toggle label="Verified badge" checked={tweet.verified} onChange={(v) => setT("verified", v)} />
-                {tweet.quote && <Toggle label="Show quoted post" checked={showQuote} onChange={setShowQuote} />}
                 <div className="space-y-2 rounded-xl border border-stone-200 p-3">
                   <Label>Show in post</Label>
                   <Toggle label="Likes" checked={displayInfo.likes} onChange={(v) => setDisplayInfo((s) => ({ ...s, likes: v }))} />

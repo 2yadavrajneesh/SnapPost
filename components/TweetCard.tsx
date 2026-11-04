@@ -406,6 +406,7 @@ function ThreadView({
   t,
   radius,
   logo,
+  showQuote,
   onOpen,
 }: {
   posts: PostData[];
@@ -413,6 +414,7 @@ function ThreadView({
   t: Theme;
   radius: number;
   logo: Settings["logo"];
+  showQuote: boolean;
   onOpen?: OpenMedia;
 }) {
   const avatar = Math.round(fs * 1.5);
@@ -469,7 +471,7 @@ function ThreadView({
                 onOpen={onOpen}
               />
 
-              {p.quote && <QuoteCard q={p.quote} fs={fs} t={t} radius={radius} depth={0} onOpen={onOpen} />}
+              {showQuote && p.quote && <QuoteCard q={p.quote} fs={fs} t={t} radius={radius} depth={0} onOpen={onOpen} />}
 
               {hasStats && (
                 <div style={{ marginTop: Math.round(fs * 0.45), color: t.muted, fontSize: Math.round(fs * 0.5) }}>
@@ -598,7 +600,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
         }}
       >
         {showThread ? (
-          <ThreadView posts={thread!} fs={fs} t={t} radius={radius} logo={settings.logo} onOpen={onOpenMedia} />
+          <ThreadView posts={thread!} fs={fs} t={t} radius={radius} logo={settings.logo} showQuote={showQuote} onOpen={onOpenMedia} />
         ) : (
           <>
             {/* Header */}
