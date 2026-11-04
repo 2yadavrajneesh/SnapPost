@@ -644,7 +644,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
           ? t.card
           : settings.theme === "light"
             ? "linear-gradient(135deg, #f6efe5 0%, #ecdfcd 100%)"
-            : "linear-gradient(135deg, #0a0d12 0%, #151c27 100%)",
+            : "transparent", // dark theme: no black panel, only the tweet itself
         color: t.text,
         fontFamily: FONTS[settings.font],
       }}

@@ -101,7 +101,7 @@ export async function renderVideo(
     const fade = Math.min(1, t / 0.15);
     const zoom = 1 + 0.04 * t;
     ctx.globalAlpha = 1;
-    ctx.fillStyle = "#000";
+    ctx.fillStyle = "#faf6f1";
     ctx.fillRect(0, 0, W, H);
     ctx.globalAlpha = fade;
     ctx.save();
