@@ -567,6 +567,8 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
         alignItems: "center",
         justifyContent: "center",
         overflow: "hidden",
+        // Corners apply to the whole picture (so exports are rounded too), not just the inner card.
+        borderRadius: radius,
         background: minimal
           ? t.card
           : settings.theme === "light"
