@@ -344,6 +344,33 @@ export default function Home() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <div role="group" aria-label="Theme" className="flex gap-1 rounded-xl bg-stone-100 p-1">
+              {(["light", "dark"] as const).map((th) => (
+                <button
+                  key={th}
+                  type="button"
+                  aria-pressed={settings.theme === th}
+                  aria-label={`${th === "light" ? "Light" : "Dark"} theme`}
+                  title={`${th === "light" ? "Light" : "Dark"} theme`}
+                  onClick={() => set("theme", th)}
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
+                    settings.theme === th ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    {th === "light" ? (
+                      <>
+                        <circle cx="12" cy="12" r="4" />
+                        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+                      </>
+                    ) : (
+                      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+                    )}
+                  </svg>
+                  <span className="hidden sm:inline">{th === "light" ? "Light" : "Dark"}</span>
+                </button>
+              ))}
+            </div>
             <Segmented
               value={format}
               options={[
