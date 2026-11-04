@@ -289,6 +289,14 @@ export default function Home() {
     }
   }
 
+  function resetAll() {
+    setSettings(DEFAULT_SETTINGS);
+    setZoom(null);
+    setShowQuote(true);
+    setShowMedia(true);
+    setDisplayInfo(ALL_INFO);
+  }
+
   function bestFit() {
     setSettings((s) => ({ ...s, ratio: "auto", padding: 100 }));
     setZoom(null);
@@ -502,14 +510,30 @@ export default function Home() {
             )}
           </Section>
 
-          <div className="grid grid-cols-[1fr_auto] gap-2">
-            <button type="button" onClick={bestFit} className="flex items-center justify-center gap-2 rounded-xl border border-stone-500 bg-[#faf7f2] px-3 py-3 text-sm font-semibold text-stone-800 hover:bg-stone-100">
-              <span aria-hidden="true">✣</span> Best fit
+          <div className="grid grid-cols-[1fr_auto] gap-2.5">
+            <button
+              type="button"
+              onClick={bestFit}
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl border-2 border-[#1b2420] bg-[#f3ecdf] px-4 text-sm font-bold text-[#1b2420] transition hover:bg-[#ece3d2]"
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9L19 14z" />
+              </svg>
+              Best fit
             </button>
-            <button type="button" onClick={() => { setSettings(DEFAULT_SETTINGS); setZoom(null); setShowQuote(true); setShowMedia(true); setDisplayInfo(ALL_INFO); }} className="flex items-center gap-2 rounded-xl border border-stone-200 bg-[#faf7f2] px-3 py-3 text-sm font-medium text-stone-700 hover:bg-stone-100">
-              <span aria-hidden="true">↻</span> Reset
+            <button
+              type="button"
+              onClick={resetAll}
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-[#f3ecdf]/60 px-5 text-sm font-semibold text-stone-600 transition hover:bg-[#ece3d2]"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
+                <path d="M21 3v5h-5" />
+              </svg>
+              Reset
             </button>
           </div>
+
           <Section title="Output ratio">
             <RatioTiles value={settings.ratio} onChange={(v) => set("ratio", v)} />
             {settings.ratio !== "auto" && (
