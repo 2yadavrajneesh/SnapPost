@@ -135,6 +135,38 @@ function Avatar({ src, name, size }: { src: string; name: string; size: number }
 
 const FILL: React.CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" };
 
+/** Small "enlarge" button over media. Preview-only: left out of exported images. */
+function ExpandBadge({ size, onClick }: { size: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      data-no-export=""
+      aria-label="Enlarge image"
+      onClick={onClick}
+      style={{
+        position: "absolute",
+        top: Math.round(size * 0.3),
+        right: Math.round(size * 0.3),
+        width: size,
+        height: size,
+        borderRadius: Math.round(size * 0.28),
+        border: "1px solid rgba(255,255,255,0.35)",
+        background: "rgba(15,20,25,0.62)",
+        color: "#fff",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "zoom-in",
+        padding: 0,
+      }}
+    >
+      <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+      </svg>
+    </button>
+  );
+}
+
 function Photos({
   photos,
   fs,
@@ -162,21 +194,23 @@ function Photos({
       {columns.map((col, c) => (
         <div key={c} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap }}>
           {col.map(({ src, idx }) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={idx}
-              src={proxied(src)}
-              alt=""
-              onClick={onOpen ? () => onOpen(photos, idx) : undefined}
-              style={{
-                display: "block",
-                width: "100%",
-                height: "auto",
-                borderRadius: radius,
-                border,
-                cursor: onOpen ? "zoom-in" : undefined,
-              }}
-            />
+            <div key={idx} style={{ position: "relative" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={proxied(src)}
+                alt=""
+                onClick={onOpen ? () => onOpen(photos, idx) : undefined}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  height: "auto",
+                  borderRadius: radius,
+                  border,
+                  cursor: onOpen ? "zoom-in" : undefined,
+                }}
+              />
+              {onOpen && <ExpandBadge size={Math.round(fs * 1.1)} onClick={() => onOpen(photos, idx)} />}
+            </div>
           ))}
         </div>
       ))}
