@@ -4,8 +4,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import AppearanceTiles from "@/components/AppearanceTiles";
 import Lightbox from "@/components/Lightbox";
 import RatioTiles from "@/components/RatioTiles";
-import TweetCard from "@/components/TweetCard";
-import { Label, Section, Segmented, Slider, TextField, Toggle } from "@/components/ui";
+import TweetCard, { ALL_INFO, type DisplayInfo } from "@/components/TweetCard";
+import { Check, Label, Section, Segmented, Slider, TextField, Toggle } from "@/components/ui";
 import { formatDate, formatTime } from "@/lib/format";
 import { copyPngToClipboard, downloadBlob, downloadUrl, renderPdf, renderPng, renderVideo } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
@@ -63,7 +63,8 @@ export default function Home() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showEdit, setShowEdit] = useState(false);
   const [showQuote, setShowQuote] = useState(true);
-  const [displayInfo, setDisplayInfo] = useState({ likes: true, reposts: true, replies: true, dateTime: true, views: true });
+  const [displayInfo, setDisplayInfo] = useState<DisplayInfo>(ALL_INFO);
+  const setInfo = (key: keyof DisplayInfo, v: boolean) => setDisplayInfo((s) => ({ ...s, [key]: v }));
   const [showMedia, setShowMedia] = useState(true);
 
   const [thread, setThread] = useState<PostData[] | null>(null);
@@ -475,14 +476,6 @@ export default function Home() {
                   <TextField label="Date" value={tweet.date} onChange={(v) => setT("date", v)} />
                 </div>
                 <Toggle label="Verified badge" checked={tweet.verified} onChange={(v) => setT("verified", v)} />
-                <div className="space-y-2 rounded-xl border border-stone-200 p-3">
-                  <Label>Show in post</Label>
-                  <Toggle label="Likes" checked={displayInfo.likes} onChange={(v) => setDisplayInfo((s) => ({ ...s, likes: v }))} />
-                  <Toggle label="Reposts" checked={displayInfo.reposts} onChange={(v) => setDisplayInfo((s) => ({ ...s, reposts: v }))} />
-                  <Toggle label="Comments" checked={displayInfo.replies} onChange={(v) => setDisplayInfo((s) => ({ ...s, replies: v }))} />
-                  <Toggle label="Date & time" checked={displayInfo.dateTime} onChange={(v) => setDisplayInfo((s) => ({ ...s, dateTime: v }))} />
-                  <Toggle label="Views" checked={displayInfo.views} onChange={(v) => setDisplayInfo((s) => ({ ...s, views: v }))} />
-                </div>
                 <div className="flex items-center justify-between gap-3">
                   <label className="cursor-pointer rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50">
                     Upload avatar
@@ -513,7 +506,7 @@ export default function Home() {
             <button type="button" onClick={bestFit} className="flex items-center justify-center gap-2 rounded-xl border border-stone-500 bg-[#faf7f2] px-3 py-3 text-sm font-semibold text-stone-800 hover:bg-stone-100">
               <span aria-hidden="true">✣</span> Best fit
             </button>
-            <button type="button" onClick={() => { setSettings(DEFAULT_SETTINGS); setZoom(null); setShowQuote(true); setDisplayInfo({ likes: true, reposts: true, replies: true, dateTime: true, views: true }); }} className="flex items-center gap-2 rounded-xl border border-stone-200 bg-[#faf7f2] px-3 py-3 text-sm font-medium text-stone-700 hover:bg-stone-100">
+            <button type="button" onClick={() => { setSettings(DEFAULT_SETTINGS); setZoom(null); setShowQuote(true); setShowMedia(true); setDisplayInfo(ALL_INFO); }} className="flex items-center gap-2 rounded-xl border border-stone-200 bg-[#faf7f2] px-3 py-3 text-sm font-medium text-stone-700 hover:bg-stone-100">
               <span aria-hidden="true">↻</span> Reset
             </button>
           </div>
@@ -526,6 +519,16 @@ export default function Home() {
 
           <Section title="Appearance">
             <AppearanceTiles settings={settings} onChange={set} />
+          </Section>
+
+          <Section title="Post details">
+            <div className="grid grid-cols-2 gap-2">
+              <Check label="Likes" checked={displayInfo.likes} onChange={(v) => setInfo("likes", v)} />
+              <Check label="Reposts" checked={displayInfo.reposts} onChange={(v) => setInfo("reposts", v)} />
+              <Check label="Comments" checked={displayInfo.replies} onChange={(v) => setInfo("replies", v)} />
+              <Check label="Views" checked={displayInfo.views} onChange={(v) => setInfo("views", v)} />
+              <Check label="Date & time" checked={displayInfo.dateTime} onChange={(v) => setInfo("dateTime", v)} />
+            </div>
           </Section>
 
           <Section title="Layout">

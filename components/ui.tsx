@@ -132,3 +132,17 @@ export function Toggle({ label, checked, onChange }: { label: string; checked: b
     </label>
   );
 }
+
+/** Checkbox row used for the "Post details" options. */
+export function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label
+      className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-2 text-xs font-medium transition ${
+        checked ? "border-stone-300 bg-white text-stone-800" : "border-stone-200 bg-stone-50 text-stone-400"
+      }`}
+    >
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 accent-stone-900" />
+      {label}
+    </label>
+  );
+}
