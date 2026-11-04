@@ -113,14 +113,26 @@ function Stats({ items, size, gap }: { items: StatItem[]; size: number; gap: num
 /* ---------- Avatar ---------- */
 
 function Avatar({ src, name, size }: { src: string; name: string; size: number }) {
-  if (src) {
+  // Try our same-origin proxy first, then the original URL, then the small "_normal" size; only then
+  // fall back to the initial. The retry counter belongs to one src, so a new tweet starts fresh.
+  const attempts = useMemo(() => {
+    if (!src) return [];
+    const list = [proxied(src), src, src.replace("_400x400.", "_normal.")].map((u) => (u === src || u.startsWith("/") || u.startsWith("data:") ? u : proxied(u)));
+    return list.filter((u, i) => u && list.indexOf(u) === i);
+  }, [src]);
+  const [state, setState] = useState({ src, tried: 0 });
+  const tried = state.src === src ? state.tried : 0;
+  const url = attempts[tried];
+  if (url) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={proxied(src)}
+        key={url}
+        src={url}
         alt=""
         width={size}
         height={size}
+        onError={() => setState({ src, tried: tried + 1 })}
         style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flex: "none" }}
       />
     );

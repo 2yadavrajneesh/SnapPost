@@ -61,6 +61,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "That post is unavailable (deleted, suspended or private)." }, { status: 404 });
   }
 
+  // The main post must always show its own author's picture. If the service left it out, or handed
+  // back the quoted author's picture instead, take it from the older endpoint's author record.
+  if (!post.avatar || (post.quote && post.avatar === post.quote.avatar && post.username !== post.quote.username)) {
+    const v1 = await fxJson(`/${post.username || parsed.username}/status/${parsed.id}`);
+    const own = v1.ok ? normalizePost(v1.json?.tweet ?? v1.json?.status) : null;
+    if (own?.avatar && own.username.toLowerCase() === post.username.toLowerCase()) post.avatar = own.avatar;
+  }
+
   // A post can only be part of a thread if it continues one of the author's own posts or has replies.
   const maybeThread = post.replyingTo?.toLowerCase() === post.username.toLowerCase() || post.replies > 0;
   const data: Payload = { ...post, maybeThread };
