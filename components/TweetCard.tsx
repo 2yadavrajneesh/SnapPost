@@ -459,7 +459,7 @@ function ThreadView({
                   @{p.username}
                   {p.timestamp ? ` · ${relativeTime(p.timestamp)}` : ""}
                 </span>
-                {i === 0 && <Logo kind={logo} size={Math.round(fs * 1.15)} color={t.text} />}
+                {i === 0 && <Logo kind={logo} size={Math.round(fs * 1.35)} color={t.text} />}
               </div>
 
               <div style={{ marginTop: Math.round(fs * 0.3), fontSize: textSize, lineHeight: 1.35, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
@@ -624,7 +624,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
                 </div>
                 <div style={{ fontSize: nameSize, color: t.muted }}>@{tweet.username || "username"}</div>
               </div>
-              <Logo kind={settings.logo} size={Math.round(fs * 0.85)} color={t.text} />
+              <Logo kind={settings.logo} size={Math.round(fs * 1.05)} color={t.text} />
             </div>
 
             {/* Text */}
