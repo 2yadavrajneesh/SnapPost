@@ -62,7 +62,7 @@ export default function Home() {
   const [showEdit, setShowEdit] = useState(false);
   const [showQuote, setShowQuote] = useState(true);
   const [displayInfo, setDisplayInfo] = useState({ likes: true, reposts: true, replies: true, dateTime: true, views: true });
-  const [removedMedia, setRemovedMedia] = useState<{ photos: string[]; video: TweetData["video"] } | null>(null);
+  const [showMedia, setShowMedia] = useState(true);
 
   const [thread, setThread] = useState<PostData[] | null>(null);
   const [threadState, setThreadState] = useState<ThreadState>("idle");
@@ -179,6 +179,7 @@ export default function Home() {
       if (id !== reqId.current) return; // a newer fetch has started
       if (!res.ok) throw new Error(j.error || "Couldn't fetch that tweet.");
       setTweet(toTweet(j));
+      setShowMedia(true);
       setShowQuote(true); // quote tweets are detected automatically; untick the checkbox to hide one
       setZoom(null);
 
@@ -225,7 +226,10 @@ export default function Home() {
       reader.onload = () => resolve(String(reader.result));
       reader.onerror = () => reject(new Error("Could not read the selected image."));
       reader.readAsDataURL(file);
-    }))).then((images) => setTweet((current) => ({ ...current, photos: [...current.photos, ...images] })))
+    }))).then((images) => {
+      setShowMedia(true);
+      setTweet((current) => ({ ...current, photos: [...current.photos, ...images] }));
+    })
       .catch(() => setFetchError("Could not add one or more images."));
   }
 
@@ -293,6 +297,10 @@ export default function Home() {
     title: RATIOS[k].note,
   }));
 
+  const posts: PostData[] = showThread && thread ? thread : [];
+  const hasMedia = showThread
+    ? posts.some((p) => p.photos.length > 0 || p.video || p.quote?.photos.length || p.quote?.video)
+    : tweet.photos.length > 0 || !!tweet.video || !!tweet.quote?.photos.length || !!tweet.quote?.video;
   const hasQuote = showThread ? !!thread?.some((p) => p.quote) : !!tweet.quote;
   const hasPhotos = showThread
     ? !!thread?.some((p) => p.photos.length > 0 || p.quote?.photos.length)
@@ -409,6 +417,13 @@ export default function Home() {
               </div>
             )}
 
+            {hasMedia && (
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700">
+                <input type="checkbox" checked={showMedia} onChange={(e) => setShowMedia(e.target.checked)} className="h-4 w-4 accent-stone-900" />
+                Include media
+              </label>
+            )}
+
             {hasQuote && (
               <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700">
                 <input type="checkbox" checked={showQuote} onChange={(e) => setShowQuote(e.target.checked)} className="h-4 w-4 accent-stone-900" />
@@ -476,26 +491,13 @@ export default function Home() {
                         Remove avatar
                       </button>
                     )}
-                    {(tweet.photos.length > 0 || tweet.video) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRemovedMedia({ photos: tweet.photos, video: tweet.video });
-                          setTweet((t) => ({ ...t, photos: [], video: null }));
-                        }}
-                        className="text-stone-500 underline hover:text-stone-900"
-                      >
-                        Remove media
+                    {hasMedia && (
+                      <button type="button" onClick={() => setShowMedia((v) => !v)} className="text-stone-500 underline hover:text-stone-900">
+                        {showMedia ? "Remove media" : "Add media back"}
                       </button>
                     )}
-                    {removedMedia && tweet.photos.length === 0 && !tweet.video && (
-                      <button type="button" onClick={() => {
-                        setTweet((t) => ({ ...t, photos: removedMedia.photos, video: removedMedia.video }));
-                        setRemovedMedia(null);
-                      }} className="text-stone-500 underline hover:text-stone-900">Restore media</button>
-                    )}
                     <label className="cursor-pointer text-stone-500 underline hover:text-stone-900">
-                      Add media
+                      Upload media
                       <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => onMediaFiles(e.target.files)} />
                     </label>
                   </div>
@@ -591,6 +593,7 @@ export default function Home() {
                       settings={settings}
                       thread={showThread ? thread : null}
                       showQuote={showQuote}
+                      showMedia={showMedia}
                       displayInfo={displayInfo}
                       onOpenMedia={openMedia}
                     />

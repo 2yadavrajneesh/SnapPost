@@ -332,6 +332,7 @@ function QuoteCard({
   t,
   radius,
   depth,
+  showMedia,
   onOpen,
 }: {
   q: PostData;
@@ -339,6 +340,7 @@ function QuoteCard({
   t: Theme;
   radius: number;
   depth: number;
+  showMedia: boolean;
   onOpen?: OpenMedia;
 }) {
   const small = Math.round(fs * (depth === 0 ? 0.74 : 0.68));
@@ -367,18 +369,20 @@ function QuoteCard({
         {q.text}
       </div>
 
-      <Media
-        photos={q.photos}
-        video={q.video}
-        fs={fs}
-        marginTop={Math.round(fs * 0.5)}
-        radius={Math.round(radius * 0.4)}
-        border={`1px solid ${t.border}`}
-        videoMaxHeight={Math.round(fs * 10)}
-        onOpen={onOpen}
-      />
+      {showMedia && (
+        <Media
+          photos={q.photos}
+          video={q.video}
+          fs={fs}
+          marginTop={Math.round(fs * 0.5)}
+          radius={Math.round(radius * 0.4)}
+          border={`1px solid ${t.border}`}
+          videoMaxHeight={Math.round(fs * 10)}
+          onOpen={onOpen}
+        />
+      )}
 
-      {q.quote && depth < 1 && <QuoteCard q={q.quote} fs={fs} t={t} radius={radius} depth={depth + 1} onOpen={onOpen} />}
+      {q.quote && depth < 1 && <QuoteCard q={q.quote} fs={fs} t={t} radius={radius} depth={depth + 1} showMedia={showMedia} onOpen={onOpen} />}
 
       {hasStats && depth === 0 && (
         <div style={{ marginTop: Math.round(fs * 0.5), color: t.muted, fontSize: Math.round(fs * 0.55) }}>
@@ -407,6 +411,7 @@ function ThreadView({
   radius,
   logo,
   showQuote,
+  showMedia,
   onOpen,
 }: {
   posts: PostData[];
@@ -415,6 +420,7 @@ function ThreadView({
   radius: number;
   logo: Settings["logo"];
   showQuote: boolean;
+  showMedia: boolean;
   onOpen?: OpenMedia;
 }) {
   const avatar = Math.round(fs * 1.5);
@@ -460,18 +466,20 @@ function ThreadView({
                 {p.text}
               </div>
 
-              <Media
-                photos={p.photos}
-                video={p.video}
-                fs={fs}
-                marginTop={Math.round(fs * 0.5)}
-                radius={Math.round(radius * 0.55)}
-                border={`1px solid ${t.border}`}
-                videoMaxHeight={Math.round(fs * 12)}
-                onOpen={onOpen}
-              />
+              {showMedia && (
+                <Media
+                  photos={p.photos}
+                  video={p.video}
+                  fs={fs}
+                  marginTop={Math.round(fs * 0.5)}
+                  radius={Math.round(radius * 0.55)}
+                  border={`1px solid ${t.border}`}
+                  videoMaxHeight={Math.round(fs * 12)}
+                  onOpen={onOpen}
+                />
+              )}
 
-              {showQuote && p.quote && <QuoteCard q={p.quote} fs={fs} t={t} radius={radius} depth={0} onOpen={onOpen} />}
+              {showQuote && p.quote && <QuoteCard q={p.quote} fs={fs} t={t} radius={radius} depth={0} showMedia={showMedia} onOpen={onOpen} />}
 
               {hasStats && (
                 <div style={{ marginTop: Math.round(fs * 0.45), color: t.muted, fontSize: Math.round(fs * 0.5) }}>
@@ -510,6 +518,7 @@ type Props = {
   thread?: PostData[] | null;
   onOpenMedia?: OpenMedia;
   showQuote?: boolean;
+  showMedia?: boolean;
   displayInfo?: { likes: boolean; reposts: boolean; replies: boolean; dateTime: boolean; views: boolean };
 };
 
@@ -520,7 +529,7 @@ type Props = {
  * With a fixed output ratio the content is scaled down to fit inside the frame when it is
  * taller than the ratio allows, so the whole post and all its media always stay visible.
  */
-const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, displayInfo }, ref) {
+const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, showMedia = true, displayInfo }, ref) {
   const t = THEMES[settings.theme];
   const fs = settings.textSize;
   const p = settings.padding / 100;
@@ -600,7 +609,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
         }}
       >
         {showThread ? (
-          <ThreadView posts={thread!} fs={fs} t={t} radius={radius} logo={settings.logo} showQuote={showQuote} onOpen={onOpenMedia} />
+          <ThreadView posts={thread!} fs={fs} t={t} radius={radius} logo={settings.logo} showQuote={showQuote} showMedia={showMedia} onOpen={onOpenMedia} />
         ) : (
           <>
             {/* Header */}
@@ -624,19 +633,21 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
             </div>
 
             {/* Media */}
-            <Media
-              photos={tweet.photos}
-              video={tweet.video}
-              fs={fs}
-              marginTop={gap}
-              radius={Math.round(radius * 0.55)}
-              border={`1px solid ${t.border}`}
-              videoMaxHeight={Math.round(fs * 14)}
-              onOpen={onOpenMedia}
-            />
+            {showMedia && (
+              <Media
+                photos={tweet.photos}
+                video={tweet.video}
+                fs={fs}
+                marginTop={gap}
+                radius={Math.round(radius * 0.55)}
+                border={`1px solid ${t.border}`}
+                videoMaxHeight={Math.round(fs * 14)}
+                onOpen={onOpenMedia}
+              />
+            )}
 
             {/* Quoted post */}
-            {showQuote && tweet.quote && <QuoteCard q={tweet.quote} fs={fs} t={t} radius={radius} depth={0} onOpen={onOpenMedia} />}
+            {showQuote && tweet.quote && <QuoteCard q={tweet.quote} fs={fs} t={t} radius={radius} depth={0} showMedia={showMedia} onOpen={onOpenMedia} />}
 
             {/* Footer: stats left, time right */}
             <div
