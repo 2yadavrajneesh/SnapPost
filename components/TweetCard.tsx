@@ -640,11 +640,8 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
         overflow: "hidden",
         // Corners apply to the whole picture (so exports are rounded too), not just the inner card.
         borderRadius: radius,
-        background: minimal
-          ? t.card
-          : settings.theme === "light"
-            ? "linear-gradient(135deg, #f6efe5 0%, #ecdfcd 100%)"
-            : "transparent", // dark theme: no black panel, only the tweet itself
+        // No panel behind the post in either theme: only the tweet itself is visible (Minimalist keeps its solid fill).
+        background: minimal ? t.card : "transparent",
         color: t.text,
         fontFamily: FONTS[settings.font],
       }}
