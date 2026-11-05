@@ -255,16 +255,19 @@ export default function Home() {
     setProgress(null);
     const base = `snappost-${tweet.username || "post"}${showThread ? "-thread" : ""}`;
     try {
-      const png = await renderPng(node);
-      if (format === "png") {
-        downloadUrl(png.dataUrl, `${base}.png`);
-      } else if (format === "pdf") {
-        const blob = await renderPdf(png.dataUrl, node.offsetWidth, node.offsetHeight);
-        downloadBlob(blob, `${base}.pdf`);
-      } else {
+      if (format === "mp4") {
+        // The whole post as a video: embedded videos play in place, with sound.
         setProgress(0);
-        const { blob, ext } = await renderVideo(png.dataUrl, setProgress);
+        const { blob, ext } = await renderVideo(node, setProgress);
         downloadBlob(blob, `${base}.${ext}`);
+      } else {
+        const png = await renderPng(node);
+        if (format === "png") {
+          downloadUrl(png.dataUrl, `${base}.png`);
+        } else {
+          const blob = await renderPdf(png.dataUrl, node.offsetWidth, node.offsetHeight);
+          downloadBlob(blob, `${base}.pdf`);
+        }
       }
     } catch (e) {
       setExportError(e instanceof Error ? e.message : "Export failed. Please try again.");

@@ -288,10 +288,11 @@ function VideoPlayer({
       {/* Poster + play badge sit under the <video>: they're what shows in exported files. */}
       {poster && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={poster} alt="" style={FILL} />
+        <img data-video-ui="" src={poster} alt="" style={FILL} />
       )}
       {!video.gif && (
         <div
+          data-video-ui=""
           style={{
             position: "absolute",
             left: "50%",
