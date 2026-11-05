@@ -103,7 +103,7 @@ export const DEFAULT_SETTINGS: Settings = {
   corners: "soft",
   logo: "x",
   font: "sans",
-  style: "standard",
+  style: "minimal",
   textSize: 40,
   padding: 100,
 };

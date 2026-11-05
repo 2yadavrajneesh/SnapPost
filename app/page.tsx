@@ -586,17 +586,6 @@ export default function Home() {
           </Section>
 
           <Section title="Layout">
-            <div>
-              <Label>Style</Label>
-              <Segmented
-                value={settings.style}
-                options={[
-                  { value: "standard", label: "Standard" },
-                  { value: "minimal", label: "Minimalist" },
-                ]}
-                onChange={(v) => set("style", v)}
-              />
-            </div>
             <Slider label="Text size" value={settings.textSize} min={24} max={64} suffix="px" onChange={(v) => set("textSize", v)} />
             <Slider label="Padding" value={settings.padding} min={50} max={150} step={5} suffix="%" onChange={(v) => set("padding", v)} />
           </Section>
