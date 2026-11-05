@@ -34,6 +34,76 @@ function failure(status: number) {
   );
 }
 
+async function fetchPost(id: string): Promise<FxPost | null> {
+  let res = await fxJson(`/2/status/${id}`);
+  let raw: unknown = res.ok ? res.json?.status : null;
+  if (!raw) {
+    res = await fxJson(`/i/status/${id}`);
+    raw = res.ok ? (res.json?.tweet ?? res.json?.status) : null;
+  }
+  return normalizePost(raw);
+}
+
+const idLess = (a: string, b: string) => {
+  try {
+    return BigInt(a) < BigInt(b);
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Walks up a reply chain (nearest parent last in the result). The service doesn't always say which
+ * post is being replied to, so this tries, in order: the id on the post itself, the older endpoint's
+ * record of it, and finally the conversation (thread) endpoint, matching on the replied-to account.
+ */
+async function findParents(post: FxPost, id: string): Promise<FxPost[]> {
+  const parents: FxPost[] = [];
+  const seen = new Set<string>([post.id || id]);
+  const pool = new Map<string, FxPost>();
+  let loaded = false;
+  const loadPool = async () => {
+    if (loaded) return;
+    loaded = true;
+    const res = await fxJson(`/2/thread/${id}`);
+    if (!res.ok) return;
+    const entries: unknown[] = [...(Array.isArray(res.json?.thread) ? res.json.thread : []), res.json?.status];
+    for (const e of entries) {
+      const p = normalizePost(e);
+      if (p?.id) pool.set(p.id, p);
+    }
+  };
+
+  let cur = post;
+  while (parents.length < MAX_PARENTS) {
+    let pid = cur.replyingToId;
+    if (!pid && cur === post) {
+      const v1 = await fxJson(`/${cur.username}/status/${id}`);
+      pid = (v1.ok ? normalizePost(v1.json?.tweet ?? v1.json?.status) : null)?.replyingToId ?? null;
+    }
+
+    let parent: FxPost | null = null;
+    if (pid && !seen.has(pid)) parent = pool.get(pid) ?? (await fetchPost(pid));
+    if (!parent && cur.replyingTo) {
+      await loadPool();
+      if (pid && pool.has(pid)) parent = pool.get(pid)!;
+      else {
+        const handle = cur.replyingTo.toLowerCase();
+        const candidates = [...pool.values()]
+          .filter((p) => p.username.toLowerCase() === handle && !seen.has(p.id) && idLess(p.id, cur.id || id))
+          .sort((x, y) => (idLess(x.id, y.id) ? 1 : -1)); // newest earlier post first
+        parent = candidates[0] ?? null;
+      }
+    }
+    if (!parent || seen.has(parent.id)) break; // unavailable, or we looped
+    seen.add(parent.id);
+    parents.unshift(parent);
+    cur = parent;
+    if (!cur.replyingTo) break;
+  }
+  return parents;
+}
+
 export async function GET(req: NextRequest) {
   const parsed = parseTweetUrl(req.nextUrl.searchParams.get("url") ?? "");
   if (!parsed) {
@@ -71,25 +141,12 @@ export async function GET(req: NextRequest) {
     if (own?.avatar && own.username.toLowerCase() === post.username.toLowerCase()) post.avatar = own.avatar;
   }
 
-  // A reply to someone else: fetch the post(s) above it (nearest first, up to MAX_PARENTS), so the
-  // image can show what is being replied to. Replies to your own posts are handled by the thread view.
-  const parents: FxPost[] = [];
-  let nextId = post.replyingToId;
-  const own = post.username.toLowerCase();
-  if (nextId && post.replyingTo && post.replyingTo.toLowerCase() !== own) {
-    while (nextId && parents.length < MAX_PARENTS) {
-      let res = await fxJson(`/2/status/${nextId}`);
-      let raw2: unknown = res.ok ? res.json?.status : null;
-      if (!raw2) {
-        res = await fxJson(`/i/status/${nextId}`);
-        raw2 = res.ok ? (res.json?.tweet ?? res.json?.status) : null;
-      }
-      const parent = normalizePost(raw2);
-      if (!parent) break; // deleted, private or unavailable: show what we have
-      parents.unshift(parent);
-      nextId = parent.replyingToId;
-    }
-  }
+  // A reply to someone else: fetch the post(s) above it so the image can show what is being replied
+  // to. Replies to your own posts are handled by the thread view instead.
+  const parents =
+    post.replyingTo && post.replyingTo.toLowerCase() !== post.username.toLowerCase()
+      ? await findParents(post, parsed.id)
+      : [];
 
   // A post can only be part of a thread if it continues one of the author's own posts or has replies.
   const maybeThread = post.replyingTo?.toLowerCase() === post.username.toLowerCase() || post.replies > 0;
