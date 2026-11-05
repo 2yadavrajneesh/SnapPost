@@ -58,10 +58,10 @@ body {
   opacity: 0.75;
   pointer-events: none;
 }
-.snap-bracket-tl { top: -12px; left: -12px; border-top-width: 2px; border-left-width: 2px; border-top-left-radius: 6px; }
-.snap-bracket-tr { top: -12px; right: -12px; border-top-width: 2px; border-right-width: 2px; border-top-right-radius: 6px; }
-.snap-bracket-bl { bottom: -12px; left: -12px; border-bottom-width: 2px; border-left-width: 2px; border-bottom-left-radius: 6px; }
-.snap-bracket-br { bottom: -12px; right: -12px; border-bottom-width: 2px; border-right-width: 2px; border-bottom-right-radius: 6px; }
+.snap-bracket-tl { top: -12px; left: -12px; border-top-width: 2px; border-left-width: 2px; }
+.snap-bracket-tr { top: -12px; right: -12px; border-top-width: 2px; border-right-width: 2px; }
+.snap-bracket-bl { bottom: -12px; left: -12px; border-bottom-width: 2px; border-left-width: 2px; }
+.snap-bracket-br { bottom: -12px; right: -12px; border-bottom-width: 2px; border-right-width: 2px; }
 
 /* ---------- Website dark theme (the tweet image has its own Light/Dark in Appearance) ---------- */
 html[data-theme="dark"] { color-scheme: dark; }
@@ -114,3 +114,5 @@ html[data-theme="dark"] .snap-stage::before {
     radial-gradient(34% 34% at 78% 72%, rgba(29, 155, 240, 0.16), transparent 70%);
 }
 html[data-theme="dark"] .snap-bracket { border-color: #d8cfc3; }
+
+html[data-theme="dark"] .border-stone-400 { border-color: #5d554c; }

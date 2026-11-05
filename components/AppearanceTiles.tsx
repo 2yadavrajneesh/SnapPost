@@ -51,7 +51,7 @@ function Tile({
       aria-pressed={active}
       aria-label={`${name}: ${label}. Click to change.`}
       title={`${name}: ${label} (click to change)`}
-      className={`flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border px-1.5 py-3 text-[11px] font-medium transition ${
+      className={`flex min-w-0 flex-col items-center justify-center gap-1.5 border px-1.5 py-3 text-[11px] font-medium transition ${
         active
           ? "border-[#1b2420] bg-[#1b2420] text-white"
           : "border-stone-200 bg-[#f4efe8] text-stone-600 hover:bg-[#ece6dc]"
@@ -93,8 +93,8 @@ export default function AppearanceTiles({ settings, onChange }: Props) {
       <Tile
         name="Corners"
         label={corners === "sharp" ? "Sharp" : corners === "soft" ? "Soft" : "Round"}
-        active={corners !== "soft"}
-        onClick={() => onChange("corners", next(["soft", "round", "sharp"] as const, corners))}
+        active={corners !== "sharp"}
+        onClick={() => onChange("corners", next(["sharp", "soft", "round"] as const, corners))}
         icon={
           <svg {...svgProps}>
             <path d={CORNER_PATH[corners]} />

@@ -360,30 +360,34 @@ export default function Home() {
   const frameW = FRAME_W * scale;
   const frameHs = frameH * scale;
   const zoomBtn =
-    "flex h-8 w-8 items-center justify-center rounded-full text-base font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-40";
+    "flex h-8 w-8 items-center justify-center text-base font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-40";
 
   return (
     <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
       {/* Navbar: brand on the left, export controls on the right */}
-      <header className="sticky top-0 z-20 border-b border-stone-200/80 bg-[#faf6f1]/90 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-dotted border-stone-400 bg-[#faf6f1]/90 backdrop-blur">
         <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-white shadow-sm">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M4 3h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-8l-5 4v-4H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
-              </svg>
-            </span>
+            <svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true">
+              <rect width="64" height="64" fill="#1b2420" />
+              <path d="M12 24V12h12M40 12h12v12M52 40v12H40M24 52H12V40" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="square" />
+              <rect x="22" y="22" width="7" height="7" fill="#ea580c" />
+              <rect x="32" y="22" width="10" height="3" fill="#fff" />
+              <rect x="32" y="27" width="7" height="2.5" fill="#9ca3a0" />
+              <rect x="22" y="33" width="20" height="3" fill="#fff" />
+              <rect x="22" y="39" width="14" height="3" fill="#fff" />
+            </svg>
             <div>
               <h1 className="text-base font-bold leading-none">SnapPost</h1>
-              <div className="mt-1 text-[11px] text-stone-500">Screenshot, upgraded.</div>
+              <div className="mt-1 text-[11px] text-stone-500">Screenshot, upgraded. Posts to PNG, PDF &amp; MP4.</div>
             </div>
-            <span className="ml-1 rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-stone-600">
+            <span className="ml-1 bg-stone-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-stone-600">
               Beta
             </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div role="group" aria-label="Theme" className="flex gap-1 rounded-xl bg-stone-100 p-1">
+            <div role="group" aria-label="Theme" className="flex gap-1 bg-stone-100 p-1">
               {(["light", "dark"] as const).map((th) => (
                 <button
                   key={th}
@@ -392,8 +396,8 @@ export default function Home() {
                   aria-label={`${th === "light" ? "Light" : "Dark"} theme`}
                   title={`${th === "light" ? "Light" : "Dark"} theme`}
                   onClick={() => changeSiteTheme(th)}
-                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-                    siteTheme === th ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition ${
+                    siteTheme === th ? "bg-white text-stone-900" : "text-stone-500 hover:text-stone-800"
                   }`}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -424,7 +428,7 @@ export default function Home() {
               onClick={copyImage}
               disabled={!hasTweet || exporting || copyState === "working"}
               title={hasTweet ? undefined : "Paste a tweet link first"}
-              className="whitespace-nowrap rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 shadow-sm transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="whitespace-nowrap border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {copyState === "working" ? "Copying…" : copyState === "done" ? "Copied ✓" : "Copy image"}
             </button>
@@ -433,7 +437,7 @@ export default function Home() {
               onClick={download}
               disabled={!hasTweet || exporting}
               title={hasTweet ? undefined : "Paste a tweet link first"}
-              className="whitespace-nowrap rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              className="whitespace-nowrap bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {exporting
                 ? progress !== null
@@ -449,9 +453,9 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="mx-auto grid w-full max-w-[1440px] flex-1 gap-4 px-4 pb-5 pt-4 sm:px-6 lg:min-h-0 lg:grid-cols-[360px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
+      <main className="grid w-full flex-1 lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
         {/* Controls (scroll on their own on desktop, so the preview never moves) */}
-        <aside className="order-2 min-w-0 space-y-3 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:pb-2 lg:pr-1">
+        <aside className="order-2 min-w-0 border-t border-dotted border-stone-400 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:border-r lg:border-t-0">
           <Section title="Source">
             <div>
               <Label>Tweet link</Label>
@@ -461,14 +465,14 @@ export default function Home() {
                   onChange={(e) => setLink(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && void fetchTweet(link)}
                   placeholder="https://x.com/user/status/123…"
-                  className="min-w-0 flex-1 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-200"
+                  className="min-w-0 flex-1 border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-200"
                 />
                 <button
                   type="button"
                   onClick={() => void pasteLink()}
                   aria-label="Paste link from clipboard"
                   title="Paste from clipboard"
-                  className="flex w-10 flex-none items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-700 transition hover:bg-stone-100"
+                  className="flex w-10 flex-none items-center justify-center border border-stone-200 bg-white text-stone-700 transition hover:bg-stone-100"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <rect x="8" y="2" width="8" height="4" rx="1" />
@@ -479,13 +483,13 @@ export default function Home() {
                   type="button"
                   onClick={() => void fetchTweet(link)}
                   disabled={fetching}
-                  className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:opacity-60"
+                  className=" bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:opacity-60"
                 >
                   {fetching ? "Fetching…" : "Fetch"}
                 </button>
               </div>
               {fetchError && (
-                <p role="alert" className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+                <p role="alert" className="mt-2 bg-red-50 px-3 py-2 text-xs text-red-700">
                   {fetchError}
                 </p>
               )}
@@ -510,14 +514,14 @@ export default function Home() {
             )}
 
             {hasMedia && (
-              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700">
+              <label className="flex cursor-pointer items-center gap-2 border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700">
                 <input type="checkbox" checked={showMedia} onChange={(e) => setShowMedia(e.target.checked)} className="h-4 w-4 accent-stone-900" />
                 Include media
               </label>
             )}
 
             {hasQuote && (
-              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700">
+              <label className="flex cursor-pointer items-center gap-2 border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700">
                 <input type="checkbox" checked={showQuote} onChange={(e) => setShowQuote(e.target.checked)} className="h-4 w-4 accent-stone-900" />
                 Include quoted post <span className="text-stone-400">(detected)</span>
               </label>
@@ -526,7 +530,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setShowEdit((v) => !v)}
-              className="flex w-full items-center justify-between rounded-lg bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-200"
+              className="flex w-full items-center justify-between bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-200"
               aria-expanded={showEdit}
             >
               Edit details
@@ -536,7 +540,7 @@ export default function Home() {
             {showEdit && (
               <div className="space-y-3">
                 {showThread && (
-                  <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  <p className=" bg-amber-50 px-3 py-2 text-xs text-amber-800">
                     Edits apply to &ldquo;This tweet&rdquo;. Switch back to see them.
                   </p>
                 )}
@@ -546,7 +550,7 @@ export default function Home() {
                     value={tweet.text}
                     onChange={(e) => setT("text", e.target.value)}
                     rows={4}
-                    className="w-full resize-y rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-200"
+                    className="w-full resize-y border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-200"
                   />
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -575,7 +579,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <label className="cursor-pointer rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50">
+                  <label className="cursor-pointer border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50">
                     Upload avatar
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => onAvatarFile(e.target.files?.[0])} />
                   </label>
@@ -600,11 +604,11 @@ export default function Home() {
             )}
           </Section>
 
-          <div className="grid grid-cols-[1fr_auto] gap-2.5">
+          <div className="grid grid-cols-[1fr_auto] gap-2.5 border-b border-dotted border-stone-400 px-5 py-5">
             <button
               type="button"
               onClick={bestFit}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl border-2 border-[#1b2420] bg-[#f3ecdf] px-4 text-sm font-bold text-[#1b2420] transition hover:bg-[#ece3d2]"
+              className="flex h-12 items-center justify-center gap-2 border-2 border-[#1b2420] bg-[#f3ecdf] px-4 text-sm font-bold text-[#1b2420] transition hover:bg-[#ece3d2]"
             >
               <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9L19 14z" />
@@ -614,7 +618,7 @@ export default function Home() {
             <button
               type="button"
               onClick={resetAll}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-[#f3ecdf]/60 px-5 text-sm font-semibold text-stone-600 transition hover:bg-[#ece3d2]"
+              className="flex h-12 items-center justify-center gap-2 border border-stone-200 bg-[#f3ecdf]/60 px-5 text-sm font-semibold text-stone-600 transition hover:bg-[#ece3d2]"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
@@ -644,7 +648,7 @@ export default function Home() {
         {/* Viewer */}
         <div id="canvas" className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">
           <div
-            className="snap-stage relative flex min-h-[260px] flex-1 overflow-hidden rounded-2xl border border-stone-200 shadow-sm lg:min-h-0"
+            className="snap-stage relative flex min-h-[260px] flex-1 overflow-hidden lg:min-h-0"
             style={isDesktop ? undefined : { height: availH, flex: "none" }}
           >
             <div ref={stageRef} className="relative z-[1] flex flex-1 overflow-auto">
@@ -672,8 +676,8 @@ export default function Home() {
             </div>
 
             {/* Status chip */}
-            <div className="pointer-events-none absolute left-3 top-3 z-[2] flex items-center gap-2 rounded-full border border-stone-200 bg-white/90 px-3 py-1.5 text-xs font-medium text-stone-700 shadow-sm backdrop-blur">
-              <span className="h-2 w-2 rounded-full bg-accent" aria-hidden="true" />
+            <div className="pointer-events-none absolute left-3 top-3 z-[2] flex items-center gap-2 border border-stone-200 bg-white/90 px-3 py-1.5 text-xs font-medium text-stone-700 backdrop-blur">
+              <span className="h-2 w-2 bg-accent" aria-hidden="true" />
               {FORMAT_LABEL[format]} · {zoom === null ? "Fit " : ""}
               {pct}%
             </div>
@@ -685,13 +689,13 @@ export default function Home() {
             </div>
 
             {exportError && (
-              <p role="alert" className="absolute left-1/2 top-14 z-[3] max-w-[90%] -translate-x-1/2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 shadow">
+              <p role="alert" className="absolute left-1/2 top-14 z-[3] max-w-[90%] -translate-x-1/2 bg-red-50 px-3 py-2 text-xs text-red-700 shadow">
                 {exportError}
               </p>
             )}
 
             {/* Floating zoom pill */}
-            <div className="absolute bottom-4 left-1/2 z-[2] flex -translate-x-1/2 items-center gap-1 rounded-full border border-stone-200 bg-white/95 px-1.5 py-1 text-xs shadow-md backdrop-blur">
+            <div className="absolute bottom-4 left-1/2 z-[2] flex -translate-x-1/2 items-center gap-1 border border-stone-200 bg-white/95 px-1.5 py-1 text-xs backdrop-blur">
               <button type="button" onClick={zoomOut} disabled={scale <= MIN_ZOOM + 0.001} aria-label="Zoom out" className={zoomBtn}>
                 −
               </button>
@@ -700,7 +704,7 @@ export default function Home() {
                 onClick={() => setZoom(null)}
                 title="Reset to fit"
                 aria-live="polite"
-                className="w-12 rounded-full py-1 text-center font-semibold tabular-nums text-stone-700 hover:bg-stone-100"
+                className="w-12 py-1 text-center font-semibold tabular-nums text-stone-700 hover:bg-stone-100"
               >
                 {pct}%
               </button>

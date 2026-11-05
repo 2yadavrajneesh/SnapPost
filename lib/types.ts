@@ -100,7 +100,7 @@ export const DEFAULT_TWEET: TweetData = {
 export const DEFAULT_SETTINGS: Settings = {
   ratio: "auto",
   theme: "light",
-  corners: "soft",
+  corners: "sharp",
   logo: "x",
   font: "sans",
   style: "minimal",

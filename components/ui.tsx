@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-stone-200 bg-white/70 p-4 shadow-sm">
+    <section className="border-b border-dotted border-stone-400 px-5 pb-5 pt-5">
       <h2 className="mb-3 text-sm font-bold text-stone-900">{title}</h2>
       <div className="space-y-3">{children}</div>
     </section>
@@ -29,7 +29,7 @@ export function Segmented<T extends string>({
   wrap?: boolean;
 }) {
   return (
-    <div className={`flex gap-1 rounded-xl bg-stone-100 p-1 ${wrap ? "flex-wrap" : ""}`}>
+    <div className={`flex gap-1 bg-stone-100 p-1 ${wrap ? "flex-wrap" : ""}`}>
       {options.map((o) => (
         <button
           key={o.value}
@@ -37,8 +37,8 @@ export function Segmented<T extends string>({
           title={o.title}
           onClick={() => onChange(o.value)}
           aria-pressed={value === o.value}
-          className={`flex-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-            value === o.value ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+          className={`flex-1 whitespace-nowrap px-2.5 py-1.5 text-xs font-medium transition ${
+            value === o.value ? "bg-white text-stone-900" : "text-stone-500 hover:text-stone-800"
           }`}
         >
           {o.label}
@@ -105,14 +105,14 @@ export function TextField({
   return (
     <label className="block">
       <Label>{label}</Label>
-      <div className="flex items-center rounded-lg border border-stone-200 bg-white focus-within:border-orange-600 focus-within:ring-2 focus-within:ring-orange-200">
+      <div className="flex items-center border border-stone-200 bg-white focus-within:border-orange-600 focus-within:ring-2 focus-within:ring-orange-200">
         {prefix && <span className="pl-2.5 text-sm text-stone-400">{prefix}</span>}
         <input
           type={type}
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full min-w-0 rounded-lg bg-transparent px-2.5 py-1.5 text-sm outline-none"
+          className="w-full min-w-0 bg-transparent px-2.5 py-1.5 text-sm outline-none"
         />
       </div>
     </label>
@@ -137,7 +137,7 @@ export function Toggle({ label, checked, onChange }: { label: string; checked: b
 export function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <label
-      className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-2 text-xs font-medium transition ${
+      className={`flex cursor-pointer items-center gap-2 border px-2.5 py-2 text-xs font-medium transition ${
         checked ? "border-stone-300 bg-white text-stone-800" : "border-stone-200 bg-stone-50 text-stone-400"
       }`}
     >

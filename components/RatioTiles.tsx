@@ -25,7 +25,7 @@ export default function RatioTiles({ value, onChange }: { value: RatioKey; onCha
             type="button"
             aria-pressed={on}
             onClick={() => onChange(on ? "auto" : t.key)}
-            className={`flex min-h-[64px] flex-col items-center justify-center gap-1.5 rounded-xl border px-2 py-2.5 text-xs font-semibold transition ${
+            className={`flex min-h-[64px] flex-col items-center justify-center gap-1.5 border px-2 py-2.5 text-xs font-semibold transition ${
               on ? "border-[#1b2420] bg-[#1b2420] text-white" : "border-stone-200 bg-[#f7f3ee] text-stone-600 hover:bg-stone-100"
             }`}
           >
