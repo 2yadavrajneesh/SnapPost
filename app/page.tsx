@@ -221,6 +221,21 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [link, autoFetch, fetchTweet]);
 
+  async function pasteLink() {
+    try {
+      const text = (await navigator.clipboard.readText()).trim();
+      if (!text) {
+        setFetchError("Your clipboard is empty. Copy a tweet link first.");
+        return;
+      }
+      setLink(text);
+      setFetchError(null);
+      if (parseTweetUrl(text)) void fetchTweet(text); // paste and go
+    } catch {
+      setFetchError("Couldn't read the clipboard. Allow clipboard access, or paste into the box with Ctrl/Cmd+V.");
+    }
+  }
+
   function onMediaFiles(files: FileList | null) {
     if (!files?.length) return;
     const selected = Array.from(files).filter((file) => file.type.startsWith("image/"));
@@ -425,6 +440,18 @@ export default function Home() {
                   placeholder="https://x.com/user/status/123…"
                   className="min-w-0 flex-1 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-200"
                 />
+                <button
+                  type="button"
+                  onClick={() => void pasteLink()}
+                  aria-label="Paste link from clipboard"
+                  title="Paste from clipboard"
+                  className="flex w-10 flex-none items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-700 transition hover:bg-stone-100"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="8" y="2" width="8" height="4" rx="1" />
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                  </svg>
+                </button>
                 <button
                   type="button"
                   onClick={() => void fetchTweet(link)}
