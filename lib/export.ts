@@ -1,4 +1,5 @@
 import { toPng } from "html-to-image";
+import { videoSrc } from "./format";
 import { MAX_EXPORT_WIDTH } from "./types";
 
 /**
@@ -73,21 +74,48 @@ const VIDEO_WIDTH = 1080;
 
 type VideoSlot = { el: HTMLVideoElement; x: number; y: number; w: number; h: number; r: number };
 
+/**
+ * Loads a private copy of a video so it can be drawn into the recording. Phones ignore preload and
+ * only start fetching on play(), so we "prime" it with a muted play/pause instead of waiting for
+ * data that would never arrive.
+ */
 const loadVideo = (src: string) =>
   new Promise<HTMLVideoElement | null>((resolve) => {
     const v = document.createElement("video");
     v.playsInline = true;
+    v.muted = true; // muted playback is always allowed, which is what lets us prime it
     v.preload = "auto";
     v.src = src;
-    const done = (ok: boolean) => {
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timer);
-      resolve(ok ? v : null);
+      v.onloadeddata = v.oncanplay = v.onerror = null;
+      if (!ok) return resolve(null);
+      v.pause();
+      v.currentTime = 0;
+      v.muted = false; // sound goes into the recording only (see renderVideo)
+      resolve(v);
     };
-    const timer = setTimeout(() => done(false), 20_000);
-    v.onloadeddata = () => done(true);
-    v.onerror = () => done(false);
+    const timer = setTimeout(() => finish(v.readyState >= 2), 25_000);
+    v.onloadeddata = () => finish(true);
+    v.oncanplay = () => finish(true);
+    v.onerror = () => finish(false);
     v.load();
+    v.play().catch(() => undefined); // starts the download on browsers that wait for play()
   });
+
+/** A video URL we can draw to a canvas: same-origin (our /api/video proxy), never a cross-origin CDN link. */
+const sameOriginVideo = (src: string): string | null => {
+  try {
+    const u = new URL(src, location.href);
+    if (/\.m3u8(\?|$)/i.test(u.pathname)) return null; // HLS playlists can't be loaded this way
+    return u.origin === location.origin ? u.href : videoSrc(u.href);
+  } catch {
+    return null;
+  }
+};
 
 /** Finds every playable <video> in the card, with its position inside the frame (output pixels). */
 async function collectVideoSlots(node: HTMLElement, scale: number): Promise<VideoSlot[]> {
@@ -95,7 +123,7 @@ async function collectVideoSlots(node: HTMLElement, scale: number): Promise<Vide
   const k = (node.offsetWidth / (nodeRect.width || 1)) * scale; // preview zoom -> output pixels
   const slots: VideoSlot[] = [];
   for (const live of Array.from(node.querySelectorAll("video"))) {
-    const src = live.currentSrc || live.src;
+    const src = sameOriginVideo(live.currentSrc || live.src);
     const box = live.parentElement;
     if (!src || !box) continue;
     const el = await loadVideo(src); // a private copy, so the preview player and its sound are untouched
@@ -123,6 +151,10 @@ export async function renderVideo(
 
   const scale = VIDEO_WIDTH / node.offsetWidth;
   const slots = await collectVideoSlots(node, scale);
+  if (!slots.length && node.querySelector("video")) {
+    // Don't quietly hand back a still picture when the post has a video: say what went wrong.
+    throw new Error("Couldn't load the video for recording. Wait for it to appear in the preview, then try again.");
+  }
   const png = await renderPng(node, { forVideo: slots.length > 0, maxWidth: VIDEO_WIDTH });
 
   const img = new Image();
