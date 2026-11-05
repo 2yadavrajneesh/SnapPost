@@ -24,6 +24,7 @@ export type PostData = {
   reposts: number;
   likes: number;
   views: number;
+  replyingTo?: string | null;
   quote: PostData | null;
 };
 
@@ -45,6 +46,10 @@ export type TweetData = {
   photos: string[];
   video: VideoData | null;
   quote: PostData | null;
+  /** Handle this tweet replies to (without the @), when it is a reply. */
+  replyingTo?: string | null;
+  /** The posts above this reply, oldest first (only when it replies to someone else). */
+  parents?: PostData[];
 };
 
 /** Which screenshot to produce when a tweet is part of a thread. */

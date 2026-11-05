@@ -4,7 +4,9 @@ import { fxJson, makeCache, normalizePost, type FxPost } from "@/lib/fx";
 
 export const runtime = "nodejs";
 
-type Payload = FxPost & { maybeThread: boolean };
+type Payload = FxPost & { maybeThread: boolean; parents: FxPost[] };
+
+const MAX_PARENTS = 3;
 const cache = makeCache<Payload>();
 
 function failure(status: number) {
@@ -69,9 +71,29 @@ export async function GET(req: NextRequest) {
     if (own?.avatar && own.username.toLowerCase() === post.username.toLowerCase()) post.avatar = own.avatar;
   }
 
+  // A reply to someone else: fetch the post(s) above it (nearest first, up to MAX_PARENTS), so the
+  // image can show what is being replied to. Replies to your own posts are handled by the thread view.
+  const parents: FxPost[] = [];
+  let nextId = post.replyingToId;
+  const own = post.username.toLowerCase();
+  if (nextId && post.replyingTo && post.replyingTo.toLowerCase() !== own) {
+    while (nextId && parents.length < MAX_PARENTS) {
+      let res = await fxJson(`/2/status/${nextId}`);
+      let raw2: unknown = res.ok ? res.json?.status : null;
+      if (!raw2) {
+        res = await fxJson(`/i/status/${nextId}`);
+        raw2 = res.ok ? (res.json?.tweet ?? res.json?.status) : null;
+      }
+      const parent = normalizePost(raw2);
+      if (!parent) break; // deleted, private or unavailable: show what we have
+      parents.unshift(parent);
+      nextId = parent.replyingToId;
+    }
+  }
+
   // A post can only be part of a thread if it continues one of the author's own posts or has replies.
   const maybeThread = post.replyingTo?.toLowerCase() === post.username.toLowerCase() || post.replies > 0;
-  const data: Payload = { ...post, maybeThread };
+  const data: Payload = { ...post, maybeThread, parents };
   cache.set(key, data);
   return NextResponse.json(data, { headers: { "X-Cache": "MISS" } });
 }

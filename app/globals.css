@@ -154,3 +154,4 @@ html[data-theme="dark"] .border-stone-400 { border-color: #5d554c; }
 html[data-theme="dark"] { --range-ink: #e9e2d6; --range-bg: #1c1815; }
 html[data-theme="dark"] .bg-stone-300 { background-color: #4d453d; }
 html[data-theme="dark"] .border-stone-400 { border-color: #5d554c; }
+html[data-theme="dark"] .bg-\[\#fffdf8\] { background-color: #26211d; }

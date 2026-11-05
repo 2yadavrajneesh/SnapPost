@@ -31,6 +31,8 @@ export type FxPost = {
   likes: number;
   views: number;
   replyingTo: string | null;
+  /** Id of the post this one replies to, when the service says. */
+  replyingToId: string | null;
   quote: FxPost | null;
 };
 
@@ -130,6 +132,7 @@ export function normalizePost(p: any, depth = 0): FxPost | null {
     likes: Number(p.likes ?? 0),
     views: Number(p.views ?? 0),
     replyingTo,
+    replyingToId: String(p.replying_to?.post ?? p.replying_to_status ?? "") || null,
     quote: p.quote && depth < MAX_QUOTE_DEPTH ? normalizePost(p.quote, depth + 1) : null,
   };
 }

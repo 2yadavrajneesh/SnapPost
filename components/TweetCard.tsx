@@ -462,6 +462,66 @@ function QuoteCard({
   );
 }
 
+/* ---------- Parent posts above a reply (what the reply is answering), joined by a connector line ---------- */
+
+function ParentChain({
+  posts,
+  fs,
+  t,
+  info,
+  showMedia,
+  radius,
+  onOpen,
+}: {
+  posts: PostData[];
+  fs: number;
+  t: Theme;
+  info: DisplayInfo;
+  showMedia: boolean;
+  radius: number;
+  onOpen?: OpenMedia;
+}) {
+  const avatar = Math.round(fs * 1.25);
+  const nameSize = Math.round(fs * 0.72);
+  return (
+    <div>
+      {posts.map((p, i) => (
+        <div key={p.id || i} style={{ display: "flex", gap: Math.round(fs * 0.5) }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: "none", width: avatar }}>
+            <Avatar src={p.avatar} name={p.name || p.username} size={avatar} />
+            <div style={{ flex: 1, width: 3, marginTop: Math.round(fs * 0.2), background: t.border, borderRadius: 2 }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0, paddingBottom: Math.round(fs * 0.8) }}>
+            <div style={{ display: "flex", alignItems: "center", gap: Math.round(fs * 0.2), lineHeight: 1.25, fontSize: nameSize }}>
+              <span style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+              {p.verified && <Badge size={Math.round(nameSize * 1.05)} />}
+              <span style={{ color: t.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+                @{p.username}
+                {p.timestamp && info.dateTime ? ` · ${formatDate(p.timestamp)}` : ""}
+              </span>
+            </div>
+            <div style={{ marginTop: Math.round(fs * 0.2), fontSize: Math.round(fs * 0.9), lineHeight: 1.35, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+              {p.text}
+            </div>
+            {showMedia && (
+              <Media
+                photos={p.photos}
+                video={p.video}
+                fs={fs}
+                marginTop={Math.round(fs * 0.45)}
+                radius={Math.round(radius * 0.55)}
+                border={`1px solid ${t.border}`}
+                videoMaxHeight={Math.round(fs * 10)}
+                onOpen={onOpen}
+              />
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ---------- Full thread: every post in order, joined by a connector line ---------- */
 
 function ThreadView({
@@ -577,6 +637,9 @@ type Props = {
   onOpenMedia?: OpenMedia;
   showQuote?: boolean;
   showMedia?: boolean;
+  /** Posts above a reply: shown when `showParents` is on; their media follows `showParentMedia`. */
+  showParents?: boolean;
+  showParentMedia?: boolean;
   displayInfo?: DisplayInfo;
 };
 
@@ -587,7 +650,7 @@ type Props = {
  * With a fixed output ratio the content is scaled down to fit inside the frame when it is
  * taller than the ratio allows, so the whole post and all its media always stay visible.
  */
-const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, showMedia = true, displayInfo = ALL_INFO }, ref) {
+const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, showMedia = true, showParents = true, showParentMedia = true, displayInfo = ALL_INFO }, ref) {
   const t = THEMES[settings.theme];
   const fs = settings.textSize;
   const p = settings.padding / 100;
@@ -600,6 +663,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
   const gap = Math.round(fs * 0.7);
   const nameSize = Math.round(fs * 0.8);
   const showThread = !!thread && thread.length > 1;
+  const isReply = !!tweet.replyingTo && tweet.replyingTo.toLowerCase() !== tweet.username.toLowerCase();
   const footerStats = statItems(tweet, displayInfo, false);
   const showTime = displayInfo.dateTime;
   const showViews = displayInfo.views && tweet.views > 0;
@@ -667,6 +731,11 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
           <ThreadView posts={thread!} fs={fs} t={t} radius={radius} logo={settings.logo} showQuote={showQuote} showMedia={showMedia} info={displayInfo} onOpen={onOpenMedia} />
         ) : (
           <>
+            {/* Posts being replied to, with a connector line down to this reply */}
+            {showParents && !!tweet.parents?.length && (
+              <ParentChain posts={tweet.parents} fs={fs} t={t} info={displayInfo} showMedia={showParentMedia} radius={radius} onOpen={onOpenMedia} />
+            )}
+
             {/* Header */}
             <div style={{ display: "flex", alignItems: "center", gap: Math.round(fs * 0.4) }}>
               <Avatar src={tweet.avatar} name={tweet.name || tweet.username} size={Math.round(fs * 1.5)} />
@@ -682,8 +751,17 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
               <Logo kind={settings.logo} size={Math.round(fs * 1.05)} color={t.text} />
             </div>
 
+            {isReply && (
+              <div style={{ marginTop: gap, display: "flex", alignItems: "center", gap: Math.round(fs * 0.3), color: t.muted, fontSize: Math.round(fs * 0.62) }}>
+                <Icon name="reply" size={Math.round(fs * 0.7)} />
+                <span>
+                  Replying to <span style={{ color: BLUE }}>@{tweet.replyingTo}</span>
+                </span>
+              </div>
+            )}
+
             {/* Text */}
-            <div style={{ marginTop: gap, fontSize: fs, lineHeight: 1.35, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+            <div style={{ marginTop: isReply ? Math.round(gap * 0.5) : gap, fontSize: fs, lineHeight: 1.35, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
               {tweet.text || "Tweet text"}
             </div>
 

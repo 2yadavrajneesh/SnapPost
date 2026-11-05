@@ -52,6 +52,8 @@ function toTweet(j: any): TweetData {
     photos: j.photos ?? [],
     video: j.video ?? null,
     quote: j.quote ?? null,
+    replyingTo: j.replyingTo ?? null,
+    parents: Array.isArray(j.parents) ? j.parents : [],
   };
 }
 
@@ -69,6 +71,9 @@ export default function Home() {
   const [displayInfo, setDisplayInfo] = useState<DisplayInfo>(ALL_INFO);
   const setInfo = (key: keyof DisplayInfo, v: boolean) => setDisplayInfo((s) => ({ ...s, [key]: v }));
   const [showMedia, setShowMedia] = useState(true);
+  const [showParents, setShowParents] = useState(true);
+  const [showParentMedia, setShowParentMedia] = useState(true);
+  const [toast, setToast] = useState<string | null>(null);
 
   const [thread, setThread] = useState<PostData[] | null>(null);
   const [threadState, setThreadState] = useState<ThreadState>("idle");
@@ -204,6 +209,8 @@ export default function Home() {
       setTweet(toTweet(j));
       setHasTweet(true);
       setShowMedia(true);
+      setShowParents(true);
+      setShowParentMedia(true);
       setShowQuote(true); // quote tweets are detected automatically; untick the checkbox to hide one
       setZoom(null);
 
@@ -321,7 +328,9 @@ export default function Home() {
     try {
       await copyPngToClipboard(node);
       setCopyState("done");
+      setToast("Image copied");
       setTimeout(() => setCopyState("idle"), 2000);
+      setTimeout(() => setToast(null), 2400);
     } catch (e) {
       setCopyState("idle");
       setExportError(e instanceof Error ? e.message : "Couldn't copy the image. Try Download instead.");
@@ -333,6 +342,8 @@ export default function Home() {
     setZoom(null);
     setShowQuote(true);
     setShowMedia(true);
+    setShowParents(true);
+    setShowParentMedia(true);
     setDisplayInfo(ALL_INFO);
   }
 
@@ -351,6 +362,7 @@ export default function Home() {
   const hasMedia = showThread
     ? posts.some((p) => p.photos.length > 0 || p.video || p.quote?.photos.length || p.quote?.video)
     : tweet.photos.length > 0 || !!tweet.video || !!tweet.quote?.photos.length || !!tweet.quote?.video;
+  const hasParents = !showThread && !!tweet.parents?.length;
   const hasQuote = showThread ? !!thread?.some((p) => p.quote) : !!tweet.quote;
   const hasPhotos = showThread
     ? !!thread?.some((p) => p.photos.length > 0 || p.quote?.photos.length)
@@ -600,6 +612,35 @@ export default function Home() {
             )}
           </Section>
 
+          {hasParents && (
+            <Section title="Reply focus">
+              <p className="text-xs text-stone-500">Choose whether to include the parent tweet or tweets above the pasted reply.</p>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    ["Show parent tweet(s)", showParents, false, () => setShowParents(true)],
+                    ["Hide parent tweet(s)", !showParents, false, () => setShowParents(false)],
+                    ["Show parent media", showParentMedia, true, () => setShowParentMedia(true)],
+                    ["Hide parent media", !showParentMedia, true, () => setShowParentMedia(false)],
+                  ] as const
+                ).map(([label, on, isMedia, act]) => (
+                  <button
+                    key={label}
+                    type="button"
+                    aria-pressed={on}
+                    disabled={isMedia && !showParents}
+                    onClick={act}
+                    className={`min-h-[52px] border px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                      on ? "border-[#1b2420] bg-[#1b2420] text-white" : "border-stone-200 bg-[#f7f3ee] text-stone-600 hover:bg-stone-100"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </Section>
+          )}
+
           <div className="grid grid-cols-[1fr_auto] gap-2.5 border-b border-dotted border-stone-400 px-5 py-5">
             <button
               type="button"
@@ -662,6 +703,9 @@ export default function Home() {
                         settings={settings}
                         thread={showThread ? thread : null}
                         showQuote={showQuote}
+                        showMedia={showMedia}
+                        showParents={showParents}
+                        showParentMedia={showParentMedia}
                         displayInfo={displayInfo}
                         onOpenMedia={openMedia}
                       />
@@ -711,6 +755,16 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {toast && (
+        <div role="status" aria-live="polite" className="pointer-events-none fixed left-1/2 top-16 z-50 flex -translate-x-1/2 items-center gap-3 border border-stone-300 bg-[#fffdf8] px-6 py-4 text-base font-semibold text-stone-900 shadow-lg">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M8 12.5l2.7 2.7L16 9.8" />
+          </svg>
+          {toast}
+        </div>
+      )}
 
       {lightbox && <Lightbox images={lightbox.images} index={lightbox.index} onIndex={setMediaIndex} onClose={closeMedia} />}
     </div>
