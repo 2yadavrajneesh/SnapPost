@@ -370,12 +370,8 @@ export default function Home() {
           <div className="flex items-center gap-2.5">
             <svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true">
               <rect width="64" height="64" fill="#1b2420" />
-              <path d="M12 24V12h12M40 12h12v12M52 40v12H40M24 52H12V40" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="square" />
-              <rect x="22" y="22" width="7" height="7" fill="#ea580c" />
-              <rect x="32" y="22" width="10" height="3" fill="#fff" />
-              <rect x="32" y="27" width="7" height="2.5" fill="#9ca3a0" />
-              <rect x="22" y="33" width="20" height="3" fill="#fff" />
-              <rect x="22" y="39" width="14" height="3" fill="#fff" />
+              <path d="M14 26V14h12M38 14h12v12M50 38v12H38M26 50H14V38" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="square" />
+              <rect x="25" y="25" width="14" height="14" fill="#ea580c" />
             </svg>
             <div>
               <h1 className="text-base font-bold leading-none">SnapPost</h1>
