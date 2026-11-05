@@ -105,5 +105,5 @@ export const DEFAULT_SETTINGS: Settings = {
   font: "sans",
   style: "minimal",
   textSize: 40,
-  padding: 100,
+  padding: 60,
 };

@@ -32,6 +32,7 @@ const PAD_X = 44; // breathing room around the card inside the viewer (room for 
 const PAD_Y = 64; // extra top/bottom room for the status chip and the zoom pill
 const FORMAT_LABEL = { png: "PNG image", pdf: "PDF document", mp4: "MP4 video" } as const;
 const AUTO_FETCH_KEY = "snappost:autoFetch";
+const SITE_THEME_KEY = "snappost:siteTheme";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function toTweet(j: any): TweetData {
@@ -60,6 +61,8 @@ export default function Home() {
   const [link, setLink] = useState("");
   const [autoFetch, setAutoFetch] = useState(true);
   const [fetching, setFetching] = useState(false);
+  const [hasTweet, setHasTweet] = useState(false); // true once a real tweet was fetched: the sample is never exported
+  const [siteTheme, setSiteTheme] = useState<"light" | "dark">("light");
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showEdit, setShowEdit] = useState(false);
   const [showQuote, setShowQuote] = useState(true);
@@ -106,6 +109,23 @@ export default function Home() {
       /* storage unavailable: keep the default */
     }
   }, []);
+  // Light/Dark theme of the website itself (not of the tweet image, which has its own Appearance tile).
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(SITE_THEME_KEY) === "dark") setSiteTheme("dark");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const changeSiteTheme = (th: "light" | "dark") => {
+    setSiteTheme(th);
+    document.documentElement.dataset.theme = th;
+    try {
+      localStorage.setItem(SITE_THEME_KEY, th);
+    } catch {
+      /* ignore */
+    }
+  };
   const changeAutoFetch = (v: boolean) => {
     setAutoFetch(v);
     try {
@@ -182,6 +202,7 @@ export default function Home() {
       if (id !== reqId.current) return; // a newer fetch has started
       if (!res.ok) throw new Error(j.error || "Couldn't fetch that tweet.");
       setTweet(toTweet(j));
+      setHasTweet(true);
       setShowMedia(true);
       setShowQuote(true); // quote tweets are detected automatically; untick the checkbox to hide one
       setZoom(null);
@@ -264,7 +285,7 @@ export default function Home() {
 
   async function download() {
     const node = frameRef.current;
-    if (!node) return;
+    if (!node || !hasTweet) return;
     setExporting(true);
     setExportError(null);
     setProgress(null);
@@ -294,7 +315,7 @@ export default function Home() {
 
   async function copyImage() {
     const node = frameRef.current;
-    if (!node) return;
+    if (!node || !hasTweet) return;
     setCopyState("working");
     setExportError(null);
     try {
@@ -316,7 +337,7 @@ export default function Home() {
   }
 
   function bestFit() {
-    setSettings((s) => ({ ...s, ratio: "auto", padding: 100 }));
+    setSettings((s) => ({ ...s, ratio: "auto", padding: DEFAULT_SETTINGS.padding }));
     setZoom(null);
   }
 
@@ -367,12 +388,12 @@ export default function Home() {
                 <button
                   key={th}
                   type="button"
-                  aria-pressed={settings.theme === th}
+                  aria-pressed={siteTheme === th}
                   aria-label={`${th === "light" ? "Light" : "Dark"} theme`}
                   title={`${th === "light" ? "Light" : "Dark"} theme`}
-                  onClick={() => set("theme", th)}
+                  onClick={() => changeSiteTheme(th)}
                   className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-                    settings.theme === th ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                    siteTheme === th ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
                   }`}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -401,16 +422,18 @@ export default function Home() {
             <button
               type="button"
               onClick={copyImage}
-              disabled={exporting || copyState === "working"}
-              className="whitespace-nowrap rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 shadow-sm transition hover:bg-stone-50 disabled:opacity-60"
+              disabled={!hasTweet || exporting || copyState === "working"}
+              title={hasTweet ? undefined : "Paste a tweet link first"}
+              className="whitespace-nowrap rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 shadow-sm transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {copyState === "working" ? "Copying…" : copyState === "done" ? "Copied ✓" : "Copy image"}
             </button>
             <button
               type="button"
               onClick={download}
-              disabled={exporting}
-              className="whitespace-nowrap rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-60"
+              disabled={!hasTweet || exporting}
+              title={hasTweet ? undefined : "Paste a tweet link first"}
+              className="whitespace-nowrap rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {exporting
                 ? progress !== null

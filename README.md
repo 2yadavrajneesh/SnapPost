@@ -2,9 +2,7 @@
 
 Turn a post link into a polished, shareable image, PDF or short video, right in your browser.
 
-Paste a tweet link, tweak the look, and download or copy the result. Built with Next.js and Tailwind CSS, and ready to deploy on Vercel with no environment variables.
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2F2yadavrajneesh%2FSnapPost)
+Paste a tweet link, tweak the look, and download or copy the result. Built with Next.js and Tailwind CSS. No environment variables are needed to run it.
 
 > SnapPost is an independent tool and is not affiliated with X Corp. Posts belong to their authors, so only capture content you have the right to share.
 
@@ -39,24 +37,6 @@ Open <http://localhost:3000>.
 | `npm run dev` | Start the development server |
 | `npm run build` | Create a production build |
 | `npm start` | Run the production build |
-
-## Deploy to Vercel
-
-**One click:** use the *Deploy with Vercel* button above.
-
-**Or from the dashboard:**
-
-1. Go to <https://vercel.com/new> and import this GitHub repository.
-2. Leave the defaults (Framework: Next.js, build command `npm run build`).
-3. Click **Deploy**. No environment variables are required.
-
-**Or with the CLI:**
-
-```bash
-npm i -g vercel
-vercel          # preview deployment
-vercel --prod   # production deployment
-```
 
 ## Configuration (optional)
 

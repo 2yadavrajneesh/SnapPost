@@ -62,3 +62,55 @@ body {
 .snap-bracket-tr { top: -12px; right: -12px; border-top-width: 2px; border-right-width: 2px; border-top-right-radius: 6px; }
 .snap-bracket-bl { bottom: -12px; left: -12px; border-bottom-width: 2px; border-left-width: 2px; border-bottom-left-radius: 6px; }
 .snap-bracket-br { bottom: -12px; right: -12px; border-bottom-width: 2px; border-right-width: 2px; border-bottom-right-radius: 6px; }
+
+/* ---------- Website dark theme (the tweet image has its own Light/Dark in Appearance) ---------- */
+html[data-theme="dark"] { color-scheme: dark; }
+html[data-theme="dark"],
+html[data-theme="dark"] body { background: #14110f; color: #efe9e0; }
+html[data-theme="dark"] .bg-white { background-color: #38312b; }
+html[data-theme="dark"] .bg-white\/70 { background-color: rgba(38, 33, 29, 0.78); }
+html[data-theme="dark"] .bg-white\/90,
+html[data-theme="dark"] .bg-white\/95 { background-color: rgba(38, 33, 29, 0.92); }
+html[data-theme="dark"] .bg-stone-50 { background-color: #1f1b18; }
+html[data-theme="dark"] .bg-stone-100 { background-color: #26211d; }
+html[data-theme="dark"] .bg-stone-200 { background-color: #3a332d; }
+html[data-theme="dark"] .hover\:bg-stone-50:hover,
+html[data-theme="dark"] .hover\:bg-stone-100:hover,
+html[data-theme="dark"] .hover\:bg-stone-200:hover { background-color: #3a332d; }
+html[data-theme="dark"] .border-stone-200,
+html[data-theme="dark"] .border-stone-200\/80 { border-color: #3a332d; }
+html[data-theme="dark"] .border-stone-300 { border-color: #4d453d; }
+html[data-theme="dark"] .text-stone-400 { color: #8a8178; }
+html[data-theme="dark"] .text-stone-500 { color: #a39a90; }
+html[data-theme="dark"] .text-stone-600 { color: #b8afa5; }
+html[data-theme="dark"] .text-stone-700 { color: #cfc7bd; }
+html[data-theme="dark"] .text-stone-800,
+html[data-theme="dark"] .text-stone-900,
+html[data-theme="dark"] .hover\:text-stone-800:hover,
+html[data-theme="dark"] .hover\:text-stone-900:hover { color: #f3eee7; }
+html[data-theme="dark"] .accent-stone-900 { accent-color: #e9e2d6; }
+html[data-theme="dark"] .bg-\[\#faf6f1\]\/90 { background-color: rgba(20, 17, 15, 0.9); }
+html[data-theme="dark"] .bg-\[\#f3ecdf\],
+html[data-theme="dark"] .bg-\[\#f3ecdf\]\/60,
+html[data-theme="dark"] .bg-\[\#f7f3ee\],
+html[data-theme="dark"] .bg-\[\#f4efe8\] { background-color: #26211d; }
+html[data-theme="dark"] .hover\:bg-\[\#ece3d2\]:hover,
+html[data-theme="dark"] .hover\:bg-\[\#ece6dc\]:hover { background-color: #332c26; }
+/* selected tiles / primary-dark buttons flip to light so they stay the strongest element */
+html[data-theme="dark"] .bg-\[\#1b2420\],
+html[data-theme="dark"] .bg-stone-900 { background-color: #e9e2d6; }
+html[data-theme="dark"] .bg-\[\#1b2420\].text-white,
+html[data-theme="dark"] .bg-stone-900.text-white { color: #1b2420; }
+html[data-theme="dark"] .hover\:bg-stone-700:hover { background-color: #fff; }
+html[data-theme="dark"] .border-\[\#1b2420\] { border-color: #e9e2d6; }
+html[data-theme="dark"] .text-\[\#1b2420\] { color: #f3eee7; }
+html[data-theme="dark"] .snap-stage {
+  background-color: #1a1613;
+  background-image: radial-gradient(circle, rgba(230, 215, 195, 0.2) 1.2px, transparent 1.5px);
+}
+html[data-theme="dark"] .snap-stage::before {
+  background:
+    radial-gradient(38% 38% at 22% 28%, rgba(234, 88, 12, 0.2), transparent 70%),
+    radial-gradient(34% 34% at 78% 72%, rgba(29, 155, 240, 0.16), transparent 70%);
+}
+html[data-theme="dark"] .snap-bracket { border-color: #d8cfc3; }

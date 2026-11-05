@@ -29,7 +29,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem("snappost:siteTheme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}`,
+          }}
+        />
+      </head>
       <body>
         {children}
         <Analytics />
