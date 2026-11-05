@@ -33,6 +33,26 @@ export function videoSrc(src: string): string {
   return `/api/video?url=${encodeURIComponent(src)}`;
 }
 
+/** The same X photo at another size (X serves orig, 4096x4096, large, medium and small). */
+export function photoSize(src: string, name: "orig" | "large" | "medium" | "small"): string {
+  try {
+    const u = new URL(src);
+    if (u.hostname === "pbs.twimg.com" && u.pathname.startsWith("/media/")) {
+      u.searchParams.set("name", name);
+      return u.toString();
+    }
+  } catch {
+    /* not a URL: leave as is */
+  }
+  return src;
+}
+
+/** A same-origin URL that makes the browser save the proxied file under `filename`. */
+export function downloadHref(kind: "image" | "video", src: string, filename: string): string {
+  const base = kind === "video" ? "/api/video" : "/api/image-proxy";
+  return `${base}?url=${encodeURIComponent(src)}&download=${encodeURIComponent(filename)}`;
+}
+
 /** Routes remote images through our proxy so canvas export isn't blocked by CORS. */
 export function proxied(src: string | null | undefined): string {
   if (!src) return "";

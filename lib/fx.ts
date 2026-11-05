@@ -14,6 +14,8 @@ export type FxVideo = {
   width: number;
   height: number;
   gif: boolean;
+  /** Every H.264 MP4 rendition (one per height, best bitrate), tallest first: used for the download options. */
+  variants: { url: string; height: number; width: number }[];
 };
 
 export type FxPost = {
@@ -88,6 +90,20 @@ export function pickVideo(media: any): FxVideo | null {
 
   if (!sources.length && !hls) return null;
 
+  const byHeight = new Map<number, { url: string; height: number; width: number; bitrate: number }>();
+  for (const f of formats) {
+    if (!f?.url || !(f.container === "mp4" || isMp4Url(f.url))) continue;
+    if (f.codec && !/^(h264|avc)/i.test(String(f.codec))) continue;
+    const height = Number(f.height) || 0;
+    const bitrate = Number(f.bitrate) || 0;
+    const have = byHeight.get(height);
+    if (!have || bitrate > have.bitrate) byHeight.set(height, { url: String(f.url), height, width: Number(f.width) || 0, bitrate });
+  }
+  const variants = [...byHeight.values()]
+    .sort((a, b) => b.height - a.height)
+    .map(({ url, height, width }) => ({ url, height, width }));
+  if (!variants.length && sources[0]) variants.push({ url: sources[0], height: Number(v.height) || 0, width: Number(v.width) || 0 });
+
   return {
     sources,
     hls: hls ? String(hls) : null,
@@ -95,6 +111,7 @@ export function pickVideo(media: any): FxVideo | null {
     width: Number(v.width) || 16,
     height: Number(v.height) || 9,
     gif: v.type === "gif",
+    variants,
   };
 }
 

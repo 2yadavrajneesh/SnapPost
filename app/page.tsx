@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import AppearanceTiles from "@/components/AppearanceTiles";
 import Lightbox from "@/components/Lightbox";
+import MediaDownload from "@/components/MediaDownload";
 import RatioTiles from "@/components/RatioTiles";
 import TweetCard, { ALL_INFO, type DisplayInfo } from "@/components/TweetCard";
 import { Check, Label, Section, Segmented, Slider, TextField, Toggle } from "@/components/ui";
@@ -31,7 +32,6 @@ const ZOOM_STEP = 1.25;
 const PAD_X = 44; // breathing room around the card inside the viewer (room for the viewfinder brackets)
 const PAD_Y = 64; // extra top/bottom room for the status chip and the zoom pill
 const FORMAT_LABEL = { png: "PNG image", pdf: "PDF document", mp4: "MP4 video" } as const;
-const AUTO_FETCH_KEY = "snappost:autoFetch";
 const SITE_THEME_KEY = "snappost:siteTheme";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -61,7 +61,6 @@ export default function Home() {
   const [tweet, setTweet] = useState<TweetData>(DEFAULT_TWEET);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [link, setLink] = useState("");
-  const [autoFetch, setAutoFetch] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [hasTweet, setHasTweet] = useState(false); // true once a real tweet was fetched: the sample is never exported
   const [siteTheme, setSiteTheme] = useState<"light" | "dark">("light");
@@ -105,15 +104,6 @@ export default function Home() {
 
   const showThread = shot === "thread" && !!thread && thread.length > 1;
 
-  // Remember the Auto fetch choice between visits.
-  useEffect(() => {
-    try {
-      const v = localStorage.getItem(AUTO_FETCH_KEY);
-      if (v !== null) setAutoFetch(v === "1");
-    } catch {
-      /* storage unavailable: keep the default */
-    }
-  }, []);
   // Light/Dark theme of the website itself (not of the tweet image, which has its own Appearance tile).
   useEffect(() => {
     try {
@@ -131,14 +121,7 @@ export default function Home() {
       /* ignore */
     }
   };
-  const changeAutoFetch = (v: boolean) => {
-    setAutoFetch(v);
-    try {
-      localStorage.setItem(AUTO_FETCH_KEY, v ? "1" : "0");
-    } catch {
-      /* ignore */
-    }
-  };
+
 
   // Re-measure the card after every render (cheap; setState bails out when unchanged)...
   useLayoutEffect(() => {
@@ -242,12 +225,11 @@ export default function Home() {
 
   // Auto fetch: as soon as the box holds a valid tweet link, load it (after a short pause for typing).
   useEffect(() => {
-    if (!autoFetch) return;
     const url = link.trim();
     if (!parseTweetUrl(url) || url === lastFetched.current) return;
     const timer = setTimeout(() => void fetchTweet(url), 350);
     return () => clearTimeout(timer);
-  }, [link, autoFetch, fetchTweet]);
+  }, [link, fetchTweet]);
 
   async function pasteLink() {
     try {
@@ -377,7 +359,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
       {/* Navbar: brand on the left, export controls on the right */}
-      <header className="sticky top-0 z-20 border-b border-dotted border-stone-400 bg-[#faf6f1]/90 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b-2 border-dotted border-stone-400 bg-[#faf6f1]/90 backdrop-blur">
         <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
           <div className="flex items-center gap-2.5">
             <svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true">
@@ -463,18 +445,22 @@ export default function Home() {
 
       <main className="grid w-full flex-1 lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
         {/* Controls (scroll on their own on desktop, so the preview never moves) */}
-        <aside className="order-2 min-w-0 border-t border-dotted border-stone-400 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:border-r lg:border-t-0">
+        <aside className="order-2 min-w-0 border-t-2 border-dotted border-stone-400 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:border-r-2 lg:border-t-0">
           <Section title="Source">
             <div>
               <Label>Tweet link</Label>
               <div className="flex gap-2">
-                <input
-                  value={link}
-                  onChange={(e) => setLink(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && void fetchTweet(link)}
-                  placeholder="https://x.com/user/status/123…"
-                  className="min-w-0 flex-1 border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-200"
-                />
+                <div className="relative min-w-0 flex-1">
+                  <input
+                    value={link}
+                    onChange={(e) => setLink(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && void fetchTweet(link)}
+                    placeholder="Paste a tweet link — it loads automatically"
+                    aria-busy={fetching}
+                    className="w-full border border-stone-200 bg-white py-2 pl-3 pr-9 text-sm outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-200"
+                  />
+                  {fetching && <span className="snap-spinner absolute right-2.5 top-1/2 -mt-2" aria-hidden="true" />}
+                </div>
                 <button
                   type="button"
                   onClick={() => void pasteLink()}
@@ -487,23 +473,16 @@ export default function Home() {
                     <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
                   </svg>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => void fetchTweet(link)}
-                  disabled={fetching}
-                  className=" bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:opacity-60"
-                >
-                  {fetching ? "Fetching…" : "Fetch"}
-                </button>
               </div>
+              {!fetchError && !fetching && link.trim() !== "" && !parseTweetUrl(link.trim()) && (
+                <p className="mt-2 text-xs text-stone-500">That doesn&apos;t look like a tweet link yet. Use https://x.com/user/status/123…</p>
+              )}
               {fetchError && (
                 <p role="alert" className="mt-2 bg-red-50 px-3 py-2 text-xs text-red-700">
                   {fetchError}
                 </p>
               )}
             </div>
-
-            <Toggle label="Auto fetch when a link is pasted" checked={autoFetch} onChange={changeAutoFetch} />
 
             {threadState === "checking" && <p className="text-xs text-stone-500">Checking for a thread…</p>}
             {thread && (
@@ -534,6 +513,8 @@ export default function Home() {
                 Include quoted post <span className="text-stone-400">(detected)</span>
               </label>
             )}
+
+            <MediaDownload key={`${tweet.username}|${tweet.photos[0] ?? ""}|${tweet.video?.sources[0] ?? ""}`} tweet={tweet} />
 
             <button
               type="button"
@@ -597,11 +578,6 @@ export default function Home() {
                         Remove avatar
                       </button>
                     )}
-                    {hasMedia && (
-                      <button type="button" onClick={() => setShowMedia((v) => !v)} className="text-stone-500 underline hover:text-stone-900">
-                        {showMedia ? "Remove media" : "Add media back"}
-                      </button>
-                    )}
                     <label className="cursor-pointer text-stone-500 underline hover:text-stone-900">
                       Upload media
                       <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => onMediaFiles(e.target.files)} />
@@ -641,7 +617,7 @@ export default function Home() {
             </Section>
           )}
 
-          <div className="grid grid-cols-[1fr_auto] gap-2.5 border-b border-dotted border-stone-400 px-5 py-5">
+          <div className="grid grid-cols-[1fr_auto] gap-2.5 border-b-2 border-dotted border-stone-400 px-5 py-5">
             <button
               type="button"
               onClick={bestFit}
@@ -714,6 +690,14 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {fetching && (
+              <div role="status" aria-live="polite" className="absolute inset-0 z-[4] flex flex-col items-center justify-center gap-4 bg-white/60 backdrop-blur-[2px]">
+                <div className="snap-loadbar absolute inset-x-0 top-0 h-[3px]" aria-hidden="true" />
+                <span className="snap-spinner snap-spinner-lg" aria-hidden="true" />
+                <span className="text-sm font-semibold text-stone-800">Fetching tweet…</span>
+              </div>
+            )}
 
             {/* Status chip */}
             <div className="pointer-events-none absolute left-3 top-3 z-[2] flex items-center gap-2 border border-stone-200 bg-white/90 px-3 py-1.5 text-xs font-medium text-stone-700 backdrop-blur">

@@ -7,6 +7,8 @@ export type VideoData = {
   width: number;
   height: number;
   gif: boolean;
+  /** MP4 renditions for downloading, tallest first. */
+  variants?: { url: string; height: number; width: number }[];
 };
 
 /** A post as returned by the API: the main tweet, a quoted tweet, or one tweet of a thread. */

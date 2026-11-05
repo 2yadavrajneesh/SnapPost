@@ -37,8 +37,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Image too large" }, { status: 413 });
     }
 
+    const dl = req.nextUrl.searchParams.get("download");
     return new Response(buf, {
       headers: {
+        ...(dl ? { "Content-Disposition": `attachment; filename="${dl.replace(/[^\w.\- ]/g, "_").slice(0, 120)}"` } : {}),
         "Content-Type": type,
         "Cache-Control": "public, max-age=86400, s-maxage=86400, immutable",
       },

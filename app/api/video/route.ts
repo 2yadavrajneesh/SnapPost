@@ -40,6 +40,8 @@ export async function GET(req: Request) {
       if (v) out.set(h, v);
     }
     out.set("Cache-Control", "public, max-age=3600");
+    const dl = new URL(req.url).searchParams.get("download");
+    if (dl) out.set("Content-Disposition", `attachment; filename="${dl.replace(/[^\w.\- ]/g, "_").slice(0, 120)}"`);
 
     return new Response(upstream.body, { status: upstream.status, headers: out });
   } catch {

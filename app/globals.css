@@ -155,3 +155,28 @@ html[data-theme="dark"] { --range-ink: #e9e2d6; --range-bg: #1c1815; }
 html[data-theme="dark"] .bg-stone-300 { background-color: #4d453d; }
 html[data-theme="dark"] .border-stone-400 { border-color: #5d554c; }
 html[data-theme="dark"] .bg-\[\#fffdf8\] { background-color: #26211d; }
+
+/* Loading indicators for "Fetching tweet…" */
+.snap-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(120, 100, 80, 0.3);
+  border-top-color: #c2410c;
+  border-radius: 50%;
+  animation: snap-spin 0.7s linear infinite;
+}
+.snap-spinner-lg { width: 34px; height: 34px; border-width: 3px; }
+.snap-loadbar {
+  background: linear-gradient(90deg, transparent, #c2410c, transparent);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  animation: snap-slide 1.1s ease-in-out infinite;
+}
+@keyframes snap-spin { to { transform: rotate(360deg); } }
+@keyframes snap-slide { from { background-position: -40% 0; } to { background-position: 140% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .snap-spinner { animation-duration: 2s; }
+  .snap-loadbar { animation: none; background-size: 100% 100%; }
+}
+html[data-theme="dark"] .bg-white\/60 { background-color: rgba(20, 17, 15, 0.6); }
