@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="border-b-2 border-dotted border-stone-400 px-5 pb-5 pt-5">
+    <section className="border-b border-stone-300 px-5 pb-5 pt-5">
       <h2 className="mb-3 text-sm font-bold text-stone-900">{title}</h2>
       <div className="space-y-3">{children}</div>
     </section>

@@ -359,7 +359,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
       {/* Navbar: brand on the left, export controls on the right */}
-      <header className="sticky top-0 z-20 border-b-2 border-dotted border-stone-400 bg-[#faf6f1]/90 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-stone-300 bg-[#faf6f1]/90 backdrop-blur">
         <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
           <div className="flex items-center gap-2.5">
             <svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true">
@@ -445,7 +445,7 @@ export default function Home() {
 
       <main className="grid w-full flex-1 lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
         {/* Controls (scroll on their own on desktop, so the preview never moves) */}
-        <aside className="order-2 min-w-0 border-t-2 border-dotted border-stone-400 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:border-r-2 lg:border-t-0">
+        <aside className="order-2 min-w-0 border-t border-stone-300 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:border-r lg:border-t-0">
           <Section title="Source">
             <div>
               <Label>Tweet link</Label>
@@ -455,7 +455,7 @@ export default function Home() {
                     value={link}
                     onChange={(e) => setLink(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && void fetchTweet(link)}
-                    placeholder="Paste a tweet link — it loads automatically"
+                    placeholder="Paste a tweet link…"
                     aria-busy={fetching}
                     className="w-full border border-stone-200 bg-white py-2 pl-3 pr-9 text-sm outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-200"
                   />
@@ -617,7 +617,7 @@ export default function Home() {
             </Section>
           )}
 
-          <div className="grid grid-cols-[1fr_auto] gap-2.5 border-b-2 border-dotted border-stone-400 px-5 py-5">
+          <div className="grid grid-cols-[1fr_auto] gap-2.5 border-b border-stone-300 px-5 py-5">
             <button
               type="button"
               onClick={bestFit}

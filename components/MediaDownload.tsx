@@ -88,7 +88,7 @@ export default function MediaDownload({ tweet }: { tweet: TweetData }) {
       </button>
 
       {open && (
-        <div className="space-y-4 border-t border-dotted border-stone-400 px-3 py-3">
+        <div className="space-y-4 border-t border-stone-300 px-3 py-3">
           {groups.map((g, gi) => (
             <div key={gi} className="space-y-3">
               {g.title && <div className="text-xs font-semibold text-stone-500">{g.title}</div>}
