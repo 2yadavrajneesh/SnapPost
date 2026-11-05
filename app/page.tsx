@@ -640,8 +640,8 @@ export default function Home() {
           </Section>
 
           <Section title="Layout">
-            <Slider label="Text size" value={settings.textSize} min={24} max={64} suffix="px" onChange={(v) => set("textSize", v)} />
-            <Slider label="Padding" value={settings.padding} min={50} max={150} step={5} suffix="%" onChange={(v) => set("padding", v)} />
+            <Slider label="Text size" value={settings.textSize} min={24} max={64} step={4} suffix="px" lowLabel="Smaller" highLabel="Larger" ticks emphasizeHigh onChange={(v) => set("textSize", v)} />
+            <Slider label="Padding" value={settings.padding} min={50} max={150} step={5} suffix="%" lowLabel="Tighter" highLabel="Looser" onChange={(v) => set("padding", v)} />
           </Section>
         </aside>
 

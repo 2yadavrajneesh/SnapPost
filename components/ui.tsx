@@ -48,6 +48,12 @@ export function Segmented<T extends string>({
   );
 }
 
+const THUMB = 22; // px, keep in sync with .snap-range in globals.css
+
+/**
+ * Labelled slider: a title, "low / value / high" captions and a track with a ring thumb.
+ * With `ticks`, each step gets a dot on the track (used for Text size).
+ */
 export function Slider({
   label,
   value,
@@ -55,6 +61,10 @@ export function Slider({
   max,
   step = 1,
   suffix,
+  lowLabel,
+  highLabel,
+  ticks = false,
+  emphasizeHigh = false,
   onChange,
 }: {
   label: string;
@@ -63,26 +73,54 @@ export function Slider({
   max: number;
   step?: number;
   suffix: string;
+  lowLabel: string;
+  highLabel: string;
+  ticks?: boolean;
+  emphasizeHigh?: boolean;
   onChange: (v: number) => void;
 }) {
+  const frac = (value - min) / (max - min);
+  const count = Math.round((max - min) / step);
+  const at = (f: number) => `calc(${THUMB / 2}px + (100% - ${THUMB}px) * ${f})`;
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="font-medium text-stone-600">{label}</span>
-        <span className="tabular-nums text-stone-500">
+      <div className="mb-3 text-base font-semibold text-stone-900">{label}</div>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-xs text-stone-500">{lowLabel}</span>
+        <span className="min-w-[4.5rem] bg-stone-100 px-3 py-1 text-center text-sm font-semibold tabular-nums text-stone-800">
           {value}
           {suffix}
         </span>
+        <span className={emphasizeHigh ? "text-base font-semibold text-stone-800" : "text-xs font-medium text-stone-600"}>{highLabel}</span>
       </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-orange-700"
-      />
+      <div className="relative h-7">
+        {/* track + filled part */}
+        <div className="absolute inset-x-0 top-1/2 h-[2px] -translate-y-1/2 bg-stone-300" aria-hidden="true" />
+        <div className="absolute top-1/2 h-[2px] -translate-y-1/2 bg-stone-900" style={{ left: at(0), width: `calc((100% - ${THUMB}px) * ${frac})` }} aria-hidden="true" />
+        {ticks &&
+          Array.from({ length: count + 1 }, (_, i) => {
+            const f = i / count;
+            const done = f <= frac + 1e-6;
+            return (
+              <span
+                key={i}
+                aria-hidden="true"
+                className={`absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border ${done ? "border-stone-900 bg-stone-900" : "border-stone-400 bg-white"}`}
+                style={{ left: at(f) }}
+              />
+            );
+          })}
+        <input
+          type="range"
+          aria-label={label}
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="snap-range absolute inset-0 w-full"
+        />
+      </div>
     </div>
   );
 }
