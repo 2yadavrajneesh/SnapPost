@@ -160,9 +160,15 @@ export default function Home() {
     };
   }, []);
 
-  // On desktop the preview fills the space under the navbar; on phones it gets 70% of the screen height.
-  const padY = isDesktop ? PAD_Y : PAD_Y_MOBILE;
-  const availH = isDesktop ? stageH : Math.max(210, Math.min(280, Math.round(viewportH * 0.34)));
+  // On desktop the preview fills the space under the navbar; on phones it sizes to the post.
+  const padTop = isDesktop ? PAD_Y : PAD_Y_MOBILE;
+  const padBottom = isDesktop ? PAD_Y : PAD_Y_MOBILE + 16; // room for the zoom pill under the post
+  const padY = (padTop + padBottom) / 2;
+  // Phones: the viewer grows with the post (width-fit), from a short box for a one-liner up to most of the screen.
+  const widthFit = Math.min(1, (stageW - PAD_X * 2) / FRAME_W);
+  const availH = isDesktop
+    ? stageH
+    : Math.max(210, Math.min(Math.round(viewportH * 0.82), Math.ceil(frameH * widthFit + padY * 2)));
   const fitScale = Math.max(
     MIN_ZOOM,
     Math.min(1, (stageW - PAD_X * 2) / FRAME_W, (availH - padY * 2) / frameH),
@@ -699,7 +705,7 @@ export default function Home() {
             style={isDesktop ? undefined : { height: availH, flex: "none" }}
           >
             <div ref={stageRef} className="relative z-[1] flex flex-1 overflow-auto">
-              <div style={{ margin: "auto", padding: `${padY}px ${PAD_X}px`, flex: "none" }}>
+              <div style={{ margin: "auto", padding: `${padTop}px ${PAD_X}px ${padBottom}px`, flex: "none" }}>
                 {/* Viewfinder brackets around the post */}
                 <div style={{ position: "relative", width: frameW, height: frameHs }}>
                   {(["tl", "tr", "bl", "br"] as const).map((c) => (
