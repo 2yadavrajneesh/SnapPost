@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { downloadHref, photoSize, proxied } from "@/lib/format";
 import type { PostData, TweetData, VideoData } from "@/lib/types";
 
@@ -14,7 +14,65 @@ const SIZES = [
 ] as const;
 
 const btn =
-  "inline-flex items-center justify-center border border-stone-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-stone-800 transition hover:bg-stone-100";
+  "inline-flex items-center justify-center border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-800 transition hover:bg-stone-100";
+const sel = "min-w-0 flex-1 border border-stone-300 bg-white px-2 py-1.5 text-xs font-medium text-stone-800";
+
+const fmtBytes = (n: number) =>
+  n >= 1048576 ? `${(n / 1048576).toFixed(n >= 10485760 ? 0 : 1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
+
+/** File size of the chosen option, fetched when it is selected and cached per URL. */
+const sizeCache = new Map<string, number>();
+function useSize(url: string) {
+  const [bytes, setBytes] = useState<number | null | undefined>(sizeCache.get(url)); // undefined: loading, null: unknown
+  useEffect(() => {
+    const hit = sizeCache.get(url);
+    if (hit !== undefined) {
+      setBytes(hit || null);
+      return;
+    }
+    setBytes(undefined);
+    let live = true;
+    fetch(`/api/media-size?url=${encodeURIComponent(url)}`)
+      .then((r) => r.json())
+      .then((d: { bytes?: number }) => {
+        sizeCache.set(url, d.bytes || 0);
+        if (live) setBytes(d.bytes || null);
+      })
+      .catch(() => live && setBytes(null));
+    return () => {
+      live = false;
+    };
+  }, [url]);
+  return bytes;
+}
+
+type Option = { key: string; label: string; url: string; file: string };
+
+/** Resolution dropdown (highest first) + the size of the selected file + its Download button. */
+function Picker({ options }: { options: Option[] }) {
+  const [i, setI] = useState(0);
+  const o = options[Math.min(i, options.length - 1)];
+  const bytes = useSize(o.url);
+  return (
+    <div>
+      <div className="flex items-stretch gap-1.5">
+        <select aria-label="Resolution" className={sel} value={i} onChange={(e) => setI(Number(e.target.value))}>
+          {options.map((x, k) => (
+            <option key={x.key} value={k}>
+              {x.label}
+            </option>
+          ))}
+        </select>
+        <a className={btn} href={o.file} download="">
+          Download
+        </a>
+      </div>
+      <div className="mt-1 text-[11px] text-stone-500" aria-live="polite">
+        File size: {bytes === undefined ? "…" : bytes ? `≈ ${fmtBytes(bytes)}` : "unknown"}
+      </div>
+    </div>
+  );
+}
 
 const ext = (src: string) => {
   try {
@@ -101,19 +159,14 @@ export default function MediaDownload({ tweet }: { tweet: TweetData }) {
                     <img src={proxied(photoSize(src, "small"))} alt="" className="h-14 w-14 flex-none border border-stone-200 object-cover" />
                     <div className="min-w-0 flex-1">
                       <div className="mb-1.5 text-xs font-semibold text-stone-800">Photo {n}</div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {SIZES.map((s) => (
-                          <a
-                            key={s.name}
-                            className={btn}
-                            title={`${s.label} · ${s.hint}`}
-                            href={downloadHref("image", photoSize(src, s.name), `${base}-photo-${n}-${s.name === "orig" ? "original" : s.name}.${ext(src)}`)}
-                            download=""
-                          >
-                            {s.label}
-                          </a>
-                        ))}
-                      </div>
+                      <Picker
+                        options={SIZES.map((z) => ({
+                          key: z.name,
+                          label: `${z.label} · ${z.hint}`,
+                          url: photoSize(src, z.name),
+                          file: downloadHref("image", photoSize(src, z.name), `${base}-photo-${n}-${z.name === "orig" ? "original" : z.name}.${ext(src)}`),
+                        }))}
+                      />
                     </div>
                   </div>
                 );
@@ -134,22 +187,16 @@ export default function MediaDownload({ tweet }: { tweet: TweetData }) {
                         {g.video.width}×{g.video.height}
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(g.video.variants?.length ? g.video.variants : g.video.sources.slice(0, 1).map((url) => ({ url, height: g.video!.height, width: g.video!.width }))).map(
-                        (v, i) => (
-                          <a
-                            key={v.url}
-                            className={btn}
-                            title={v.width ? `${v.width}×${v.height} MP4` : "MP4"}
-                            href={downloadHref("video", v.url, `${base}-${g.video!.gif ? "gif" : "video"}-${v.height || i + 1}p.mp4`)}
-                            download=""
-                          >
-                            {v.height ? `${v.height}p` : "MP4"}
-                            {i === 0 ? " · Best" : ""}
-                          </a>
-                        ),
+                    <Picker
+                      options={(g.video.variants?.length ? g.video.variants : g.video.sources.slice(0, 1).map((url) => ({ url, height: g.video!.height, width: g.video!.width }))).map(
+                        (v, i) => ({
+                          key: v.url,
+                          label: `${v.height ? `${v.height}p` : "MP4"}${v.width ? ` · ${v.width}×${v.height}` : ""}${i === 0 ? " · Best" : ""}`,
+                          url: v.url,
+                          file: downloadHref("video", v.url, `${base}-${g.video!.gif ? "gif" : "video"}-${v.height || i + 1}p.mp4`),
+                        }),
                       )}
-                    </div>
+                    />
                   </div>
                 </div>
               )}
