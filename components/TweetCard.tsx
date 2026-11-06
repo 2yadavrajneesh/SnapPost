@@ -194,6 +194,44 @@ function ExpandBadge({ size, onClick }: { size: number; onClick: () => void }) {
   );
 }
 
+/** One photo. Fills the width, but in a fixed-ratio frame it is also capped to the media budget (--snap-media-max). */
+function PhotoImg({
+  src,
+  radius,
+  border,
+  maxShare,
+  onClick,
+}: {
+  src: string;
+  radius: number;
+  border: string;
+  maxShare: number;
+  onClick?: () => void;
+}) {
+  const [aspect, setAspect] = useState(1.5); // width / height, known once the image has loaded
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={proxied(src)}
+      alt=""
+      onClick={onClick}
+      onLoad={(e) => {
+        const im = e.currentTarget;
+        if (im.naturalWidth && im.naturalHeight) setAspect(im.naturalWidth / im.naturalHeight);
+      }}
+      style={{
+        display: "block",
+        width: `min(100%, calc(var(--snap-media-max, 100000px) * ${maxShare.toFixed(3)} * ${aspect.toFixed(4)}))`,
+        height: "auto",
+        margin: "0 auto",
+        borderRadius: radius,
+        border,
+        cursor: onClick ? "zoom-in" : undefined,
+      }}
+    />
+  );
+}
+
 function Photos({
   photos,
   fs,
@@ -215,27 +253,15 @@ function Photos({
   const columns: { src: string; idx: number }[][] = Array.from({ length: cols }, () => []);
   photos.forEach((src, idx) => columns[idx % cols].push({ src, idx }));
   const gap = Math.max(4, Math.round(fs * 0.15));
+  const share = 1 / Math.ceil(photos.length / cols); // photos stacked in a column split the media budget
 
   return (
-    <div style={{ display: "flex", gap, marginTop, alignItems: "flex-start" }}>
+    <div data-media style={{ display: "flex", gap, marginTop, alignItems: "flex-start" }}>
       {columns.map((col, c) => (
         <div key={c} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap }}>
           {col.map(({ src, idx }) => (
             <div key={idx} style={{ position: "relative" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={proxied(src)}
-                alt=""
-                onClick={onOpen ? () => onOpen(photos, idx) : undefined}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  height: "auto",
-                  borderRadius: radius,
-                  border,
-                  cursor: onOpen ? "zoom-in" : undefined,
-                }}
-              />
+              <PhotoImg src={src} radius={radius} border={border} maxShare={share} onClick={onOpen ? () => onOpen(photos, idx) : undefined} />
               {onOpen && <ExpandBadge size={Math.round(fs * 1.1)} onClick={() => onOpen(photos, idx)} />}
             </div>
           ))}
@@ -273,10 +299,13 @@ function VideoPlayer({
 
   return (
     <div
+      data-media
       style={{
         position: "relative",
         marginTop,
-        width: "100%",
+        width: `min(100%, calc(var(--snap-media-max, 100000px) * ${(video.width / video.height).toFixed(4)}))`,
+        marginLeft: "auto",
+        marginRight: "auto",
         aspectRatio: `${video.width} / ${video.height}`,
         maxHeight,
         overflow: "hidden",
@@ -647,9 +676,14 @@ type Props = {
  * The exportable frame. It renders at a fixed logical width (FRAME_W) and is scaled
  * down by its parent for preview, so exports are always crisp and predictable.
  *
- * With a fixed output ratio the content is scaled down to fit inside the frame when it is
- * taller than the ratio allows, so the whole post and all its media always stay visible.
+ * With a fixed output ratio the whole post re-fits to the frame (scaled up or down and re-wrapped),
+ * so the text, layout and all media always stay visible and the frame is used well.
  */
+const MIN_FIT = 0.2;
+const MAX_FIT = 3;
+/** Share of a fixed-ratio frame's inner height that attached media may occupy. */
+const MEDIA_BUDGET = 0.55;
+
 const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, showMedia = true, showParents = true, showParentMedia = true, displayInfo = ALL_INFO }, ref) {
   const t = THEMES[settings.theme];
   const fs = settings.textSize;
@@ -668,26 +702,50 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
   const showTime = displayInfo.dateTime;
   const showViews = displayInfo.views && tweet.views > 0;
 
-  // Scale the content down (never up) so it fits inside the fixed-ratio frame without cropping.
+  // Fixed ratio: the whole post (text, layout, media) re-fits to the frame. We search for the
+  // largest scale at which the content, re-wrapped to the width that scale leaves it, still fits the
+  // height. A bigger scale means a narrower logical width, so text re-wraps and media re-sizes too.
+  // Auto ratio: no fitting, the frame simply hugs the content.
   const innerRef = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState(1);
+  const mediaN = useRef(1);
+  const [fit, setFit] = useState<number | null>(null);
+  const frameH = ratio ? Math.round(FRAME_W / ratio) : 0;
+  const availW = FRAME_W - 2 * framePad;
+  const availH = frameH - 2 * framePad;
   useLayoutEffect(() => {
     const el = innerRef.current;
     if (!el || !ratio) {
-      setFit(1);
+      setFit(null);
       return;
     }
-    const frameH = Math.round(FRAME_W / ratio);
-    const measure = () => {
-      const s = Math.min(1, (frameH - 2 * framePad) / (el.offsetHeight || 1), (FRAME_W - 2 * framePad) / (el.offsetWidth || 1));
-      const next = Math.max(0.05, s);
-      setFit((prev) => (Math.abs(prev - next) < 0.002 ? prev : next));
+    const apply = (sc: number) => {
+      el.style.width = `${availW / sc}px`;
+      el.style.transform = `scale(${sc})`;
+      mediaN.current = Math.max(1, el.querySelectorAll("[data-media]").length);
+      el.style.setProperty("--snap-media-max", `${(availH * MEDIA_BUDGET) / mediaN.current / sc}px`);
+      return el.offsetHeight * sc;
     };
-    measure();
-    const ro = new ResizeObserver(measure);
+    const run = () => {
+      let lo = MIN_FIT;
+      let hi = MAX_FIT;
+      if (apply(lo) > availH) {
+        apply(lo);
+        setFit((prev) => (prev !== null && Math.abs(prev - lo) < 0.002 ? prev : lo));
+        return;
+      }
+      for (let i = 0; i < 16; i++) {
+        const mid = (lo + hi) / 2;
+        if (apply(mid) <= availH) lo = mid;
+        else hi = mid;
+      }
+      apply(lo); // leave the DOM exactly at the chosen scale
+      setFit((prev) => (prev !== null && Math.abs(prev - lo) < 0.002 ? prev : lo));
+    };
+    run();
+    const ro = new ResizeObserver(run); // images and fonts finishing loading change the height
     ro.observe(el);
     return () => ro.disconnect();
-  }, [ratio, framePad]);
+  }, [ratio, availW, availH, fs, tweet, thread, showQuote, showMedia, showParents, showParentMedia, displayInfo, settings.font, settings.logo, minimal]);
 
   return (
     <div
@@ -714,7 +772,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
       <div
         ref={innerRef}
         style={{
-          width: "100%",
+          width: ratio && fit ? availW / fit : "100%",
           flex: "none",
           boxSizing: "border-box",
           padding: cardPad,
@@ -723,7 +781,8 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
           overflow: "hidden",
           // No drop shadow: the frame is transparent, so a shadow would be clipped into a visible halo.
           boxShadow: minimal ? "none" : settings.theme === "light" ? "0 0 0 1px rgba(0,0,0,0.06)" : "0 0 0 1px rgba(255,255,255,0.08)",
-          transform: fit < 1 ? `scale(${fit})` : undefined,
+          transform: ratio && fit ? `scale(${fit})` : undefined,
+          ...(ratio && fit ? ({ "--snap-media-max": `${(availH * MEDIA_BUDGET) / mediaN.current / fit}px` } as React.CSSProperties) : {}),
           transformOrigin: "center center",
         }}
       >
