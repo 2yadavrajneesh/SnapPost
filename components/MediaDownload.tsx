@@ -46,6 +46,12 @@ function useSize(url: string) {
   return bytes;
 }
 
+/** "1080p"-style name from the short side, so portrait videos (720×1280) read as 720p. */
+const nominal = (v: { width?: number; height?: number }) => {
+  const side = Math.min(v.width || Infinity, v.height || Infinity);
+  return Number.isFinite(side) && side > 0 ? `${side}p` : "MP4";
+};
+
 type Option = { key: string; label: string; url: string; file: string };
 
 /** Resolution dropdown (highest first) + the size of the selected file + its Download button. */
@@ -191,7 +197,7 @@ export default function MediaDownload({ tweet }: { tweet: TweetData }) {
                       options={(g.video.variants?.length ? g.video.variants : g.video.sources.slice(0, 1).map((url) => ({ url, height: g.video!.height, width: g.video!.width }))).map(
                         (v, i) => ({
                           key: v.url,
-                          label: `${v.height ? `${v.height}p` : "MP4"}${v.width ? ` · ${v.width}×${v.height}` : ""}${i === 0 ? " · Best" : ""}`,
+                          label: `${nominal(v)}${v.width ? ` · ${v.width}×${v.height}` : ""}${i === 0 ? " · Best" : ""}`,
                           url: v.url,
                           file: downloadHref("video", v.url, `${base}-${g.video!.gif ? "gif" : "video"}-${v.height || i + 1}p.mp4`),
                         }),

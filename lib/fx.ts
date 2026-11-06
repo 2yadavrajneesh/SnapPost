@@ -18,12 +18,21 @@ export type FxVideo = {
   variants: { url: string; height: number; width: number }[];
 };
 
+/** Badge colour: blue = individual, gold = organization, gray = government / official. */
+function badgeKind(author: any): "blue" | "gold" | "gray" {
+  const t = String(author?.verification?.type ?? author?.verified_type ?? "").toLowerCase();
+  if (/org|business|company/.test(t)) return "gold";
+  if (/gov|official/.test(t)) return "gray";
+  return "blue";
+}
+
 export type FxPost = {
   id: string;
   name: string;
   username: string;
   avatar: string;
   verified: boolean;
+  verifiedType: "blue" | "gold" | "gray";
   text: string;
   timestamp: number | null;
   photos: string[];
@@ -140,6 +149,7 @@ export function normalizePost(p: any, depth = 0): FxPost | null {
     username: String(author.screen_name ?? ""),
     avatar: typeof author.avatar_url === "string" ? author.avatar_url.replace("_normal.", "_400x400.") : "",
     verified: Boolean(author.verification?.verified ?? author.verified ?? false),
+    verifiedType: badgeKind(author),
     text: String(p.text ?? ""),
     timestamp,
     photos,

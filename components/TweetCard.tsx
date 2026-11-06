@@ -2,7 +2,7 @@
 
 import { forwardRef, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { compact, formatDate, formatTime, proxied, relativeTime, videoSrc } from "@/lib/format";
-import { FRAME_W, RATIOS, type PostData, type Settings, type TweetData, type VideoData } from "@/lib/types";
+import { FRAME_W, RATIOS, type PostData, type Settings, type TweetData, type VerifiedType, type VideoData } from "@/lib/types";
 
 const FONTS: Record<Settings["font"], string> = {
   sans: `"TwitterChirp", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`,
@@ -52,11 +52,17 @@ function Logo({ kind, size, color }: { kind: Settings["logo"]; size: number; col
   );
 }
 
-function Badge({ size }: { size: number }) {
+const BADGE_COLOR = { blue: BLUE, gold: "#e2b719", gray: "#829aab" } as const;
+const BADGE_LABEL = { blue: "Verified", gold: "Verified organization", gray: "Verified government account" } as const;
+
+/** X's scalloped verified badge: blue (individual), gold (organization) or grey (government). */
+function Badge({ size, kind = "blue" }: { size: number; kind?: VerifiedType }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-label="Verified" style={{ flex: "none" }}>
-      <circle cx="12" cy="12" r="11" fill={BLUE} />
-      <path d="M7 12.5l3.2 3.2L17 8.9" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-label={BADGE_LABEL[kind]} style={{ flex: "none" }}>
+      <path
+        fill={BADGE_COLOR[kind]}
+        d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z"
+      />
     </svg>
   );
 }
@@ -453,7 +459,7 @@ function QuoteCard({
         <Avatar src={q.avatar} name={q.name} size={Math.round(fs * 1.25)} />
         <div style={{ display: "flex", alignItems: "center", gap: Math.round(fs * 0.2), minWidth: 0, fontSize: small, lineHeight: 1.25 }}>
           <span style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{q.name}</span>
-          {q.verified && <Badge size={Math.round(small * 1.05)} />}
+          {q.verified && <Badge size={Math.round(small * 1.05)} kind={q.verifiedType} />}
           <span style={{ color: t.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>@{q.username}</span>
           {q.timestamp && info.dateTime && <span style={{ color: t.muted, whiteSpace: "nowrap" }}>· {relativeTime(q.timestamp)}</span>}
         </div>
@@ -523,7 +529,7 @@ function ParentChain({
           <div style={{ flex: 1, minWidth: 0, paddingBottom: Math.round(fs * 0.8) }}>
             <div style={{ display: "flex", alignItems: "center", gap: Math.round(fs * 0.2), lineHeight: 1.25, fontSize: nameSize }}>
               <span style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
-              {p.verified && <Badge size={Math.round(nameSize * 1.05)} />}
+              {p.verified && <Badge size={Math.round(nameSize * 1.05)} kind={p.verifiedType} />}
               <span style={{ color: t.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
                 @{p.username}
                 {p.timestamp && info.dateTime ? ` · ${formatDate(p.timestamp)}` : ""}
@@ -606,7 +612,7 @@ function ThreadView({
             <div style={{ flex: 1, minWidth: 0, paddingBottom: last ? 0 : Math.round(fs * 0.9) }}>
               <div style={{ display: "flex", alignItems: "center", gap: Math.round(fs * 0.2), lineHeight: 1.25, fontSize: nameSize }}>
                 <span style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
-                {p.verified && <Badge size={Math.round(nameSize * 1.05)} />}
+                {p.verified && <Badge size={Math.round(nameSize * 1.05)} kind={p.verifiedType} />}
                 <span style={{ color: t.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
                   @{p.username}
                   {p.timestamp && info.dateTime ? ` · ${relativeTime(p.timestamp)}` : ""}
@@ -803,7 +809,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
                   <span style={{ fontSize: nameSize, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {tweet.name || "Display name"}
                   </span>
-                  {tweet.verified && <Badge size={Math.round(nameSize * 1.05)} />}
+                  {tweet.verified && <Badge size={Math.round(nameSize * 1.05)} kind={tweet.verifiedType} />}
                 </div>
                 <div style={{ fontSize: nameSize, color: t.muted }}>@{tweet.username || "username"}</div>
               </div>

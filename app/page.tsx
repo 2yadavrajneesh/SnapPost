@@ -43,6 +43,7 @@ function toTweet(j: any): TweetData {
     username: j.username,
     avatar: j.avatar,
     verified: j.verified,
+    verifiedType: j.verifiedType === "gold" || j.verifiedType === "gray" ? j.verifiedType : "blue",
     text: j.text,
     time: formatTime(ts),
     date: formatDate(ts),
@@ -591,6 +592,17 @@ export default function Home() {
                   <TextField label="Date" value={tweet.date} onChange={(v) => setT("date", v)} />
                 </div>
                 <Toggle label="Verified badge" checked={tweet.verified} onChange={(v) => setT("verified", v)} />
+                {tweet.verified && (
+                  <Segmented
+                    value={tweet.verifiedType ?? "blue"}
+                    onChange={(v) => setT("verifiedType", v)}
+                    options={[
+                      { value: "blue", label: "Blue" },
+                      { value: "gold", label: "Gold" },
+                      { value: "gray", label: "Grey" },
+                    ]}
+                  />
+                )}
                 <div className="space-y-2">
                   <Label>Post details</Label>
                   <div className="grid grid-cols-2 gap-2">

@@ -18,6 +18,7 @@ export type PostData = {
   username: string;
   avatar: string;
   verified: boolean;
+  verifiedType?: VerifiedType;
   text: string;
   timestamp: number | null;
   photos: string[];
@@ -33,11 +34,14 @@ export type PostData = {
 export type QuoteData = PostData;
 
 /** The main tweet being edited on screen (time and date are display strings you can change). */
+export type VerifiedType = "blue" | "gold" | "gray";
+
 export type TweetData = {
   name: string;
   username: string;
   avatar: string;
   verified: boolean;
+  verifiedType?: VerifiedType;
   text: string;
   time: string;
   date: string;
