@@ -92,6 +92,7 @@ export default function Home() {
   const stageRef = useRef<HTMLDivElement>(null);
   const lastFetched = useRef("");
   const reqId = useRef(0);
+  const linkInput = useRef<HTMLInputElement>(null);
   const [frameH, setFrameH] = useState(600);
   const [stageW, setStageW] = useState(800);
   const [stageH, setStageH] = useState(600);
@@ -341,6 +342,25 @@ export default function Home() {
     setDisplayInfo(ALL_INFO);
   }
 
+  /** Clears the link, the fetched post and every setting so a different link can be pasted. */
+  function startOver() {
+    reqId.current++; // drop any fetch still in flight
+    lastFetched.current = "";
+    setLink("");
+    setTweet(DEFAULT_TWEET);
+    setHasTweet(false);
+    setFetching(false);
+    setFetchError(null);
+    setExportError(null);
+    setThread(null);
+    setThreadState("idle");
+    setShot("single");
+    setShowEdit(false);
+    setFormat("png");
+    resetAll();
+    linkInput.current?.focus();
+  }
+
   function bestFit() {
     setSettings((s) => ({ ...s, ratio: "auto", padding: DEFAULT_SETTINGS.padding }));
     setZoom(null);
@@ -487,6 +507,7 @@ export default function Home() {
               <div className="flex gap-2">
                 <div className="relative min-w-0 flex-1">
                   <input
+                    ref={linkInput}
                     value={link}
                     onChange={(e) => setLink(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && void fetchTweet(link)}
@@ -506,6 +527,18 @@ export default function Home() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <rect x="8" y="2" width="8" height="4" rx="1" />
                     <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={startOver}
+                  aria-label="Start over with a different link"
+                  title="Start over"
+                  className="flex w-10 flex-none items-center justify-center border border-stone-200 bg-white text-stone-700 transition hover:bg-stone-100"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                    <path d="M3 3v5h5" />
                   </svg>
                 </button>
               </div>
@@ -678,8 +711,9 @@ export default function Home() {
               onClick={bestFit}
               className="flex h-12 items-center justify-center gap-2 border-2 border-[#1b2420] bg-[#f3ecdf] px-4 text-sm font-bold text-[#1b2420] transition hover:bg-[#ece3d2]"
             >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9L12 2zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9L19 14z" />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3" />
+                <rect x="8" y="8" width="8" height="8" rx="1" />
               </svg>
               Best fit
             </button>

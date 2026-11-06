@@ -15,7 +15,8 @@ const SIZES = [
 
 const btn =
   "inline-flex items-center justify-center border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-800 transition hover:bg-stone-100";
-const sel = "min-w-0 flex-1 border border-stone-300 bg-white px-2 py-1.5 text-xs font-medium text-stone-800";
+const sel =
+  "w-full appearance-none truncate border border-stone-300 bg-white py-1.5 pl-2.5 pr-8 text-xs font-medium text-stone-800";
 
 const fmtBytes = (n: number) =>
   n >= 1048576 ? `${(n / 1048576).toFixed(n >= 10485760 ? 0 : 1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
@@ -52,7 +53,7 @@ const nominal = (v: { width?: number; height?: number }) => {
   return Number.isFinite(side) && side > 0 ? `${side}p` : "MP4";
 };
 
-type Option = { key: string; label: string; url: string; file: string };
+type Option = { key: string; label: string; detail?: string; url: string; file: string };
 
 /** Resolution dropdown (highest first) + the size of the selected file + its Download button. */
 function Picker({ options }: { options: Option[] }) {
@@ -62,19 +63,24 @@ function Picker({ options }: { options: Option[] }) {
   return (
     <div>
       <div className="flex items-stretch gap-1.5">
-        <select aria-label="Resolution" className={sel} value={i} onChange={(e) => setI(Number(e.target.value))}>
-          {options.map((x, k) => (
-            <option key={x.key} value={k}>
-              {x.label}
-            </option>
-          ))}
-        </select>
+        <div className="relative min-w-0 flex-1">
+          <select aria-label="Resolution" className={sel} value={i} onChange={(e) => setI(Number(e.target.value))}>
+            {options.map((x, k) => (
+              <option key={x.key} value={k}>
+                {x.label}
+              </option>
+            ))}
+          </select>
+          <svg className="pointer-events-none absolute right-2.5 top-1/2 -mt-[5px]" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </div>
         <a className={btn} href={o.file} download="">
           Download
         </a>
       </div>
       <div className="mt-1 text-[11px] text-stone-500" aria-live="polite">
-        File size: {bytes === undefined ? "…" : bytes ? `≈ ${fmtBytes(bytes)}` : "unknown"}
+        {o.detail ? `${o.detail} · ` : ""}File size: {bytes === undefined ? "…" : bytes ? `≈ ${fmtBytes(bytes)}` : "unknown"}
       </div>
     </div>
   );
@@ -168,7 +174,8 @@ export default function MediaDownload({ tweet }: { tweet: TweetData }) {
                       <Picker
                         options={SIZES.map((z) => ({
                           key: z.name,
-                          label: `${z.label} · ${z.hint}`,
+                          label: z.label,
+                          detail: z.hint,
                           url: photoSize(src, z.name),
                           file: downloadHref("image", photoSize(src, z.name), `${base}-photo-${n}-${z.name === "orig" ? "original" : z.name}.${ext(src)}`),
                         }))}
@@ -197,7 +204,8 @@ export default function MediaDownload({ tweet }: { tweet: TweetData }) {
                       options={(g.video.variants?.length ? g.video.variants : g.video.sources.slice(0, 1).map((url) => ({ url, height: g.video!.height, width: g.video!.width }))).map(
                         (v, i) => ({
                           key: v.url,
-                          label: `${nominal(v)}${v.width ? ` · ${v.width}×${v.height}` : ""}${i === 0 ? " · Best" : ""}`,
+                          label: `${nominal(v)}${i === 0 ? " · Best" : ""}`,
+                          detail: v.width ? `${v.width}×${v.height}` : undefined,
                           url: v.url,
                           file: downloadHref("video", v.url, `${base}-${g.video!.gif ? "gif" : "video"}-${v.height || i + 1}p.mp4`),
                         }),
