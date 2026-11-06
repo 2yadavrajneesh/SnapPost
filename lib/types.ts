@@ -94,7 +94,7 @@ export const MAX_EXPORT_WIDTH = 4096;
 export const DEFAULT_TWEET: TweetData = {
   name: "SnapPost",
   username: "snappost",
-  avatar: "",
+  avatar: "/snappost-logo.svg", // the sample post wears the site logo
   verified: true,
   text: "Turn any tweet into a polished image in seconds. Paste a link, then download it.",
   time: "8:30 PM",
