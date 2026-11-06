@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseTweetUrl } from "@/lib/parse";
-import { fxJson, makeCache, normalizePost, type FxPost } from "@/lib/fx";
+import { fxJson, makeCache, normalizePost, syndicationVariants, type FxPost } from "@/lib/fx";
 
 export const runtime = "nodejs";
 
@@ -131,6 +131,15 @@ export async function GET(req: NextRequest) {
   const post = normalizePost(raw);
   if (!post) {
     return NextResponse.json({ error: "That post is unavailable (deleted, suspended or private)." }, { status: 404 });
+  }
+
+  // Only one rendition came back? Ask X's embed endpoint for the others so lower resolutions can be downloaded.
+  if (post.video && (post.video.variants?.length ?? 0) < 2) {
+    const more = await syndicationVariants(parsed.id);
+    if (more.length > 1) {
+      post.video.variants = more;
+      for (const m of more) if (!post.video.sources.includes(m.url)) post.video.sources.push(m.url);
+    }
   }
 
   // The main post must always show its own author's picture. If the service left it out, or handed

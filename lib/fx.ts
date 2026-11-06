@@ -70,6 +70,44 @@ const isMp4Url = (s: unknown) => typeof s === "string" && /\.mp4(\?|$)/i.test(s)
  * Picks the best playable MP4 renditions for a video/GIF. X serves several (and HLS, and sometimes
  * HEVC that browsers can't play), so we prefer H.264 MP4s, up to 1080p, highest quality first.
  */
+/** X video URLs carry their size, e.g. ".../vid/avc1/0/0/1280x720/abc.mp4". */
+export function dimsFromUrl(url: string): { width: number; height: number } | null {
+  const m = /\/(\d{3,4})x(\d{3,4})\//.exec(url);
+  return m ? { width: Number(m[1]), height: Number(m[2]) } : null;
+}
+
+/**
+ * The service sometimes returns just one MP4 for a video. X's public embed endpoint lists every
+ * rendition, so ask it for the full ladder (best first, one MP4 per size).
+ */
+export async function syndicationVariants(id: string): Promise<{ url: string; height: number; width: number }[]> {
+  try {
+    const token = ((Number(id) / 1e15) * Math.PI).toString(36).replace(/(0+|\.)/g, "");
+    const base = process.env.SYNDICATION_BASE ?? "https://cdn.syndication.twimg.com";
+    const res = await fetch(`${base}/tweet-result?id=${encodeURIComponent(id)}&token=${token}`, {
+      headers: { "User-Agent": "Mozilla/5.0 SnapPost" },
+      signal: AbortSignal.timeout(8_000),
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const j = await res.json();
+    const details: any[] = Array.isArray(j?.mediaDetails) ? j.mediaDetails : [];
+    const vs: any[] = details.find((m) => m?.video_info?.variants)?.video_info?.variants ?? [];
+    const best = new Map<number, { url: string; height: number; width: number; bitrate: number }>();
+    for (const x of vs) {
+      if (x?.content_type !== "video/mp4" || !x.url) continue;
+      const d = dimsFromUrl(String(x.url));
+      if (!d) continue;
+      const bitrate = Number(x.bitrate) || 0;
+      const have = best.get(d.height);
+      if (!have || bitrate > have.bitrate) best.set(d.height, { url: String(x.url), ...d, bitrate });
+    }
+    return [...best.values()].sort((a, b) => b.height - a.height).map(({ url, height, width }) => ({ url, height, width }));
+  } catch {
+    return [];
+  }
+}
+
 export function pickVideo(media: any): FxVideo | null {
   const list: any[] = media?.videos?.length
     ? media.videos
@@ -111,7 +149,10 @@ export function pickVideo(media: any): FxVideo | null {
   const variants = [...byHeight.values()]
     .sort((a, b) => b.height - a.height)
     .map(({ url, height, width }) => ({ url, height, width }));
-  if (!variants.length && sources[0]) variants.push({ url: sources[0], height: Number(v.height) || 0, width: Number(v.width) || 0 });
+  if (!variants.length && sources[0]) {
+    const d = dimsFromUrl(sources[0]);
+    variants.push({ url: sources[0], height: d?.height || Number(v.height) || 0, width: d?.width || Number(v.width) || 0 });
+  }
 
   return {
     sources,
