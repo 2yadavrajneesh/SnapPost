@@ -181,9 +181,10 @@ html[data-theme="dark"] .bg-\[\#fffdf8\] { background-color: #26211d; }
 }
 html[data-theme="dark"] .bg-white\/60 { background-color: rgba(20, 17, 15, 0.6); }
 
-/* Mobile only: make the dotted grid easier to see on the dark theme */
+/* Mobile only: larger, brighter soft-white dots so the grid shows on phone screens in the dark theme */
 @media (max-width: 1023px) {
   html[data-theme="dark"] .snap-stage {
-    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.4) 1.2px, transparent 1.6px);
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.7) 1.6px, transparent 2.2px);
+    background-size: 24px 24px;
   }
 }
