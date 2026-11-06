@@ -356,6 +356,68 @@ export default function Home() {
   const zoomBtn =
     "flex h-8 w-8 items-center justify-center text-base font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-40";
 
+  const formatPicker = (
+  <Segmented
+    value={format}
+    options={[
+      { value: "png", label: "PNG" },
+      { value: "pdf", label: "PDF" },
+      { value: "mp4", label: "MP4" },
+    ]}
+    onChange={setFormat}
+  />
+  );
+  const copyButton = (iconOnly = false) => (
+  <button
+    type="button"
+    onClick={copyImage}
+    disabled={!hasTweet || exporting || copyState === "working"}
+    title={hasTweet ? undefined : "Paste a tweet link first"}
+    aria-label="Copy image"
+    className={`whitespace-nowrap border border-stone-300 bg-white text-sm font-semibold text-stone-800 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60 ${
+      iconOnly ? "flex h-12 w-12 flex-none items-center justify-center" : "px-4 py-2"
+    }`}
+  >
+    {iconOnly ? (
+      copyState === "done" ? (
+        <span aria-hidden="true">✓</span>
+      ) : (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="11" height="11" rx="1" />
+          <path d="M5 15V5a1 1 0 0 1 1-1h10" />
+        </svg>
+      )
+    ) : copyState === "working" ? (
+      "Copying…"
+    ) : copyState === "done" ? (
+      "Copied ✓"
+    ) : (
+      "Copy image"
+    )}
+  </button>
+  );
+  const downloadButton = (block = false) => (
+  <button
+    type="button"
+    onClick={download}
+    disabled={!hasTweet || exporting}
+    title={hasTweet ? undefined : "Paste a tweet link first"}
+    className={`whitespace-nowrap bg-accent text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 ${
+      block ? "h-12 min-w-0 flex-1 px-4" : "px-4 py-2"
+    }`}
+  >
+    {exporting
+      ? progress !== null
+        ? `Recording ${Math.round(progress * 100)}%`
+        : "Rendering…"
+      : format === "png"
+        ? "Download image"
+        : format === "pdf"
+          ? "Download PDF"
+          : "Download video"}
+  </button>
+  );
+
   return (
     <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
       {/* Navbar: brand on the left, export controls on the right */}
@@ -369,7 +431,7 @@ export default function Home() {
             </svg>
             <div>
               <h1 className="text-base font-bold leading-none">SnapPost</h1>
-              <div className="mt-1 text-[11px] text-stone-500">Screenshot, upgraded. Posts to PNG, PDF &amp; MP4.</div>
+              <div className="mt-1 hidden text-[11px] text-stone-500 sm:block">Screenshot, upgraded. Posts to PNG, PDF &amp; MP4.</div>
             </div>
             <span className="ml-1 bg-stone-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-stone-600">
               Beta
@@ -395,41 +457,11 @@ export default function Home() {
                 )}
               </svg>
             </button>
-            <Segmented
-              value={format}
-              options={[
-                { value: "png", label: "PNG" },
-                { value: "pdf", label: "PDF" },
-                { value: "mp4", label: "MP4" },
-              ]}
-              onChange={setFormat}
-            />
-            <button
-              type="button"
-              onClick={copyImage}
-              disabled={!hasTweet || exporting || copyState === "working"}
-              title={hasTweet ? undefined : "Paste a tweet link first"}
-              className="whitespace-nowrap border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {copyState === "working" ? "Copying…" : copyState === "done" ? "Copied ✓" : "Copy image"}
-            </button>
-            <button
-              type="button"
-              onClick={download}
-              disabled={!hasTweet || exporting}
-              title={hasTweet ? undefined : "Paste a tweet link first"}
-              className="whitespace-nowrap bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {exporting
-                ? progress !== null
-                  ? `Recording ${Math.round(progress * 100)}%`
-                  : "Rendering…"
-                : format === "png"
-                  ? "Download image"
-                  : format === "pdf"
-                    ? "Download PDF"
-                    : "Download video"}
-            </button>
+            <div className="hidden items-center gap-2 lg:flex">
+              {formatPicker}
+              {copyButton()}
+              {downloadButton()}
+            </div>
           </div>
         </div>
       </header>
@@ -578,6 +610,15 @@ export default function Home() {
               </div>
             )}
           </Section>
+
+          {/* Mobile: export controls live under the source, like the reference layout */}
+          <div className="space-y-3 border-b border-stone-300 px-5 py-5 lg:hidden">
+            {formatPicker}
+            <div className="flex gap-2.5">
+              {downloadButton(true)}
+              {copyButton(true)}
+            </div>
+          </div>
 
           {hasParents && (
             <Section title="Reply focus">
