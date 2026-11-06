@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import AppearanceTiles from "@/components/AppearanceTiles";
 import Lightbox from "@/components/Lightbox";
 import MediaDownload from "@/components/MediaDownload";
@@ -8,7 +9,7 @@ import RatioTiles from "@/components/RatioTiles";
 import TweetCard, { ALL_INFO, type DisplayInfo } from "@/components/TweetCard";
 import { Check, Label, Section, Segmented, Slider, TextField, Toggle } from "@/components/ui";
 import { formatDate, formatTime } from "@/lib/format";
-import { copyPngToClipboard, downloadBlob, downloadUrl, renderPdf, renderPng, renderVideo } from "@/lib/export";
+import { copyPngToClipboard, downloadBlob, downloadUrl, renderPdf, renderPdfPages, renderPng, renderVideo, zipFiles } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
 import {
   DEFAULT_SETTINGS,
@@ -79,6 +80,7 @@ export default function Home() {
   const [thread, setThread] = useState<PostData[] | null>(null);
   const [threadState, setThreadState] = useState<ThreadState>("idle");
   const [shot, setShot] = useState<ShotMode>("single");
+  const [slide, setSlide] = useState(0); // current carousel slide
 
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
@@ -106,6 +108,13 @@ export default function Home() {
     setT(key, Math.max(0, Math.floor(Number(v.replace(/[^\d]/g, "")) || 0)));
 
   const showThread = shot === "thread" && !!thread && thread.length > 1;
+  const carousel = shot === "carousel" && !!thread && thread.length > 1;
+  const slideCount = carousel ? thread!.length : 0;
+  const slideAt = Math.min(slide, Math.max(0, slideCount - 1));
+  // A carousel slide is one post of the thread shown as a card of its own.
+  const cardTweet: TweetData = carousel
+    ? { ...tweet, ...toTweet(thread![slideAt]), parents: [] }
+    : tweet;
 
   // Light/Dark theme of the website itself (not of the tweet image, which has its own Appearance tile).
   useEffect(() => {
@@ -291,8 +300,31 @@ export default function Home() {
     setExporting(true);
     setExportError(null);
     setProgress(null);
-    const base = `snappost-${tweet.username || "post"}${showThread ? "-thread" : ""}`;
+    const base = `snappost-${tweet.username || "post"}${showThread ? "-thread" : carousel ? "-carousel" : ""}`;
     try {
+      if (carousel) {
+        if (format === "mp4") throw new Error("A carousel exports as PNG (ZIP of slides) or PDF. Pick one of those.");
+        // Render each slide in turn, then put the viewer back where it was.
+        const keep = slideAt;
+        const shots: { dataUrl: string; pageW: number; pageH: number }[] = [];
+        for (let i = 0; i < slideCount; i++) {
+          flushSync(() => setSlide(i));
+          await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+          await new Promise((r) => setTimeout(r, 120)); // let the slide's images settle
+          const r = await renderPng(node);
+          shots.push({ dataUrl: r.dataUrl, pageW: node.offsetWidth, pageH: node.offsetHeight });
+          setProgress((i + 1) / slideCount);
+        }
+        flushSync(() => setSlide(keep));
+        const pad = String(slideCount).length;
+        if (format === "png") {
+          const zip = await zipFiles(shots.map((s, i) => ({ name: `${base}-${String(i + 1).padStart(pad, "0")}.png`, dataUrl: s.dataUrl })));
+          downloadBlob(zip, `${base}.zip`);
+        } else {
+          downloadBlob(await renderPdfPages(shots.map((s) => ({ dataUrl: s.dataUrl, w: s.pageW, h: s.pageH }))), `${base}.pdf`);
+        }
+        return;
+      }
       if (format === "mp4") {
         // The whole post as a video: embedded videos play in place, with sound.
         setProgress(0);
@@ -355,6 +387,7 @@ export default function Home() {
     setThread(null);
     setThreadState("idle");
     setShot("single");
+    setSlide(0);
     setShowEdit(false);
     setFormat("png");
     resetAll();
@@ -372,13 +405,14 @@ export default function Home() {
     title: RATIOS[k].note,
   }));
 
-  const posts: PostData[] = showThread && thread ? thread : [];
-  const hasMedia = showThread
+  const listMode = showThread || carousel;
+  const posts: PostData[] = listMode && thread ? thread : [];
+  const hasMedia = listMode
     ? posts.some((p) => p.photos.length > 0 || p.video || p.quote?.photos.length || p.quote?.video)
     : tweet.photos.length > 0 || !!tweet.video || !!tweet.quote?.photos.length || !!tweet.quote?.video;
   const hasParents = !showThread && !!tweet.parents?.length;
-  const hasQuote = showThread ? !!thread?.some((p) => p.quote) : !!tweet.quote;
-  const hasPhotos = showThread
+  const hasQuote = listMode ? !!thread?.some((p) => p.quote) : !!tweet.quote;
+  const hasPhotos = listMode
     ? !!thread?.some((p) => p.photos.length > 0 || p.quote?.photos.length)
     : tweet.photos.length > 0 || !!tweet.quote?.photos.length;
 
@@ -560,11 +594,22 @@ export default function Home() {
                   value={shot}
                   options={[
                     { value: "single", label: "This tweet" },
-                    { value: "thread", label: `Full thread (${thread.length})` },
+                    { value: "thread", label: `Thread (${thread.length})` },
+                    { value: "carousel", label: `Carousel (${thread.length})` },
                   ]}
-                  onChange={setShot}
+                  onChange={(v) => {
+                    setShot(v);
+                    setSlide(0);
+                    setZoom(null);
+                  }}
                 />
-                <p className="mt-1.5 text-[11px] text-stone-500">This tweet is part of a thread.</p>
+                <p className="mt-1.5 text-[11px] text-stone-500">
+                  {shot === "carousel"
+                    ? "One slide per post. PNG downloads as a ZIP of slides, PDF as one page per slide."
+                    : shot === "thread"
+                      ? "The whole thread in one image."
+                      : "This tweet is part of a thread."}
+                </p>
               </div>
             )}
 
@@ -764,7 +809,7 @@ export default function Home() {
                     <div style={{ position: "absolute", top: 0, left: 0, transform: `scale(${scale})`, transformOrigin: "top left" }}>
                       <TweetCard
                         ref={frameRef}
-                        tweet={tweet}
+                        tweet={cardTweet}
                         settings={settings}
                         thread={showThread ? thread : null}
                         showQuote={showQuote}
@@ -800,6 +845,20 @@ export default function Home() {
               {outW} × {outH} px
               {hasPhotos && showMedia && <span className="block font-sans">Click an image to enlarge</span>}
             </div>
+
+            {carousel && (
+              <div className="absolute bottom-3 left-3 z-[3] flex items-center border border-stone-300 bg-white/95 text-xs font-semibold text-stone-800 shadow-sm backdrop-blur lg:bottom-4">
+                <button type="button" aria-label="Previous slide" disabled={slideAt === 0} onClick={() => setSlide(slideAt - 1)} className="px-2.5 py-2 hover:bg-stone-100 disabled:opacity-40">
+                  ‹
+                </button>
+                <span className="min-w-[64px] px-1 text-center tabular-nums" aria-live="polite">
+                  {slideAt + 1} / {slideCount}
+                </span>
+                <button type="button" aria-label="Next slide" disabled={slideAt >= slideCount - 1} onClick={() => setSlide(slideAt + 1)} className="px-2.5 py-2 hover:bg-stone-100 disabled:opacity-40">
+                  ›
+                </button>
+              </div>
+            )}
 
             {exportError && (
               <p role="alert" className="absolute left-1/2 top-14 z-[3] max-w-[90%] -translate-x-1/2 bg-red-50 px-3 py-2 text-xs text-red-700 shadow">

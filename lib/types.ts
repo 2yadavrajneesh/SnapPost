@@ -59,7 +59,7 @@ export type TweetData = {
 };
 
 /** Which screenshot to produce when a tweet is part of a thread. */
-export type ShotMode = "single" | "thread";
+export type ShotMode = "single" | "thread" | "carousel";
 
 export type RatioKey = "auto" | "compact" | "standard" | "wide" | "story" | "square" | "portrait";
 

@@ -69,6 +69,27 @@ export async function renderPdf(dataUrl: string, w: number, h: number): Promise<
   return pdf.output("blob");
 }
 
+/** One PDF with a page per image (carousel slides); each page has its own slide's size. */
+export async function renderPdfPages(pages: { dataUrl: string; w: number; h: number }[]): Promise<Blob> {
+  const { jsPDF } = await import("jspdf");
+  const o = (p: { w: number; h: number }) => (p.w >= p.h ? "landscape" : "portrait") as "landscape" | "portrait";
+  const pdf = new jsPDF({ orientation: o(pages[0]), unit: "px", format: [pages[0].w, pages[0].h], hotfixes: ["px_scaling"], compress: true });
+  pages.forEach((p, i) => {
+    if (i > 0) pdf.addPage([p.w, p.h], o(p));
+    pdf.addImage(p.dataUrl, "PNG", 0, 0, p.w, p.h, undefined, "FAST");
+  });
+  return pdf.output("blob");
+}
+
+/** Bundles files into a ZIP (PNGs are already compressed, so they are stored as they are). */
+export async function zipFiles(files: { name: string; dataUrl: string }[]): Promise<Blob> {
+  const { zipSync } = await import("fflate");
+  const entries: Record<string, Uint8Array> = {};
+  for (const f of files) entries[f.name] = new Uint8Array(await (await fetch(f.dataUrl)).arrayBuffer());
+  const zipped = zipSync(entries, { level: 0 });
+  return new Blob([zipped.buffer.slice(zipped.byteOffset, zipped.byteOffset + zipped.byteLength) as ArrayBuffer], { type: "application/zip" });
+}
+
 const MAX_VIDEO_SECONDS = 180;
 const VIDEO_WIDTH = 1080;
 
