@@ -30,7 +30,8 @@ const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 3;
 const ZOOM_STEP = 1.25;
 const PAD_X = 44; // breathing room around the card inside the viewer (room for the viewfinder brackets)
-const PAD_Y = 64; // extra top/bottom room for the status chip and the zoom pill
+const PAD_Y = 64; // desktop
+const PAD_Y_MOBILE = 46; // the mobile viewer is short, so it needs less room // extra top/bottom room for the status chip and the zoom pill
 const FORMAT_LABEL = { png: "PNG image", pdf: "PDF document", mp4: "MP4 video" } as const;
 const SITE_THEME_KEY = "snappost:siteTheme";
 
@@ -160,10 +161,11 @@ export default function Home() {
   }, []);
 
   // On desktop the preview fills the space under the navbar; on phones it gets 70% of the screen height.
-  const availH = isDesktop ? stageH : Math.round(viewportH * 0.7);
+  const padY = isDesktop ? PAD_Y : PAD_Y_MOBILE;
+  const availH = isDesktop ? stageH : Math.max(210, Math.min(280, Math.round(viewportH * 0.34)));
   const fitScale = Math.max(
     MIN_ZOOM,
-    Math.min(1, (stageW - PAD_X * 2) / FRAME_W, (availH - PAD_Y * 2) / frameH),
+    Math.min(1, (stageW - PAD_X * 2) / FRAME_W, (availH - padY * 2) / frameH),
   );
   const scale = zoom ?? fitScale;
   const zoomIn = () => setZoom(Math.min(MAX_ZOOM, scale * ZOOM_STEP));
@@ -693,11 +695,11 @@ export default function Home() {
         {/* Viewer */}
         <div id="canvas" className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">
           <div
-            className="snap-stage relative flex min-h-[260px] flex-1 overflow-hidden lg:min-h-0"
+            className="snap-stage relative flex flex-1 overflow-hidden lg:min-h-0"
             style={isDesktop ? undefined : { height: availH, flex: "none" }}
           >
             <div ref={stageRef} className="relative z-[1] flex flex-1 overflow-auto">
-              <div style={{ margin: "auto", padding: `${PAD_Y}px ${PAD_X}px`, flex: "none" }}>
+              <div style={{ margin: "auto", padding: `${padY}px ${PAD_X}px`, flex: "none" }}>
                 {/* Viewfinder brackets around the post */}
                 <div style={{ position: "relative", width: frameW, height: frameHs }}>
                   {(["tl", "tr", "bl", "br"] as const).map((c) => (
