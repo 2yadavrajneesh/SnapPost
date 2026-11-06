@@ -165,13 +165,16 @@ export default function Home() {
   const padBottom = isDesktop ? PAD_Y : PAD_Y_MOBILE + 16; // room for the zoom pill under the post
   const padY = (padTop + padBottom) / 2;
   // Phones: the viewer grows with the post (width-fit), from a short box for a one-liner up to most of the screen.
-  const widthFit = Math.min(1, (stageW - PAD_X * 2) / FRAME_W);
+  const padX = isDesktop ? PAD_X : 20;
+  const widthFit = Math.min(1, (stageW - padX * 2) / FRAME_W);
   const availH = isDesktop
     ? stageH
-    : Math.max(210, Math.min(Math.round(viewportH * 0.82), Math.ceil(frameH * widthFit + padY * 2)));
+    : Math.max(210, Math.min(Math.round(viewportH * 0.72), Math.ceil(frameH * widthFit + padY * 2)));
+  // Desktop fits the whole post in the viewer. Phones fit the width so text stays readable; a tall
+  // post (a thread, say) then scrolls inside the viewer.
   const fitScale = Math.max(
     MIN_ZOOM,
-    Math.min(1, (stageW - PAD_X * 2) / FRAME_W, (availH - padY * 2) / frameH),
+    isDesktop ? Math.min(widthFit, (availH - padY * 2) / frameH) : widthFit,
   );
   const scale = zoom ?? fitScale;
   const zoomIn = () => setZoom(Math.min(MAX_ZOOM, scale * ZOOM_STEP));
@@ -705,7 +708,7 @@ export default function Home() {
             style={isDesktop ? undefined : { height: availH, flex: "none" }}
           >
             <div ref={stageRef} className="relative z-[1] flex flex-1 overflow-auto">
-              <div style={{ margin: "auto", padding: `${padTop}px ${PAD_X}px ${padBottom}px`, flex: "none" }}>
+              <div style={{ margin: "auto", padding: `${padTop}px ${padX}px ${padBottom}px`, flex: "none" }}>
                 {/* Viewfinder brackets around the post */}
                 <div style={{ position: "relative", width: frameW, height: frameHs }}>
                   {(["tl", "tr", "bl", "br"] as const).map((c) => (
