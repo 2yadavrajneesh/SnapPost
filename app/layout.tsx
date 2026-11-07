@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   description: "Turn X (Twitter) posts into polished, high-resolution images. Customize the layout, preserve photos and video previews, and export as PNG, PDF, or video.",
   keywords: ["tweet to image", "X post screenshot", "tweet screenshot", "twitter screenshot", "post to PNG", "tweet to PDF"],
   applicationName: "SnapPost",
+  // The site draws both of its themes itself. These tell browsers and dark-mode extensions not to
+  // recolour it (which is what turned the light theme dark on some tablets and phones).
+  other: { "color-scheme": "only light", "supported-color-schemes": "light", "darkreader-lock": "" },
   openGraph: {
     title: "SnapPost — Turn posts into polished images",
     description: "Paste an X (Twitter) link and export a polished PNG, PDF or video of the post.",
@@ -25,9 +28,6 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#faf6f1",
-  // The site draws both of its themes itself, so tell browsers not to force their own dark mode on it
-  // (that is what turned the light theme grey on some phones).
-  colorScheme: "light dark",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
