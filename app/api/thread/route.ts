@@ -1,3 +1,4 @@
+import { rateLimit, BUCKETS } from "@/lib/ratelimit";
 import { NextRequest, NextResponse } from "next/server";
 import { parseTweetUrl } from "@/lib/parse";
 import { fxJson, makeCache, normalizePost, type FxPost } from "@/lib/fx";
@@ -13,6 +14,8 @@ const cache = makeCache<{ posts: FxPost[]; focalId: string }>();
  * empty list rather than an error, because threads are an optional extra.
  */
 export async function GET(req: NextRequest) {
+  const limited = await rateLimit(req, BUCKETS.api);
+  if (limited) return limited;
   const parsed = parseTweetUrl(req.nextUrl.searchParams.get("url") ?? "");
   if (!parsed) return NextResponse.json({ error: "Invalid tweet link." }, { status: 400 });
 

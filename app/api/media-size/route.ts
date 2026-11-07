@@ -1,3 +1,4 @@
+import { rateLimit, BUCKETS } from "@/lib/ratelimit";
 import { NextRequest, NextResponse } from "next/server";
 import { isAllowedMediaUrl } from "@/lib/media-hosts";
 
@@ -5,6 +6,8 @@ export const runtime = "nodejs";
 
 /** Reports the byte size of a remote media file (HEAD, or a 1-byte ranged GET as fallback). */
 export async function GET(req: NextRequest) {
+  const limited = await rateLimit(req, BUCKETS.media);
+  if (limited) return limited;
   const raw = req.nextUrl.searchParams.get("url");
   let target: URL;
   try {

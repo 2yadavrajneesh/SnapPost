@@ -1,3 +1,4 @@
+import { rateLimit, BUCKETS } from "@/lib/ratelimit";
 import { isAllowedMediaUrl } from "@/lib/media-hosts";
 import { MAX_VIDEO_BYTES, MAX_VIDEO_MB } from "@/lib/limits";
 
@@ -9,6 +10,8 @@ export const maxDuration = 60;
  * Playing it same-origin avoids hotlink/Referer/CORS problems that stop <video> loading directly.
  */
 export async function GET(req: Request) {
+  const limited = await rateLimit(req, new URL(req.url).searchParams.get("download") ? BUCKETS.download : BUCKETS.media);
+  if (limited) return limited;
   const raw = new URL(req.url).searchParams.get("url");
   if (!raw) return Response.json({ error: "Missing url" }, { status: 400 });
 

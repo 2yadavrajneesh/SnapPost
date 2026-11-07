@@ -46,6 +46,8 @@ Copy `.env.example` to `.env.local` to change these. None are needed to run.
 |---|---|
 | `FX_API_BASE` | Base URL of the FxEmbed API (default `https://api.fxtwitter.com`). Set it to your own instance if you self-host FxEmbed. |
 | `MEDIA_PROXY_HOSTS` | Extra hosts (comma-separated) the image and video proxies may fetch from. By default only X's own media hosts are allowed. |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Optional. Stores per-IP rate-limit counts in Upstash Redis so limits are exact across servers. Without them, counts are kept in server memory. |
+| `RATE_LIMIT_*` | Optional overrides for the per-IP limits (`API`, `MEDIA`, `DOWNLOAD`, each with `_MAX` and `_WINDOW_SEC`). See `.env.example`. |
 
 ## How it works
 

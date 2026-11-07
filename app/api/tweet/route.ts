@@ -1,3 +1,4 @@
+import { rateLimit, BUCKETS } from "@/lib/ratelimit";
 import { NextRequest, NextResponse } from "next/server";
 import { parseTweetUrl } from "@/lib/parse";
 import { fxJson, makeCache, normalizePost, syndicationVariants, type FxPost } from "@/lib/fx";
@@ -105,6 +106,8 @@ async function findParents(post: FxPost, id: string): Promise<FxPost[]> {
 }
 
 export async function GET(req: NextRequest) {
+  const limited = await rateLimit(req, BUCKETS.api);
+  if (limited) return limited;
   const parsed = parseTweetUrl(req.nextUrl.searchParams.get("url") ?? "");
   if (!parsed) {
     return NextResponse.json(

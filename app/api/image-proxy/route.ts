@@ -1,3 +1,4 @@
+import { rateLimit, BUCKETS } from "@/lib/ratelimit";
 import { NextRequest, NextResponse } from "next/server";
 import { isAllowedMediaUrl } from "@/lib/media-hosts";
 
@@ -6,6 +7,8 @@ export const runtime = "nodejs";
 const MAX_BYTES = 25 * 1024 * 1024; // original-resolution photos can be several MB
 
 export async function GET(req: NextRequest) {
+  const limited = await rateLimit(req, BUCKETS.media);
+  if (limited) return limited;
   const raw = req.nextUrl.searchParams.get("url");
   if (!raw) return NextResponse.json({ error: "Missing url" }, { status: 400 });
 
