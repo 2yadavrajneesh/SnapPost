@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MAX_VIDEO_BYTES, MAX_VIDEO_MB } from "@/lib/limits";
 import { downloadHref, photoSize, proxied } from "@/lib/format";
 import type { PostData, TweetData, VideoData } from "@/lib/types";
 
@@ -56,10 +57,11 @@ const nominal = (v: { width?: number; height?: number }) => {
 type Option = { key: string; label: string; detail?: string; url: string; file: string };
 
 /** Resolution dropdown (highest first) + the size of the selected file + its Download button. */
-function Picker({ options }: { options: Option[] }) {
+function Picker({ options, capped }: { options: Option[]; capped?: boolean }) {
   const [i, setI] = useState(0);
   const o = options[Math.min(i, options.length - 1)];
   const bytes = useSize(o.url);
+  const tooBig = !!capped && !!bytes && bytes > MAX_VIDEO_BYTES;
   return (
     <div>
       <div className="flex items-stretch gap-1.5">
@@ -75,13 +77,24 @@ function Picker({ options }: { options: Option[] }) {
             <path d="M6 9l6 6 6-6" />
           </svg>
         </div>
-        <a className={btn} href={o.file} download="">
-          Download
-        </a>
+        {tooBig ? (
+          <span className={`${btn} cursor-not-allowed opacity-50`} aria-disabled="true">
+            Download
+          </span>
+        ) : (
+          <a className={btn} href={o.file} download="">
+            Download
+          </a>
+        )}
       </div>
       <div className="mt-1 text-[11px] text-stone-500" aria-live="polite">
         {o.detail ? `${o.detail} · ` : ""}File size: {bytes === undefined ? "…" : bytes ? `≈ ${fmtBytes(bytes)}` : "unknown"}
       </div>
+      {tooBig && (
+        <div className="mt-1 text-[11px] font-medium text-red-600">
+          Too large: videos over {MAX_VIDEO_MB} MB can't be downloaded here. Pick a lower resolution.
+        </div>
+      )}
     </div>
   );
 }
@@ -201,6 +214,7 @@ export default function MediaDownload({ tweet }: { tweet: TweetData }) {
                       </span>
                     </div>
                     <Picker
+                      capped
                       options={(g.video.variants?.length ? g.video.variants : g.video.sources.slice(0, 1).map((url) => ({ url, height: g.video!.height, width: g.video!.width }))).map(
                         (v, i) => ({
                           key: v.url,
