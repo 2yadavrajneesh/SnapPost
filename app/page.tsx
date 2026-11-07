@@ -452,6 +452,17 @@ export default function Home() {
   const pct = Math.round(scale * 100);
   const frameW = FRAME_W * scale;
   const frameHs = frameH * scale;
+  const hideDetails = (
+    <div className="space-y-3 border-t border-stone-200 pt-3">
+      <div className="text-xs font-bold text-stone-700">Hide details</div>
+      <Toggle label="Name and handle" checked={redact.name} onChange={(v) => setRedact((r) => ({ ...r, name: v }))} />
+      <Toggle label="Profile picture" checked={redact.avatar} onChange={(v) => setRedact((r) => ({ ...r, avatar: v }))} />
+      {(tweet.photos.length > 0 || tweet.video) && (
+        <Toggle label="Photos and video (blurred)" checked={redact.media} onChange={(v) => setRedact((r) => ({ ...r, media: v }))} />
+      )}
+      <p className="text-[11px] text-stone-500">Hidden details are blurred or removed in the downloaded image too.</p>
+    </div>
+  );
   const zoomBtn =
     "flex h-9 w-9 lg:h-8 lg:w-8 items-center justify-center text-base font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-40";
   const slideNav = carousel ? (
@@ -838,20 +849,13 @@ export default function Home() {
             </button>
           </div>
 
-          {!listMode && tweet.text && (
-            <Section title="Highlight & redact">
-              <HighlightEditor text={tweet.text} highlights={highlights} onChange={setHighlights} />
-            </Section>
-          )}
-
           {!showThread && (
-            <Section title="Hide details">
-              <Toggle label="Name and handle" checked={redact.name} onChange={(v) => setRedact((r) => ({ ...r, name: v }))} />
-              <Toggle label="Profile picture" checked={redact.avatar} onChange={(v) => setRedact((r) => ({ ...r, avatar: v }))} />
-              {(tweet.photos.length > 0 || tweet.video) && (
-                <Toggle label="Photos and video (blurred)" checked={redact.media} onChange={(v) => setRedact((r) => ({ ...r, media: v }))} />
+            <Section title={!listMode && tweet.text ? "Highlight & redact" : "Redact"}>
+              {!listMode && tweet.text ? (
+                <HighlightEditor text={tweet.text} highlights={highlights} onChange={setHighlights} redactExtra={hideDetails} />
+              ) : (
+                hideDetails
               )}
-              <p className="text-[11px] text-stone-500">Hidden details are blurred or removed in the downloaded image too.</p>
             </Section>
           )}
 

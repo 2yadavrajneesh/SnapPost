@@ -22,10 +22,13 @@ export default function HighlightEditor({
   text,
   highlights,
   onChange,
+  redactExtra,
 }: {
   text: string;
   highlights: Highlight[];
   onChange: (h: Highlight[]) => void;
+  /** Shown under the text tools when Redact is selected (e.g. the Hide details switches). */
+  redactExtra?: React.ReactNode;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [sel, setSel] = useState<{ start: number; end: number } | null>(null);
@@ -150,6 +153,7 @@ export default function HighlightEditor({
           Clear all
         </button>
       </div>
+      {mode === "redact" && redactExtra}
     </div>
   );
 }
