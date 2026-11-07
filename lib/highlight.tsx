@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
-export type HighlightStyle = "marker" | "underline";
+/** marker / underline highlight text; bar / blur hide it (redaction). */
+export type HighlightStyle = "marker" | "underline" | "bar" | "blur";
 export type Highlight = { start: number; end: number; color: string; style: HighlightStyle };
 
 export const HIGHLIGHT_COLORS = [
@@ -52,7 +53,16 @@ export function segments(text: string, list: Highlight[]): Seg[] {
   return segs;
 }
 
+export const REDACT_STYLES = [
+  { label: "Black bar", style: "bar", color: "#0f1419" },
+  { label: "Gray bar", style: "bar", color: "#8b98a5" },
+  { label: "Blur", style: "blur", color: "#6b7280" },
+] as const;
+
 export function highlightStyle(h: Highlight): CSSProperties {
+  // Redacted text is painted transparent, so the real glyphs never reach the exported image.
+  if (h.style === "bar") return { backgroundColor: h.color, color: "transparent", borderRadius: "0.1em", padding: "0 0.08em", boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone", userSelect: "none" };
+  if (h.style === "blur") return { color: "transparent", textShadow: `0 0 0.7em ${h.color}, 0 0 0.7em ${h.color}, 0 0 0.7em ${h.color}`, userSelect: "none" };
   return h.style === "underline"
     ? { textDecoration: "underline", textDecorationColor: h.color, textDecorationThickness: "0.14em", textUnderlineOffset: "0.16em" }
     : { backgroundColor: h.color, color: "#0f1419", borderRadius: "0.14em", padding: "0 0.08em", boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone" };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { addHighlight, HIGHLIGHT_COLORS, removeHighlight, renderHighlighted, type Highlight, type HighlightStyle } from "@/lib/highlight";
+import { addHighlight, HIGHLIGHT_COLORS, REDACT_STYLES, removeHighlight, renderHighlighted, type Highlight, type HighlightStyle } from "@/lib/highlight";
 import { Segmented } from "./ui";
 
 /** Character offset in the text for a DOM position inside the selectable copy of the tweet text. */
@@ -30,6 +30,7 @@ export default function HighlightEditor({
   const box = useRef<HTMLDivElement>(null);
   const [sel, setSel] = useState<{ start: number; end: number } | null>(null);
   const [style, setStyle] = useState<HighlightStyle>("marker");
+  const [mode, setMode] = useState<"highlight" | "redact">("highlight");
 
   // Remember the selection as it is made: tapping a button can clear it on some phones.
   function capture() {
@@ -44,9 +45,9 @@ export default function HighlightEditor({
     setSel(end > start ? { start, end } : null);
   }
 
-  const apply = (color: string) => {
+  const apply = (color: string, as: HighlightStyle = style) => {
     if (!sel) return;
-    onChange(addHighlight(highlights, { ...sel, color, style }));
+    onChange(addHighlight(highlights, { ...sel, color, style: as }));
     setSel(null);
     window.getSelection()?.removeAllRanges();
   };
@@ -60,6 +61,14 @@ export default function HighlightEditor({
 
   return (
     <div className="space-y-3">
+      <Segmented
+        value={mode}
+        options={[
+          { value: "highlight", label: "Highlight" },
+          { value: "redact", label: "Redact" },
+        ]}
+        onChange={setMode}
+      />
       <div
         ref={box}
         onMouseUp={capture}
@@ -69,19 +78,42 @@ export default function HighlightEditor({
       >
         {renderHighlighted(text, highlights, true)}
       </div>
-      <p className="text-[11px] text-stone-500">{sel ? "Choose a colour to highlight the selected text." : "Select words above, then pick a colour."}</p>
+      <p className="text-[11px] text-stone-500">
+        {mode === "redact"
+          ? sel
+            ? "Choose how to hide the selected text."
+            : "Select the words to hide, then pick Black bar, Gray bar or Blur. A bar hides text best."
+          : sel
+            ? "Choose a colour to highlight the selected text."
+            : "Select words above, then pick a colour."}
+      </p>
 
-      <Segmented
-        value={style}
-        options={[
-          { value: "marker", label: "Marker" },
-          { value: "underline", label: "Underline" },
-        ]}
-        onChange={setStyle}
-      />
+      {mode === "highlight" && (
+        <Segmented
+          value={style === "underline" ? "underline" : "marker"}
+          options={[
+            { value: "marker", label: "Marker" },
+            { value: "underline", label: "Underline" },
+          ]}
+          onChange={setStyle}
+        />
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
-        {HIGHLIGHT_COLORS.map((c) => (
+        {mode === "redact" &&
+          REDACT_STYLES.map((r) => (
+            <button
+              key={r.label}
+              type="button"
+              disabled={!sel}
+              onMouseDown={keep}
+              onClick={() => apply(r.color, r.style)}
+              className="h-9 border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-800 transition hover:bg-stone-100 disabled:opacity-35"
+            >
+              {r.label}
+            </button>
+          ))}
+        {mode === "highlight" && HIGHLIGHT_COLORS.map((c) => (
           <button
             key={c.value}
             type="button"

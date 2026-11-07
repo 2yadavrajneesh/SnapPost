@@ -119,7 +119,7 @@ function Stats({ items, size, gap }: { items: StatItem[]; size: number; gap: num
 
 /* ---------- Avatar ---------- */
 
-function Avatar({ src, name, size }: { src: string; name: string; size: number }) {
+function Avatar({ src, name, size, blank, blankColor }: { src: string; name: string; size: number; blank?: boolean; blankColor?: string }) {
   // Try our same-origin proxy first, then the original URL, then the small "_normal" size; only then
   // fall back to the initial. The retry counter belongs to one src, so a new tweet starts fresh.
   const attempts = useMemo(() => {
@@ -130,6 +130,7 @@ function Avatar({ src, name, size }: { src: string; name: string; size: number }
   const [state, setState] = useState({ src, tried: 0 });
   const tried = state.src === src ? state.tried : 0;
   const url = attempts[tried];
+  if (blank) return <div style={{ width: size, height: size, borderRadius: "50%", flex: "none", background: blankColor ?? "#8b98a5" }} />;
   if (url) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -394,6 +395,7 @@ function Media({
   border,
   videoMaxHeight,
   onOpen,
+  blur,
 }: {
   photos: string[];
   video: VideoData | null;
@@ -403,9 +405,11 @@ function Media({
   border: string;
   videoMaxHeight: number;
   onOpen?: OpenMedia;
+  /** Redaction: blur the photos and video heavily. */
+  blur?: boolean;
 }) {
   return (
-    <>
+    <div style={blur ? { filter: "blur(26px)" } : undefined}>
       {photos.length > 0 && <Photos photos={photos} fs={fs} marginTop={marginTop} radius={radius} border={border} onOpen={onOpen} />}
       {video && (
         <VideoPlayer
@@ -418,7 +422,7 @@ function Media({
           maxHeight={videoMaxHeight}
         />
       )}
-    </>
+    </div>
   );
 }
 
@@ -681,7 +685,11 @@ type Props = {
   maxFit?: number;
   /** Highlighted ranges of the main tweet's text. */
   highlights?: Highlight[];
+  /** Hide parts of the main post: name and handle, profile picture, photos and video. */
+  redact?: Redact;
 };
+
+export type Redact = { name: boolean; avatar: boolean; media: boolean };
 
 /**
  * The exportable frame. It renders at a fixed logical width (FRAME_W) and is scaled
@@ -690,12 +698,15 @@ type Props = {
  * With a fixed output ratio the whole post re-fits to the frame (scaled up or down and re-wrapped),
  * so the text, layout and all media always stay visible and the frame is used well.
  */
+/** Text hidden behind a solid bar (the glyphs themselves are not painted). */
+const hidden = (color: string): React.CSSProperties => ({ color: "transparent", backgroundColor: color, borderRadius: "0.12em", userSelect: "none" });
+
 const MIN_FIT = 0.2;
 const MAX_FIT = 3;
 /** Share of a fixed-ratio frame's inner height that attached media may occupy. */
 const MEDIA_BUDGET = 0.55;
 
-const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, showMedia = true, showParents = true, showParentMedia = true, displayInfo = ALL_INFO, maxFit = MAX_FIT, highlights }, ref) {
+const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, showMedia = true, showParents = true, showParentMedia = true, displayInfo = ALL_INFO, maxFit = MAX_FIT, highlights, redact }, ref) {
   const t = THEMES[settings.theme];
   const fs = settings.textSize;
   const p = settings.padding / 100;
@@ -756,7 +767,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
     const ro = new ResizeObserver(run); // images and fonts finishing loading change the height
     ro.observe(el);
     return () => ro.disconnect();
-  }, [ratio, maxFit, highlights, availW, availH, fs, tweet, thread, showQuote, showMedia, showParents, showParentMedia, displayInfo, settings.font, settings.logo, minimal]);
+  }, [ratio, maxFit, highlights, redact, availW, availH, fs, tweet, thread, showQuote, showMedia, showParents, showParentMedia, displayInfo, settings.font, settings.logo, minimal]);
 
   return (
     <div
@@ -808,15 +819,17 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
 
             {/* Header */}
             <div style={{ display: "flex", alignItems: "center", gap: Math.round(fs * 0.4) }}>
-              <Avatar src={tweet.avatar} name={tweet.name || tweet.username} size={Math.round(fs * 1.5)} />
+              <Avatar src={tweet.avatar} name={tweet.name || tweet.username} size={Math.round(fs * 1.5)} blank={redact?.avatar} blankColor={t.border} />
               <div style={{ minWidth: 0, flex: 1, lineHeight: 1.25 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: Math.round(fs * 0.2) }}>
-                  <span style={{ fontSize: nameSize, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <span style={{ fontSize: nameSize, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...(redact?.name ? hidden(t.border === "#2f3336" ? "#536471" : "#8b98a5") : null) }}>
                     {tweet.name || "Display name"}
                   </span>
                   {tweet.verified && <Badge size={Math.round(nameSize * 1.05)} kind={tweet.verifiedType} />}
                 </div>
-                <div style={{ fontSize: nameSize, color: t.muted }}>@{tweet.username || "username"}</div>
+                <div style={{ fontSize: nameSize, color: t.muted }}>
+                  <span style={redact?.name ? hidden(t.border === "#2f3336" ? "#536471" : "#8b98a5") : undefined}>@{tweet.username || "username"}</span>
+                </div>
               </div>
               <Logo kind={settings.logo} size={Math.round(fs * 1.05)} color={t.text} />
             </div>
@@ -837,6 +850,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
 
             {/* Media */}
             {showMedia && (
+              <div style={redact?.media ? { overflow: "hidden", borderRadius: Math.round(radius * 0.55), pointerEvents: "none" } : undefined}>
               <Media
                 photos={tweet.photos}
                 video={tweet.video}
@@ -846,7 +860,9 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
                 border={`1px solid ${t.border}`}
                 videoMaxHeight={Math.round(fs * 14)}
                 onOpen={onOpenMedia}
+                blur={redact?.media}
               />
+              </div>
             )}
 
             {/* Quoted post */}

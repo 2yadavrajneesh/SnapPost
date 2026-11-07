@@ -8,7 +8,7 @@ import HighlightEditor from "@/components/HighlightEditor";
 import MediaDownload from "@/components/MediaDownload";
 import type { Highlight } from "@/lib/highlight";
 import RatioTiles from "@/components/RatioTiles";
-import TweetCard, { ALL_INFO, type DisplayInfo } from "@/components/TweetCard";
+import TweetCard, { ALL_INFO, type DisplayInfo, type Redact } from "@/components/TweetCard";
 import { Check, Label, Section, Segmented, Slider, TextField, Toggle } from "@/components/ui";
 import { formatDate, formatTime } from "@/lib/format";
 import { copyPngToClipboard, downloadBlob, downloadUrl, renderPdf, renderPdfPages, renderPng, renderVideo, zipFiles } from "@/lib/export";
@@ -84,6 +84,8 @@ export default function Home() {
   const [shot, setShot] = useState<ShotMode>("single");
   const [slide, setSlide] = useState(0); // current carousel slide
   const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const NO_REDACT: Redact = { name: false, avatar: false, media: false };
+  const [redact, setRedact] = useState<Redact>(NO_REDACT);
 
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
@@ -216,6 +218,7 @@ export default function Home() {
       if (!res.ok) throw new Error(j.error || "Couldn't fetch that tweet.");
       setTweet(toTweet(j));
       setHighlights([]);
+      setRedact({ name: false, avatar: false, media: false });
       setHasTweet(true);
       setShowMedia(true);
       setShowParents(true);
@@ -385,6 +388,7 @@ export default function Home() {
     setLink("");
     setTweet(DEFAULT_TWEET);
     setHighlights([]);
+    setRedact({ name: false, avatar: false, media: false });
     setHasTweet(false);
     setFetching(false);
     setFetchError(null);
@@ -811,8 +815,19 @@ export default function Home() {
           </div>
 
           {!listMode && tweet.text && (
-            <Section title="Text highlights">
+            <Section title="Highlight & redact">
               <HighlightEditor text={tweet.text} highlights={highlights} onChange={setHighlights} />
+            </Section>
+          )}
+
+          {!showThread && (
+            <Section title="Hide details">
+              <Toggle label="Name and handle" checked={redact.name} onChange={(v) => setRedact((r) => ({ ...r, name: v }))} />
+              <Toggle label="Profile picture" checked={redact.avatar} onChange={(v) => setRedact((r) => ({ ...r, avatar: v }))} />
+              {(tweet.photos.length > 0 || tweet.video) && (
+                <Toggle label="Photos and video (blurred)" checked={redact.media} onChange={(v) => setRedact((r) => ({ ...r, media: v }))} />
+              )}
+              <p className="text-[11px] text-stone-500">Hidden details are blurred or removed in the downloaded image too.</p>
             </Section>
           )}
 
@@ -860,6 +875,7 @@ export default function Home() {
                         settings={showThread ? { ...settings, ratio: "auto" } : settings}
                         maxFit={carousel ? 1 : undefined}
                         highlights={listMode ? undefined : highlights}
+                        redact={showThread ? undefined : redact}
                         thread={showThread ? thread : null}
                         showQuote={showQuote}
                         showMedia={showMedia}
