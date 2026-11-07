@@ -776,8 +776,9 @@ export default function Home() {
           </div>
 
           <Section title="Output ratio">
-            <RatioTiles value={settings.ratio} onChange={(v) => set("ratio", v)} />
-            {settings.ratio !== "auto" && (
+            <RatioTiles value={showThread ? "auto" : settings.ratio} onChange={(v) => set("ratio", v)} disabled={showThread} />
+            {showThread && <p className="text-[11px] text-stone-500">A full thread always uses Auto size. Switch to Carousel to pick a ratio.</p>}
+            {!showThread && settings.ratio !== "auto" && (
               <p className="text-[11px] text-stone-500">The full post stays visible; content scales to fit. Click the selected tile again for Auto.</p>
             )}
           </Section>
@@ -810,7 +811,8 @@ export default function Home() {
                       <TweetCard
                         ref={frameRef}
                         tweet={cardTweet}
-                        settings={settings}
+                        settings={showThread ? { ...settings, ratio: "auto" } : settings}
+                        maxFit={carousel ? 1 : undefined}
                         thread={showThread ? thread : null}
                         showQuote={showQuote}
                         showMedia={showMedia}

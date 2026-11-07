@@ -14,9 +14,9 @@ const TILES: Tile[] = [
 ];
 
 /** Output ratio picker: six tiles with a small outline of each shape. Clicking the active tile goes back to Auto. */
-export default function RatioTiles({ value, onChange }: { value: RatioKey; onChange: (v: RatioKey) => void }) {
+export default function RatioTiles({ value, onChange, disabled = false }: { value: RatioKey; onChange: (v: RatioKey) => void; disabled?: boolean }) {
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className={`grid grid-cols-3 gap-2 ${disabled ? "pointer-events-none opacity-45" : ""}`} aria-disabled={disabled}>
       {TILES.map((t) => {
         const on = value === t.key;
         return (
@@ -24,6 +24,7 @@ export default function RatioTiles({ value, onChange }: { value: RatioKey; onCha
             key={t.key}
             type="button"
             aria-pressed={on}
+            disabled={disabled}
             onClick={() => onChange(on ? "auto" : t.key)}
             className={`flex min-h-[64px] flex-col items-center justify-center gap-1.5 border px-2 py-2.5 text-xs font-semibold transition ${
               on ? "border-[#1b2420] bg-[#1b2420] text-white" : "border-stone-200 bg-[#f7f3ee] text-stone-600 hover:bg-stone-100"

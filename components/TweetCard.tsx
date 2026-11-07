@@ -676,6 +676,8 @@ type Props = {
   showParents?: boolean;
   showParentMedia?: boolean;
   displayInfo?: DisplayInfo;
+  /** Largest scale a fixed-ratio frame may enlarge the content to (1 keeps short posts at natural size). */
+  maxFit?: number;
 };
 
 /**
@@ -690,7 +692,7 @@ const MAX_FIT = 3;
 /** Share of a fixed-ratio frame's inner height that attached media may occupy. */
 const MEDIA_BUDGET = 0.55;
 
-const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, showMedia = true, showParents = true, showParentMedia = true, displayInfo = ALL_INFO }, ref) {
+const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, showMedia = true, showParents = true, showParentMedia = true, displayInfo = ALL_INFO, maxFit = MAX_FIT }, ref) {
   const t = THEMES[settings.theme];
   const fs = settings.textSize;
   const p = settings.padding / 100;
@@ -733,7 +735,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
     };
     const run = () => {
       let lo = MIN_FIT;
-      let hi = MAX_FIT;
+      let hi = maxFit;
       if (apply(lo) > availH) {
         apply(lo);
         setFit((prev) => (prev !== null && Math.abs(prev - lo) < 0.002 ? prev : lo));
@@ -751,7 +753,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
     const ro = new ResizeObserver(run); // images and fonts finishing loading change the height
     ro.observe(el);
     return () => ro.disconnect();
-  }, [ratio, availW, availH, fs, tweet, thread, showQuote, showMedia, showParents, showParentMedia, displayInfo, settings.font, settings.logo, minimal]);
+  }, [ratio, maxFit, availW, availH, fs, tweet, thread, showQuote, showMedia, showParents, showParentMedia, displayInfo, settings.font, settings.logo, minimal]);
 
   return (
     <div
