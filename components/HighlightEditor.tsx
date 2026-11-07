@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { addHighlight, HIGHLIGHT_COLORS, REDACT_STYLES, removeHighlight, renderHighlighted, type Highlight, type HighlightStyle } from "@/lib/highlight";
 import { Segmented } from "./ui";
 
@@ -32,18 +32,23 @@ export default function HighlightEditor({
   const [style, setStyle] = useState<HighlightStyle>("marker");
   const [mode, setMode] = useState<"highlight" | "redact">("highlight");
 
-  // Remember the selection as it is made: tapping a button can clear it on some phones.
-  function capture() {
-    const root = box.current;
-    const s = window.getSelection();
-    if (!root || !s || s.rangeCount === 0 || s.isCollapsed) return;
-    const r = s.getRangeAt(0);
-    if (!root.contains(r.startContainer) || !root.contains(r.endContainer)) return;
-    const a = offsetOf(root, r.startContainer, r.startOffset);
-    const b = offsetOf(root, r.endContainer, r.endOffset);
-    const [start, end] = a <= b ? [a, b] : [b, a];
-    setSel(end > start ? { start, end } : null);
-  }
+  // Track the selection the moment it changes (mouse, touch handles or keyboard). It is only ever
+  // replaced by a new valid selection, because tapping a button can collapse it on some phones.
+  useEffect(() => {
+    const onChange = () => {
+      const root = box.current;
+      const s = window.getSelection();
+      if (!root || !s || s.rangeCount === 0 || s.isCollapsed) return;
+      const r = s.getRangeAt(0);
+      if (!root.contains(r.startContainer) || !root.contains(r.endContainer)) return;
+      const a = offsetOf(root, r.startContainer, r.startOffset);
+      const b = offsetOf(root, r.endContainer, r.endOffset);
+      const [start, end] = a <= b ? [a, b] : [b, a];
+      setSel((cur) => (end <= start ? cur : cur && cur.start === start && cur.end === end ? cur : { start, end }));
+    };
+    document.addEventListener("selectionchange", onChange);
+    return () => document.removeEventListener("selectionchange", onChange);
+  }, []);
 
   const apply = (color: string, as: HighlightStyle = style) => {
     if (!sel) return;
@@ -71,9 +76,7 @@ export default function HighlightEditor({
       />
       <div
         ref={box}
-        onMouseUp={capture}
-        onTouchEnd={() => setTimeout(capture, 50)}
-        onKeyUp={capture}
+        onPointerDown={() => setSel(null)}
         className="max-h-44 select-text overflow-auto whitespace-pre-wrap break-words border border-stone-200 bg-white px-3 py-2 text-sm leading-relaxed text-stone-800"
       >
         {renderHighlighted(text, highlights, true)}

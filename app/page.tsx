@@ -29,7 +29,7 @@ import {
 type Format = "png" | "pdf" | "mp4";
 type ThreadState = "idle" | "checking" | "found" | "none";
 
-const MIN_ZOOM = 0.1;
+const MIN_ZOOM = 0.04;
 const MAX_ZOOM = 3;
 const ZOOM_STEP = 1.25;
 const PAD_X = 44; // breathing room around the card inside the viewer (room for the viewfinder brackets)
@@ -185,12 +185,12 @@ export default function Home() {
   const widthFit = Math.min(1, (stageW - padX * 2) / FRAME_W);
   const availH = isDesktop
     ? stageH
-    : Math.max(210, Math.min(Math.round(viewportH * 0.72), Math.ceil(frameH * widthFit + padY * 2)));
-  // Desktop fits the whole post in the viewer. Phones fit the width so text stays readable; a tall
-  // post (a thread, say) then scrolls inside the viewer.
+    : Math.max(210, Math.min(Math.round(viewportH * (showThread ? 0.8 : 0.72)), Math.ceil(frameH * widthFit + padY * 2)));
+  // Desktop and full threads fit the whole post in the viewer (zoom in to read). Phones fit other posts
+  // to the width so text stays readable, and a tall one scrolls inside the viewer.
   const fitScale = Math.max(
     MIN_ZOOM,
-    isDesktop ? Math.min(widthFit, (availH - padY * 2) / frameH) : widthFit,
+    isDesktop || showThread ? Math.min(widthFit, (availH - padY * 2) / frameH) : widthFit,
   );
   const scale = zoom ?? fitScale;
   const zoomIn = () => setZoom(Math.min(MAX_ZOOM, scale * ZOOM_STEP));
@@ -874,11 +874,6 @@ export default function Home() {
 
         {/* Viewer */}
         <div id="canvas" className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">
-          {/* Phones and tablets: slide and zoom controls sit above the viewer so they are always in view */}
-          <div className="flex items-center justify-between gap-2 border-b border-stone-300 px-3 py-2 lg:hidden">
-            {carousel ? slideNav : <span />}
-            {zoomPill}
-          </div>
           <div
             className="snap-stage relative flex flex-1 overflow-hidden lg:min-h-0"
             style={isDesktop ? undefined : { height: availH, flex: "none" }}
@@ -944,6 +939,12 @@ export default function Home() {
 
             {/* Desktop: floating zoom pill */}
             <div className="absolute bottom-4 left-1/2 z-[2] hidden -translate-x-1/2 lg:block">{zoomPill}</div>
+          </div>
+
+          {/* Phones and tablets: slide and zoom controls sit right under the viewer */}
+          <div className="flex items-center justify-between gap-2 border-b border-stone-300 px-3 py-2 lg:hidden">
+            {carousel ? slideNav : <span />}
+            {zoomPill}
           </div>
         </div>
       </main>
