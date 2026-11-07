@@ -4,7 +4,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { flushSync } from "react-dom";
 import AppearanceTiles from "@/components/AppearanceTiles";
 import Lightbox from "@/components/Lightbox";
+import HighlightEditor from "@/components/HighlightEditor";
 import MediaDownload from "@/components/MediaDownload";
+import type { Highlight } from "@/lib/highlight";
 import RatioTiles from "@/components/RatioTiles";
 import TweetCard, { ALL_INFO, type DisplayInfo } from "@/components/TweetCard";
 import { Check, Label, Section, Segmented, Slider, TextField, Toggle } from "@/components/ui";
@@ -81,6 +83,7 @@ export default function Home() {
   const [threadState, setThreadState] = useState<ThreadState>("idle");
   const [shot, setShot] = useState<ShotMode>("single");
   const [slide, setSlide] = useState(0); // current carousel slide
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
 
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
@@ -212,6 +215,7 @@ export default function Home() {
       if (id !== reqId.current) return; // a newer fetch has started
       if (!res.ok) throw new Error(j.error || "Couldn't fetch that tweet.");
       setTweet(toTweet(j));
+      setHighlights([]);
       setHasTweet(true);
       setShowMedia(true);
       setShowParents(true);
@@ -380,6 +384,7 @@ export default function Home() {
     lastFetched.current = "";
     setLink("");
     setTweet(DEFAULT_TWEET);
+    setHighlights([]);
     setHasTweet(false);
     setFetching(false);
     setFetchError(null);
@@ -677,7 +682,10 @@ export default function Home() {
                   <Label>Tweet text</Label>
                   <textarea
                     value={tweet.text}
-                    onChange={(e) => setT("text", e.target.value)}
+                    onChange={(e) => {
+                      setT("text", e.target.value);
+                      setHighlights([]); // ranges no longer match the edited text
+                    }}
                     rows={4}
                     className="w-full resize-y border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-200"
                   />
@@ -802,6 +810,12 @@ export default function Home() {
             </button>
           </div>
 
+          {!listMode && tweet.text && (
+            <Section title="Text highlights">
+              <HighlightEditor text={tweet.text} highlights={highlights} onChange={setHighlights} />
+            </Section>
+          )}
+
           <Section title="Output ratio">
             <RatioTiles value={showThread ? "auto" : settings.ratio} onChange={(v) => set("ratio", v)} disabled={showThread} />
             {showThread && <p className="text-[11px] text-stone-500">A full thread always uses Auto size. Switch to Carousel to pick a ratio.</p>}
@@ -845,6 +859,7 @@ export default function Home() {
                         tweet={cardTweet}
                         settings={showThread ? { ...settings, ratio: "auto" } : settings}
                         maxFit={carousel ? 1 : undefined}
+                        highlights={listMode ? undefined : highlights}
                         thread={showThread ? thread : null}
                         showQuote={showQuote}
                         showMedia={showMedia}

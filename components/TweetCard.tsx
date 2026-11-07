@@ -2,6 +2,7 @@
 
 import { forwardRef, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { compact, formatDate, formatTime, proxied, relativeTime, videoSrc } from "@/lib/format";
+import { renderHighlighted, type Highlight } from "@/lib/highlight";
 import { FRAME_W, RATIOS, type PostData, type Settings, type TweetData, type VerifiedType, type VideoData } from "@/lib/types";
 
 const FONTS: Record<Settings["font"], string> = {
@@ -678,6 +679,8 @@ type Props = {
   displayInfo?: DisplayInfo;
   /** Largest scale a fixed-ratio frame may enlarge the content to (1 keeps short posts at natural size). */
   maxFit?: number;
+  /** Highlighted ranges of the main tweet's text. */
+  highlights?: Highlight[];
 };
 
 /**
@@ -692,7 +695,7 @@ const MAX_FIT = 3;
 /** Share of a fixed-ratio frame's inner height that attached media may occupy. */
 const MEDIA_BUDGET = 0.55;
 
-const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, showMedia = true, showParents = true, showParentMedia = true, displayInfo = ALL_INFO, maxFit = MAX_FIT }, ref) {
+const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, showMedia = true, showParents = true, showParentMedia = true, displayInfo = ALL_INFO, maxFit = MAX_FIT, highlights }, ref) {
   const t = THEMES[settings.theme];
   const fs = settings.textSize;
   const p = settings.padding / 100;
@@ -753,7 +756,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
     const ro = new ResizeObserver(run); // images and fonts finishing loading change the height
     ro.observe(el);
     return () => ro.disconnect();
-  }, [ratio, maxFit, availW, availH, fs, tweet, thread, showQuote, showMedia, showParents, showParentMedia, displayInfo, settings.font, settings.logo, minimal]);
+  }, [ratio, maxFit, highlights, availW, availH, fs, tweet, thread, showQuote, showMedia, showParents, showParentMedia, displayInfo, settings.font, settings.logo, minimal]);
 
   return (
     <div
@@ -829,7 +832,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
 
             {/* Text */}
             <div style={{ marginTop: isReply ? Math.round(gap * 0.5) : gap, fontSize: fs, lineHeight: 1.35, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-              {tweet.text || "Tweet text"}
+              {tweet.text ? renderHighlighted(tweet.text, highlights) : "Tweet text"}
             </div>
 
             {/* Media */}
