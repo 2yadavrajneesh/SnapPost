@@ -380,6 +380,67 @@ export default function Home() {
     }
   }
 
+  type ShareTarget = "native" | "x" | "whatsapp" | "linkedin";
+  const [canNativeShare, setCanNativeShare] = useState(false);
+  useEffect(() => {
+    try {
+      const f = new File([new Blob(["x"], { type: "image/png" })], "x.png", { type: "image/png" });
+      setCanNativeShare(typeof navigator.share === "function" && !!navigator.canShare?.({ files: [f] }));
+    } catch {
+      setCanNativeShare(false);
+    }
+  }, []);
+
+  /**
+   * Shares the image. Web pages can't attach a picture to X, WhatsApp or LinkedIn, so those buttons put
+   * the image on the clipboard and open the app's compose page to paste it into. "Share…" uses the
+   * phone's own share sheet, which does attach the picture.
+   */
+  async function shareImage(target: ShareTarget) {
+    const node = frameRef.current;
+    if (!node || !hasTweet) return;
+    setExportError(null);
+    const parsed = parseTweetUrl(link.trim());
+    const source = parsed ? `https://x.com/${parsed.username}/status/${parsed.id}` : "";
+    const say = (m: string) => {
+      setToast(m);
+      setTimeout(() => setToast(null), 3600);
+    };
+    // Open the tab now, while the click still counts, and point it at the app once the image is ready.
+    const tab = target === "native" ? null : window.open("", "_blank");
+    try {
+      if (target === "native") {
+        const png = await renderPng(node);
+        const blob = await (await fetch(png.dataUrl)).blob();
+        const file = new File([blob], `snappost-${tweet.username || "post"}.png`, { type: "image/png" });
+        await navigator.share({ files: [file], text: source || undefined });
+        return;
+      }
+      let copied = true;
+      try {
+        await copyPngToClipboard(node);
+      } catch {
+        copied = false;
+        const png = await renderPng(node);
+        downloadUrl(png.dataUrl, `snappost-${tweet.username || "post"}.png`);
+      }
+      const enc = encodeURIComponent(source);
+      const url =
+        target === "x"
+          ? `https://x.com/intent/post${source ? `?url=${enc}` : ""}`
+          : target === "whatsapp"
+            ? `https://wa.me/${source ? `?text=${enc}` : ""}`
+            : `https://www.linkedin.com/feed/?shareActive=true${source ? `&text=${enc}` : ""}`;
+      if (tab) tab.location.href = url;
+      else window.location.href = url;
+      say(copied ? "Image copied. Paste it into your post (Ctrl/Cmd + V)" : "Image downloaded. Attach it to your post");
+    } catch (e) {
+      tab?.close();
+      if (e instanceof DOMException && e.name === "AbortError") return; // closed the share sheet
+      setExportError(e instanceof Error ? e.message : "Couldn't share the image.");
+    }
+  }
+
   // Ctrl/Cmd + Shift + C copies the image from anywhere on the page.
   const copyRef = useRef(copyImage);
   copyRef.current = copyImage;
@@ -492,6 +553,8 @@ export default function Home() {
     onChange={setFormat}
   />
   );
+  const shareBtn =
+    "flex h-11 items-center justify-center border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50";
   const copyButton = (iconOnly = false) => (
   <button
     type="button"
@@ -842,6 +905,32 @@ export default function Home() {
               <HighlightEditor text={tweet.text} highlights={highlights} onChange={setHighlights} />
             </Section>
           )}
+
+          <Section title="Share">
+            <div className="grid grid-cols-2 gap-2">
+              {canNativeShare && (
+                <button type="button" disabled={!hasTweet || exporting} onClick={() => void shareImage("native")} className={`${shareBtn} col-span-2 bg-[#1b2420] text-white hover:bg-[#2a3530]`}>
+                  Share…
+                </button>
+              )}
+              <button type="button" disabled={!hasTweet || exporting} onClick={() => void shareImage("x")} className={shareBtn}>
+                X
+              </button>
+              <button type="button" disabled={!hasTweet || exporting} onClick={() => void shareImage("whatsapp")} className={shareBtn}>
+                WhatsApp
+              </button>
+              <button type="button" disabled={!hasTweet || exporting} onClick={() => void shareImage("linkedin")} className={`${shareBtn} col-span-2`}>
+                LinkedIn
+              </button>
+            </div>
+            <p className="text-[11px] text-stone-500">
+              {hasTweet
+                ? canNativeShare
+                  ? "Share… attaches the image. X, WhatsApp and LinkedIn copy it for you to paste into the post."
+                  : "The image is copied, then the app opens. Paste it into your post."
+                : "Fetch a tweet to share it."}
+            </p>
+          </Section>
 
           {!showThread && (
             <Section title="Hide details">
