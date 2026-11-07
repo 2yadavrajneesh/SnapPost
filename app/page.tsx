@@ -186,11 +186,12 @@ export default function Home() {
   const availH = isDesktop
     ? stageH
     : Math.max(210, Math.min(Math.round(viewportH * (showThread ? 0.8 : 0.72)), Math.ceil(frameH * widthFit + padY * 2)));
-  // Desktop and full threads fit the whole post in the viewer (zoom in to read). Phones fit other posts
-  // to the width so text stays readable, and a tall one scrolls inside the viewer.
+  // Desktop fits a whole post in the viewer. Phones, and full threads, fit the width so text stays
+  // readable, and a tall post scrolls inside the viewer.
   const fitScale = Math.max(
     MIN_ZOOM,
-    isDesktop || showThread ? Math.min(widthFit, (availH - padY * 2) / frameH) : widthFit,
+    // A thread is long: fit its width so it stays readable and scroll down; + / − then enlarge or shrink it.
+    isDesktop && !showThread ? Math.min(widthFit, (availH - padY * 2) / frameH) : widthFit,
   );
   const scale = zoom ?? fitScale;
   const zoomIn = () => setZoom(Math.min(MAX_ZOOM, scale * ZOOM_STEP));
