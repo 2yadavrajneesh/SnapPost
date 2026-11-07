@@ -367,9 +367,32 @@ export default function Home() {
       setTimeout(() => setToast(null), 2400);
     } catch (e) {
       setCopyState("idle");
-      setExportError(e instanceof Error ? e.message : "Couldn't copy the image. Try Download instead.");
+      // The browser won't put images on the clipboard (or blocked it): save the PNG instead so the
+      // click still gives the person their image.
+      try {
+        const png = await renderPng(node);
+        downloadUrl(png.dataUrl, `snappost-${tweet.username || "post"}.png`);
+        setToast("Couldn't copy here, so the image was downloaded");
+        setTimeout(() => setToast(null), 3200);
+      } catch {
+        setExportError(e instanceof Error ? e.message : "Couldn't copy the image. Try Download instead.");
+      }
     }
   }
+
+  // Ctrl/Cmd + Shift + C copies the image from anywhere on the page.
+  const copyRef = useRef(copyImage);
+  copyRef.current = copyImage;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        void copyRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   function resetAll() {
     setSettings(DEFAULT_SETTINGS);
@@ -474,7 +497,7 @@ export default function Home() {
     type="button"
     onClick={copyImage}
     disabled={!hasTweet || exporting || copyState === "working"}
-    title={hasTweet ? undefined : "Paste a tweet link first"}
+    title={hasTweet ? "Copy image (Ctrl/Cmd + Shift + C)" : "Paste a tweet link first"}
     aria-label="Copy image"
     className={`whitespace-nowrap border border-stone-300 bg-white text-sm font-semibold text-stone-800 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60 ${
       iconOnly ? "flex h-12 w-12 flex-none items-center justify-center" : "px-4 py-2"
