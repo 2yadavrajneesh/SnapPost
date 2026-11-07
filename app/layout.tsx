@@ -25,6 +25,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#faf6f1",
+  // The site draws both of its themes itself, so tell browsers not to force their own dark mode on it
+  // (that is what turned the light theme grey on some phones).
+  colorScheme: "light dark",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -64,6 +64,7 @@ body {
 .snap-bracket-br { bottom: -12px; right: -12px; border-bottom-width: 2px; border-right-width: 2px; }
 
 /* ---------- Website dark theme (the tweet image has its own Light/Dark in Appearance) ---------- */
+html { color-scheme: light; }
 html[data-theme="dark"] { color-scheme: dark; }
 html[data-theme="dark"],
 html[data-theme="dark"] body { background: #14110f; color: #efe9e0; }
