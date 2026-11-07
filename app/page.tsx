@@ -173,7 +173,7 @@ export default function Home() {
 
   // On desktop the preview fills the space under the navbar; on phones it sizes to the post.
   const padTop = isDesktop ? PAD_Y : PAD_Y_MOBILE;
-  const padBottom = isDesktop ? PAD_Y : PAD_Y_MOBILE + 16; // room for the zoom pill under the post
+  const padBottom = isDesktop ? PAD_Y : PAD_Y_MOBILE;
   const padY = (padTop + padBottom) / 2;
   // Phones: the viewer grows with the post (width-fit), from a short box for a one-liner up to most of the screen.
   const padX = isDesktop ? PAD_X : 20;
@@ -420,7 +420,34 @@ export default function Home() {
   const frameW = FRAME_W * scale;
   const frameHs = frameH * scale;
   const zoomBtn =
-    "flex h-8 w-8 items-center justify-center text-base font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-40";
+    "flex h-9 w-9 lg:h-8 lg:w-8 items-center justify-center text-base font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-40";
+  const slideNav = carousel ? (
+    <div className="flex items-center border border-stone-300 bg-white/95 text-xs font-semibold text-stone-800 shadow-sm">
+      <button type="button" aria-label="Previous slide" disabled={slideAt === 0} onClick={() => setSlide(slideAt - 1)} className="h-9 w-9 text-base hover:bg-stone-100 disabled:opacity-40 lg:h-8 lg:w-8">
+        ‹
+      </button>
+      <span className="min-w-[64px] px-1 text-center tabular-nums" aria-live="polite">
+        {slideAt + 1} / {slideCount}
+      </span>
+      <button type="button" aria-label="Next slide" disabled={slideAt >= slideCount - 1} onClick={() => setSlide(slideAt + 1)} className="h-9 w-9 text-base hover:bg-stone-100 disabled:opacity-40 lg:h-8 lg:w-8">
+        ›
+      </button>
+    </div>
+  ) : null;
+  const zoomPill = (
+    <div className="flex items-center gap-1 border border-stone-300 bg-white/95 px-1 py-0.5 text-xs">
+      <button type="button" onClick={zoomOut} disabled={scale <= MIN_ZOOM + 0.001} aria-label="Zoom out" className={zoomBtn}>
+        −
+      </button>
+      <button type="button" onClick={() => setZoom(null)} title="Reset to fit" aria-live="polite" className="w-12 py-1.5 text-center font-semibold tabular-nums text-stone-700 hover:bg-stone-100">
+        {pct}%
+      </button>
+      <button type="button" onClick={zoomIn} disabled={scale >= MAX_ZOOM - 0.001} aria-label="Zoom in" className={zoomBtn}>
+        +
+      </button>
+    </div>
+  );
+
 
   const formatPicker = (
   <Segmented
@@ -795,6 +822,11 @@ export default function Home() {
 
         {/* Viewer */}
         <div id="canvas" className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">
+          {/* Phones and tablets: slide and zoom controls sit above the viewer so they are always in view */}
+          <div className="flex items-center justify-between gap-2 border-b border-stone-300 px-3 py-2 lg:hidden">
+            {carousel ? slideNav : <span />}
+            {zoomPill}
+          </div>
           <div
             className="snap-stage relative flex flex-1 overflow-hidden lg:min-h-0"
             style={isDesktop ? undefined : { height: availH, flex: "none" }}
@@ -845,22 +877,10 @@ export default function Home() {
             {/* Output size + hints */}
             <div className="pointer-events-none absolute right-3 top-3 z-[2] max-w-[50%] text-right text-[11px] tabular-nums text-stone-500">
               {outW} × {outH} px
-              {hasPhotos && showMedia && <span className="block font-sans">Click an image to enlarge</span>}
+              {hasPhotos && showMedia && <span className="hidden font-sans sm:block">Click an image to enlarge</span>}
             </div>
 
-            {carousel && (
-              <div className="absolute bottom-3 left-3 z-[3] flex items-center border border-stone-300 bg-white/95 text-xs font-semibold text-stone-800 shadow-sm backdrop-blur lg:bottom-4">
-                <button type="button" aria-label="Previous slide" disabled={slideAt === 0} onClick={() => setSlide(slideAt - 1)} className="px-2.5 py-2 hover:bg-stone-100 disabled:opacity-40">
-                  ‹
-                </button>
-                <span className="min-w-[64px] px-1 text-center tabular-nums" aria-live="polite">
-                  {slideAt + 1} / {slideCount}
-                </span>
-                <button type="button" aria-label="Next slide" disabled={slideAt >= slideCount - 1} onClick={() => setSlide(slideAt + 1)} className="px-2.5 py-2 hover:bg-stone-100 disabled:opacity-40">
-                  ›
-                </button>
-              </div>
-            )}
+            {carousel && <div className="absolute bottom-4 left-3 z-[3] hidden lg:block">{slideNav}</div>}
 
             {exportError && (
               <p role="alert" className="absolute left-1/2 top-14 z-[3] max-w-[90%] -translate-x-1/2 bg-red-50 px-3 py-2 text-xs text-red-700 shadow">
@@ -868,24 +888,8 @@ export default function Home() {
               </p>
             )}
 
-            {/* Floating zoom pill */}
-            <div className="absolute bottom-4 left-1/2 z-[2] flex -translate-x-1/2 items-center gap-1 border border-stone-200 bg-white/95 px-1.5 py-1 text-xs backdrop-blur">
-              <button type="button" onClick={zoomOut} disabled={scale <= MIN_ZOOM + 0.001} aria-label="Zoom out" className={zoomBtn}>
-                −
-              </button>
-              <button
-                type="button"
-                onClick={() => setZoom(null)}
-                title="Reset to fit"
-                aria-live="polite"
-                className="w-12 py-1 text-center font-semibold tabular-nums text-stone-700 hover:bg-stone-100"
-              >
-                {pct}%
-              </button>
-              <button type="button" onClick={zoomIn} disabled={scale >= MAX_ZOOM - 0.001} aria-label="Zoom in" className={zoomBtn}>
-                +
-              </button>
-            </div>
+            {/* Desktop: floating zoom pill */}
+            <div className="absolute bottom-4 left-1/2 z-[2] hidden -translate-x-1/2 lg:block">{zoomPill}</div>
           </div>
         </div>
       </main>
