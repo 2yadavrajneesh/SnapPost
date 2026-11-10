@@ -3,10 +3,10 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { compact, formatDate, formatTime, proxied } from "@/lib/format";
 import { renderHighlighted, type Highlight } from "@/lib/highlight";
-import { PAGE_SIZES, rgba, type NumPos, type Orientation, type PageLabel, type PageSizeId, type PaperTheme } from "@/lib/paper";
+import { PAGE_SIZES, formatPageNumber, rgba, type NumFormat, type NumPos, type Orientation, type PageLabel, type PageSizeId, type PaperTheme } from "@/lib/paper";
 import type { PostData } from "@/lib/types";
 
-export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; label: PageLabel | null; hl: Record<number, Highlight[]>; redact: Redact };
+export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; numFormat: NumFormat; label: PageLabel | null; hl: Record<number, Highlight[]>; redact: Redact };
 
 export type Redact = { name: boolean; avatar: boolean; media: boolean };
 export const NO_REDACT: Redact = { name: false, avatar: false, media: false };
@@ -23,7 +23,7 @@ export function pagePx(size: PageSizeId, orientation: Orientation) {
   return { w: Math.round(w * MM), h: Math.round(h * MM), margin: Math.round(Math.max(8, Math.min(14, w * 0.06)) * MM), footer: 30 };
 }
 
-export function AuthorHeader({ posts, theme, redact }: { posts: PostData[]; theme: PaperTheme; redact: Redact }) {
+export function AuthorHeader({ posts, theme, redact, showCount = true }: { posts: PostData[]; theme: PaperTheme; redact: Redact; showCount?: boolean }) {
   const a = posts[0];
   return (
     <header className="flex items-center gap-3 pb-4" style={{ borderBottom: `1px solid ${theme.line}`, marginBottom: 16 }}>
@@ -36,8 +36,8 @@ export function AuthorHeader({ posts, theme, redact }: { posts: PostData[]; them
       <div className="min-w-0">
         <div className="truncate text-sm font-bold">{redact.name ? bar(120, 13) : a.name}</div>
         <div className="mt-0.5 truncate text-xs" style={{ color: theme.muted }}>
-          {redact.name ? bar(80, 10) : handle(a)} · {posts.length} post{posts.length === 1 ? "" : "s"}
-          {a.timestamp ? ` · ${formatDate(a.timestamp)}` : ""}
+          {redact.name ? bar(80, 10) : handle(a)}
+          {showCount ? ` · ${posts.length} post${posts.length === 1 ? "" : "s"}` : ""}
         </div>
       </div>
     </header>
@@ -90,7 +90,7 @@ export function PostBody({ p, i, n, theme, o }: { p: PostData; i: number; n: num
         </div>
       )}
       <div className="mt-2 flex flex-wrap gap-x-4 text-[11px]" style={{ color: theme.muted }}>
-        {p.timestamp && <span>{formatTime(p.timestamp)}</span>}
+        {p.timestamp && <span>{formatDate(p.timestamp)} · {formatTime(p.timestamp)}</span>}
         {o.stats && (
           <>
             <span>{compact(p.likes)} likes</span>
@@ -146,17 +146,26 @@ function PageNumber({ text, pos, w, h, margin, theme }: { text: string; pos: Num
   if (pos === "none") return null;
   const base = { position: "absolute", color: theme.muted, fontSize: 11, lineHeight: 1, whiteSpace: "nowrap" } as const;
   const side = margin * 0.45;
+  const wide = { left: 0, width: w } as const;
   const style =
     pos === "top"
-      ? { ...base, top: side, left: 0, width: w, textAlign: "center" as const }
+      ? { ...base, top: side, ...wide, textAlign: "center" as const }
       : pos === "bottom"
-        ? { ...base, bottom: side, left: 0, width: w, textAlign: "center" as const }
-        : pos === "left"
-          ? { ...base, left: side, top: h / 2, transform: "translate(-50%, -50%) rotate(-90deg)", transformOrigin: "center", marginLeft: 5 }
-          : pos === "right"
-            ? { ...base, right: side, top: h / 2, transform: "translate(50%, -50%) rotate(90deg)", transformOrigin: "center", marginRight: 5 }
-            : { ...base, left: 0, top: h / 2, width: w, textAlign: "center" as const, transform: "translateY(-50%)", fontSize: Math.round(Math.min(w, h) * 0.34), fontWeight: 800, opacity: 0.07, zIndex: 0 };
-  return <div style={style}>{pos === "center" ? text.split(" ")[0] : text}</div>;
+        ? { ...base, bottom: side, ...wide, textAlign: "center" as const }
+        : pos === "top-left"
+          ? { ...base, top: side, left: margin }
+          : pos === "top-right"
+            ? { ...base, top: side, right: margin }
+            : pos === "bottom-left"
+              ? { ...base, bottom: side, left: margin }
+              : pos === "bottom-right"
+                ? { ...base, bottom: side, right: margin }
+                : pos === "left"
+                  ? { ...base, left: side, top: h / 2, transform: "translate(-50%, -50%) rotate(-90deg)", transformOrigin: "center", marginLeft: 5 }
+                  : pos === "right"
+                    ? { ...base, right: side, top: h / 2, transform: "translate(50%, -50%) rotate(90deg)", transformOrigin: "center", marginRight: 5 }
+                    : { ...base, ...wide, top: h / 2, textAlign: "center" as const, transform: "translateY(-50%)", fontSize: Math.round(Math.min(w, h) * 0.34), fontWeight: 800, opacity: 0.07, zIndex: 0 };
+  return <div style={style}>{pos === "center" ? text.replace(/\D*(\w+).*/, "$1") : text}</div>;
 }
 
 /** One post per page. The post is shrunk (never cut) when it is taller than the page. */
@@ -183,14 +192,15 @@ function Page({ posts, i, size, orientation, theme, o }: { posts: PostData[]; i:
       <LabelOverlay label={o.label} w={w} />
       <div style={{ position: "absolute", left: margin, top: margin, width: boxW, height: boxH, overflow: "hidden", zIndex: 1 }}>
         <div ref={inner} style={{ width: boxW, transform: `scale(${scale})`, transformOrigin: "top center" }}>
-          {i === 0 && <AuthorHeader posts={posts} theme={theme} redact={o.redact} />}
-          <PostBody p={p} i={i} n={posts.length} theme={theme} o={o} />
+          {i === 0 && <AuthorHeader posts={posts} theme={theme} redact={o.redact} showCount={false} />}
+          {/* each post has its own page, so the page number already says "n of N": show the count only once */}
+          <PostBody p={p} i={i} n={posts.length} theme={theme} o={{ ...o, numbers: o.numbers && o.numPos === "none" }} />
         </div>
       </div>
-      <div className="text-[11px]" style={{ position: "absolute", left: margin, bottom: margin * 0.45, color: theme.muted, zIndex: 1 }}>
-        {o.redact.name ? "Thread" : handle(posts[0])} · post {i + 1} of {posts.length}
+      <div className="text-[11px]" style={{ position: "absolute", ...(o.numPos === "bottom-left" ? { right: margin } : { left: margin }), bottom: margin * 0.45, color: theme.muted, zIndex: 1 }}>
+        {o.redact.name ? "Thread" : handle(posts[0])}
       </div>
-      <PageNumber text={`${i + 1} / ${posts.length}`} pos={o.numPos} w={w} h={h} margin={margin} theme={theme} />
+      <PageNumber text={formatPageNumber(i, posts.length, o.numFormat)} pos={o.numPos} w={w} h={h} margin={margin} theme={theme} />
     </div>
   );
 }

@@ -35,6 +35,22 @@ export default function HighlightEditor({
   const [style, setStyle] = useState<HighlightStyle>("marker");
   const [mode, setMode] = useState<"highlight" | "redact">("highlight");
 
+  // Every change goes through commit(), which remembers the list it replaced so Undo can bring it back.
+  const [history, setHistory] = useState<Highlight[][]>([]);
+  const commit = (next: Highlight[]) => {
+    setHistory((h) => [...h.slice(-49), highlights]);
+    onChange(next);
+  };
+  const undo = () => {
+    const prev = history[history.length - 1];
+    if (!prev) return;
+    setHistory((h) => h.slice(0, -1));
+    onChange(prev);
+    setSel(null);
+  };
+  // New text means the old ranges are meaningless, so the history starts over.
+  useEffect(() => setHistory([]), [text]);
+
   // Track the selection the moment it changes (mouse, touch handles or keyboard). It is only ever
   // replaced by a new valid selection, because tapping a button can collapse it on some phones.
   useEffect(() => {
@@ -55,13 +71,13 @@ export default function HighlightEditor({
 
   const apply = (color: string, as: HighlightStyle = style) => {
     if (!sel) return;
-    onChange(addHighlight(highlights, { ...sel, color, style: as }));
+    commit(addHighlight(highlights, { ...sel, color, style: as }));
     setSel(null);
     window.getSelection()?.removeAllRanges();
   };
   const remove = () => {
     if (!sel) return;
-    onChange(removeHighlight(highlights, sel.start, sel.end));
+    commit(removeHighlight(highlights, sel.start, sel.end));
     setSel(null);
     window.getSelection()?.removeAllRanges();
   };
@@ -151,6 +167,14 @@ export default function HighlightEditor({
         )}
         <button
           type="button"
+          disabled={history.length === 0}
+          onClick={undo}
+          className="h-9 border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-700 transition hover:bg-stone-100 disabled:opacity-35"
+        >
+          Undo
+        </button>
+        <button
+          type="button"
           disabled={!sel}
           onMouseDown={keep}
           onClick={remove}
@@ -162,7 +186,7 @@ export default function HighlightEditor({
           type="button"
           disabled={highlights.length === 0}
           onClick={() => {
-            onChange([]);
+            commit([]);
             setSel(null);
           }}
           className="h-9 border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-700 transition hover:bg-stone-100 disabled:opacity-35"

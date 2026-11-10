@@ -3,15 +3,49 @@ import { renderPng } from "./export";
 export type PageSizeId = "a3" | "a4" | "a5" | "a6" | "b5" | "letter" | "legal" | "tabloid" | "executive";
 export type Orientation = "portrait" | "landscape";
 
-export type NumPos = "top" | "bottom" | "left" | "right" | "center" | "none";
+export type NumPos = "top-left" | "top" | "top-right" | "left" | "center" | "right" | "bottom-left" | "bottom" | "bottom-right" | "none";
 export const NUM_POSITIONS: { value: NumPos; label: string }[] = [
+  { value: "top-left", label: "Top left" },
   { value: "top", label: "Top" },
-  { value: "bottom", label: "Bottom" },
+  { value: "top-right", label: "Top right" },
   { value: "left", label: "Left" },
-  { value: "right", label: "Right" },
   { value: "center", label: "Centre" },
+  { value: "right", label: "Right" },
+  { value: "bottom-left", label: "Bottom left" },
+  { value: "bottom", label: "Bottom" },
+  { value: "bottom-right", label: "Bottom right" },
   { value: "none", label: "None" },
 ];
+
+export type NumFormat = "of" | "plain" | "page-of" | "page" | "dash" | "roman";
+export const NUM_FORMATS: { value: NumFormat; label: string }[] = [
+  { value: "of", label: "1 / 4" },
+  { value: "plain", label: "1" },
+  { value: "page-of", label: "Page 1 of 4" },
+  { value: "page", label: "Page 1" },
+  { value: "dash", label: "- 1 -" },
+  { value: "roman", label: "I / IV" },
+];
+
+const ROMAN: [number, string][] = [[10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
+function roman(n: number): string {
+  let out = "";
+  for (const [v, r] of ROMAN) while (n >= v) { out += r; n -= v; }
+  return out;
+}
+
+/** The page number text for page i (0-based) of n, in the chosen format. */
+export function formatPageNumber(i: number, n: number, f: NumFormat): string {
+  const k = i + 1;
+  switch (f) {
+    case "plain": return `${k}`;
+    case "page-of": return `Page ${k} of ${n}`;
+    case "page": return `Page ${k}`;
+    case "dash": return `- ${k} -`;
+    case "roman": return `${roman(k)} / ${roman(n)}`;
+    default: return `${k} / ${n}`;
+  }
+}
 
 /** Paper sizes in millimetres (portrait). */
 export const PAGE_SIZES: { id: PageSizeId; label: string; w: number; h: number }[] = [

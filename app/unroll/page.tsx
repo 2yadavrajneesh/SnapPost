@@ -5,7 +5,8 @@ import SiteHeader from "@/components/SiteHeader";
 import { CollapsibleSection, Label, Section, Segmented } from "@/components/ui";
 import { downloadBlob } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
-import { DEFAULT_LABEL_STRENGTH, LABEL_COLORS, LABEL_PRESETS, NUM_POSITIONS, PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type NumPos, type Orientation, type PageLabel, type PageSizeId } from "@/lib/paper";
+import { DEFAULT_LABEL_STRENGTH, LABEL_COLORS, LABEL_PRESETS, NUM_FORMATS, NUM_POSITIONS, PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type NumFormat, type NumPos, type Orientation, type PageLabel, type PageSizeId } from "@/lib/paper";
+import ScrollTop from "@/components/ScrollTop";
 import HighlightEditor from "@/components/HighlightEditor";
 import { NO_REDACT, Pages, PrintPages, Reading, type Redact } from "@/components/ThreadView";
 import { type Highlight } from "@/lib/highlight";
@@ -110,6 +111,7 @@ export default function Unroller() {
   const [orientation, setOrientation] = useState<Orientation>("portrait");
   const [printing, setPrinting] = useState(false); // true while the PDF is being drawn (videos show as pictures)
   const [numPos, setNumPos] = useState<NumPos>("bottom");
+  const [numFormat, setNumFormat] = useState<NumFormat>("of");
   const [label, setLabel] = useState<PageLabel | null>(null);
   const [hl, setHl] = useState<Record<number, Highlight[]>>({});
   const [redact, setRedact] = useState<Redact>(NO_REDACT);
@@ -244,7 +246,7 @@ export default function Unroller() {
       setPrinting(false);
     }
   }
-  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, label, hl, redact });
+  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, numFormat, label, hl, redact });
   const a = thread?.posts[0];
   const base = a && !redact.name ? `thread-${a.username}-${a.id}` : "thread-redacted";
 
@@ -372,6 +374,10 @@ export default function Unroller() {
               <Segmented value={numPos} onChange={setNumPos} wrap options={NUM_POSITIONS} />
             </div>
             <div>
+              <Label>Page number format</Label>
+              <Segmented value={numFormat} onChange={setNumFormat} wrap options={NUM_FORMATS} />
+            </div>
+            <div>
               <Label>Preview</Label>
               <Segmented
                 value={view}
@@ -387,16 +393,17 @@ export default function Unroller() {
 
           <CollapsibleSection title="Marker & redact">
             {!thread ? (
-              <p className="text-[11px] text-stone-500">Unroll a thread first, then pick a post and select its words to highlight or hide them.</p>
+              <p className="text-[11px] text-stone-500">Load a thread first, then pick a post and select its words to highlight or hide them.</p>
             ) : (
               <>
                 <div>
                   <Label>Post to edit</Label>
+                  <div className="relative">
                   <select
                     aria-label="Post to edit"
                     value={Math.min(editIdx, thread.posts.length - 1)}
                     onChange={(e) => setEditIdx(Number(e.target.value))}
-                    className="w-full border border-stone-300 bg-white px-2.5 py-2 text-xs font-medium text-stone-800"
+                    className="w-full appearance-none truncate border border-stone-300 bg-white py-2 pl-2.5 pr-8 text-xs font-medium text-stone-800"
                   >
                     {thread.posts.map((p, i) => (
                       <option key={i} value={i}>
@@ -404,6 +411,10 @@ export default function Unroller() {
                       </option>
                     ))}
                   </select>
+                  <svg className="pointer-events-none absolute right-2.5 top-1/2 -mt-[5px]" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                  </div>
                 </div>
                 <HighlightEditor
                   key={editIdx}
@@ -540,7 +551,7 @@ export default function Unroller() {
                 ) : !thread ? (
                   <div className="mx-auto max-w-[640px] border border-stone-300 bg-white p-8 text-center text-sm text-stone-600">
                     <div className="mb-1 text-base font-bold text-stone-900">Unroll a thread</div>
-                    Paste a link to any post of a thread and press Unroll. You get every post in order, ready to read, copy or download.
+                    Paste a link to any post in a thread and it loads on its own. You get every post in order, ready to read, copy or download as a PDF.
                   </div>
                 ) : view === "pages" ? (
                   <Pages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={vo(false)} containerWidth={stageW} />
@@ -549,6 +560,7 @@ export default function Unroller() {
                 )}
               </div>
             </div>
+            <ScrollTop target={stage} />
           </div>
         </div>
       </main>

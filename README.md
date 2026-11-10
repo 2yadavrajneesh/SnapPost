@@ -39,8 +39,10 @@ Paste a link, tweak the look, and download or copy the result. Built with Next.j
 - **Print layout preview:** the *Pages* preview shows the pages exactly as they will print. *Reading* shows one continuous page (the default on phones).
 - **One post per page, never cut:** each post gets its own page. A post taller than the page is scaled down to fit. The first page carries the author header, and every page has a footer with the post and page number.
 - **Page themes:** Paper, Sepia, Dark, Newsprint or Ocean. The choice applies to the preview and the PDF.
-- **Page number position:** put the footer number at the top, bottom, left, right or centre (or any corner combination).
+- **Page number position and format:** put the number in any corner, at the top, bottom, left, right or centre, or hide it. Formats: `1 / 4`, `1`, `Page 1 of 4`, `Page 1`, `- 1 -` and Roman numerals. The count shows once per page.
 - **Background label:** an optional light, editable watermark such as *Confidential* or *Important* behind every page, subtle enough to keep the text readable.
+- **Undo:** the marker and redact tools (in both apps) have an *Undo* button that steps back through your changes.
+- **Go to top:** a button appears in the viewer of both apps once you scroll down a long thread.
 - **Marker and redact:** highlight text (16 colours plus a custom one) or hide it with bars or blur. Redactions carry into the PDF and the text exports.
 - **Collapsed options:** *Display*, *Page*, *Marker & redact* and *Background label* start closed to keep the sidebar short.
 - **Rising-dot stage:** the viewer has its own teal dotted animation, different from SnapPost's.

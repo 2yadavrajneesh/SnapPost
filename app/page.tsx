@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { flushSync } from "react-dom";
 import AppearanceTiles from "@/components/AppearanceTiles";
 import Lightbox from "@/components/Lightbox";
+import ScrollTop from "@/components/ScrollTop";
 import HighlightEditor from "@/components/HighlightEditor";
 import MediaDownload from "@/components/MediaDownload";
 import type { Highlight } from "@/lib/highlight";
@@ -904,6 +905,8 @@ export default function Home() {
                 {exportError}
               </p>
             )}
+
+            <ScrollTop target={stageRef} />
 
             {/* Desktop: floating zoom pill */}
             <div className="absolute bottom-4 left-1/2 z-[2] hidden -translate-x-1/2 lg:block">{zoomPill}</div>
