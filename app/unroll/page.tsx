@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
 import { Label, Section, Segmented } from "@/components/ui";
 import { downloadBlob } from "@/lib/export";
-import { PAGE_SIZES, PAPER_THEMES, renderThreadPdf, type Orientation, type PageSizeId } from "@/lib/paper";
+import { PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type Orientation, type PageSizeId } from "@/lib/paper";
+import { Pages, PrintPages, Reading } from "@/components/ThreadView";
 import { compact, formatDate, formatTime, proxied } from "@/lib/format";
 import type { PostData } from "@/lib/types";
 
@@ -87,7 +88,10 @@ export default function Unroller() {
   const [size, setSize] = useState<PageSizeId>("a4");
   const [orientation, setOrientation] = useState<Orientation>("portrait");
   const [printing, setPrinting] = useState(false); // true while the PDF is being drawn (videos show as pictures)
-  const paper = useRef<HTMLElement>(null);
+  const [view, setView] = useState<"pages" | "reading">("pages");
+  const [stageW, setStageW] = useState(700);
+  const stage = useRef<HTMLDivElement>(null);
+  const printRoot = useRef<HTMLDivElement>(null);
   const theme = PAPER_THEMES[0];
   const reqId = useRef(0);
   const flash = (m: string) => {
@@ -125,13 +129,32 @@ export default function Unroller() {
 
   const opts = { numbers, media };
 
+  useEffect(() => {
+    if (window.innerWidth < 1024) setView("reading"); // phones: pages are too small to read
+  }, []);
+  useEffect(() => {
+    const el = stage.current;
+    if (!el) return;
+    const measure = () => setStageW(Math.max(200, el.clientWidth - (window.innerWidth < 640 ? 32 : 64)));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   async function downloadPdf() {
-    if (!thread || !paper.current) return;
+    if (!thread) return;
     setPrinting(true);
     try {
-      await new Promise((r) => setTimeout(r, 300)); // let video posters replace the players
-      const blocks = Array.from(paper.current.querySelectorAll<HTMLElement>("[data-block]"));
-      const { blob, pages } = await renderThreadPdf(blocks, { size, orientation, theme });
+      // Wait for the off-screen pages to mount, shrink to fit and load their pictures.
+      await new Promise((r) => setTimeout(r, 400));
+      const root = printRoot.current;
+      const nodes = root ? Array.from(root.querySelectorAll<HTMLElement>("[data-page]")) : [];
+      await Promise.all(
+        Array.from(root?.querySelectorAll("img") ?? []).map((im) => (im.complete ? Promise.resolve() : new Promise((r) => { im.onload = im.onerror = () => r(null); }))),
+      );
+      await new Promise((r) => setTimeout(r, 150));
+      const { blob, pages } = await renderPagesPdf(nodes, { size, orientation });
       downloadBlob(blob, `${base}-${size}-${orientation}.pdf`);
       flash(`PDF saved · ${pages} page${pages === 1 ? "" : "s"}`);
     } catch {
@@ -213,6 +236,18 @@ export default function Unroller() {
                 ]}
               />
             </div>
+            <div>
+              <Label>Preview</Label>
+              <Segmented
+                value={view}
+                onChange={setView}
+                options={[
+                  { value: "pages", label: "Pages (print layout)" },
+                  { value: "reading", label: "Reading" },
+                ]}
+              />
+            </div>
+            <p className="text-[11px] leading-snug text-stone-500">Each post gets its own page, so nothing is cut when you print. A post taller than the page is scaled down to fit.</p>
           </Section>
 
           <Section title="Save">
@@ -241,72 +276,28 @@ export default function Unroller() {
 
         <div className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">
           <div className="snap-stage relative flex max-h-[72vh] flex-1 overflow-hidden lg:max-h-none lg:min-h-0">
-            <div className="relative z-[1] flex flex-1 overflow-auto px-4 py-6 sm:px-8">
-              <div className="mx-auto w-full" style={{ maxWidth: orientation === "landscape" ? 900 : 640 }}>
+            <div ref={stage} className="relative z-[1] flex flex-1 overflow-auto px-4 py-6 sm:px-8">
+              <div className="mx-auto w-full">
                 {!thread ? (
-                  <div className="border border-stone-300 bg-white p-8 text-center text-sm text-stone-600">
+                  <div className="mx-auto max-w-[640px] border border-stone-300 bg-white p-8 text-center text-sm text-stone-600">
                     <div className="mb-1 text-base font-bold text-stone-900">Unroll a thread</div>
                     Paste a link to any post of a thread and press Unroll. You get every post in order, ready to read, copy or download.
                   </div>
+                ) : view === "pages" ? (
+                  <Pages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={{ numbers, media, stats, printing: false }} containerWidth={stageW} />
                 ) : (
-                  <article ref={paper} style={{ background: theme.bg, color: theme.fg, border: `1px solid ${theme.line}` }}>
-                    <header data-block className="flex items-center gap-3 p-4" style={{ background: theme.bg, borderBottom: `1px solid ${theme.line}` }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      {a?.avatar ? <img src={proxied(a.avatar)} alt="" className="h-11 w-11 rounded-full object-cover" /> : <div className="h-11 w-11 rounded-full" style={{ background: theme.line }} />}
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-bold">{a?.name}</div>
-                        <div className="truncate text-xs" style={{ color: theme.muted }}>
-                          {a && handle(a)} · {thread.posts.length} post{thread.posts.length === 1 ? "" : "s"}
-                          {a?.timestamp ? ` · ${formatDate(a.timestamp)}` : ""}
-                        </div>
-                      </div>
-                    </header>
-                    <ol>
-                      {thread.posts.map((p, i) => (
-                        <li key={p.id || i} data-block className="p-4" style={{ background: theme.bg, borderBottom: i < thread.posts.length - 1 ? `1px solid ${theme.line}` : undefined }}>
-                          {numbers && thread.posts.length > 1 && (
-                            <div className="mb-1 text-[11px] font-semibold tabular-nums" style={{ color: theme.muted }}>
-                              {i + 1}/{thread.posts.length}
-                            </div>
-                          )}
-                          <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{p.text}</p>
-                          {media && p.photos.length > 0 && (
-                            <div className={`mt-3 grid gap-1.5 ${p.photos.length > 1 ? "grid-cols-2" : ""}`}>
-                              {p.photos.map((u) => (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img key={u} src={proxied(u)} alt="" loading="eager" className="w-full object-cover" style={{ border: `1px solid ${theme.line}` }} />
-                              ))}
-                            </div>
-                          )}
-                          {media && p.video &&
-                            (printing ? (
-                              p.video.poster ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={proxied(p.video.poster)} alt="Video" className="mt-3 w-full object-cover" style={{ border: `1px solid ${theme.line}` }} />
-                              ) : null
-                            ) : (
-                              <video className="mt-3 w-full bg-black" style={{ border: `1px solid ${theme.line}` }} controls preload="none" poster={p.video.poster ? proxied(p.video.poster) : undefined} src={p.video.sources[0] ? `/api/video?url=${encodeURIComponent(p.video.sources[0])}` : undefined} />
-                            ))}
-                          <div className="mt-2 flex flex-wrap gap-x-4 text-[11px]" style={{ color: theme.muted }}>
-                            {p.timestamp && <span>{formatTime(p.timestamp)}</span>}
-                            {stats && (
-                              <>
-                                <span>{compact(p.likes)} likes</span>
-                                <span>{compact(p.reposts)} reposts</span>
-                                <span>{compact(p.views)} views</span>
-                              </>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ol>
-                  </article>
+                  <Reading posts={thread.posts} theme={theme} o={{ numbers, media, stats, printing: false }} width={orientation === "landscape" ? 900 : 640} />
                 )}
               </div>
             </div>
           </div>
         </div>
       </main>
+      {printing && thread && (
+        <div ref={printRoot}>
+          <PrintPages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={{ numbers, media, stats, printing: true }} />
+        </div>
+      )}
     </div>
   );
 }
