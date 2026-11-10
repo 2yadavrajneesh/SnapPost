@@ -132,6 +132,23 @@ export default function HighlightEditor({
             style={{ backgroundColor: c.value }}
           />
         ))}
+        {mode === "highlight" && (
+          <label
+            title="Pick any colour"
+            className={`relative flex h-9 items-center gap-1.5 border border-stone-300 bg-white px-2.5 text-xs font-semibold text-stone-700 ${sel ? "cursor-pointer hover:bg-stone-100" : "opacity-35"}`}
+          >
+            <span className="h-4 w-4 border border-stone-400" style={{ background: "conic-gradient(#f87171, #fde047, #86efac, #67e8f9, #a78bfa, #f472b6, #f87171)" }} />
+            Custom
+            <input
+              type="color"
+              aria-label="Custom highlight colour"
+              disabled={!sel}
+              defaultValue="#fde047"
+              onChange={(e) => apply(e.target.value)}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+            />
+          </label>
+        )}
         <button
           type="button"
           disabled={!sel}

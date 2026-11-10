@@ -6,10 +6,21 @@ export type Highlight = { start: number; end: number; color: string; style: High
 
 export const HIGHLIGHT_COLORS = [
   { name: "Yellow", value: "#fde047" },
+  { name: "Lemon", value: "#fef08a" },
+  { name: "Lime", value: "#bef264" },
   { name: "Green", value: "#86efac" },
-  { name: "Pink", value: "#f9a8d4" },
+  { name: "Mint", value: "#6ee7b7" },
+  { name: "Cyan", value: "#67e8f9" },
+  { name: "Sky", value: "#7dd3fc" },
   { name: "Blue", value: "#93c5fd" },
+  { name: "Lavender", value: "#c4b5fd" },
+  { name: "Purple", value: "#d8b4fe" },
+  { name: "Pink", value: "#f9a8d4" },
+  { name: "Rose", value: "#fda4af" },
+  { name: "Red", value: "#fca5a5" },
   { name: "Orange", value: "#fdba74" },
+  { name: "Peach", value: "#fed7aa" },
+  { name: "Gray", value: "#d4d4d8" },
 ] as const;
 
 /** Removes [start, end) from every range, splitting the ones that straddle it. */
