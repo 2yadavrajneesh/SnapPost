@@ -11,7 +11,7 @@ import MediaDownload from "@/components/MediaDownload";
 import type { Highlight } from "@/lib/highlight";
 import RatioTiles from "@/components/RatioTiles";
 import TweetCard, { ALL_INFO, type DisplayInfo, type Redact } from "@/components/TweetCard";
-import { Check, Label, Section, Segmented, Slider, TextField, Toggle } from "@/components/ui";
+import { Check, CollapsibleSection, Label, Section, Segmented, Slider, TextField, Toggle } from "@/components/ui";
 import { formatDate, formatTime } from "@/lib/format";
 import { copyPngToClipboard, downloadBlob, downloadUrl, renderPdf, renderPdfPages, renderPng, renderVideo, zipFiles } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
@@ -823,22 +823,22 @@ export default function Home() {
             </button>
           </div>
 
-          <Section title="Output ratio">
+          <CollapsibleSection title="Output ratio">
             <RatioTiles value={showThread ? "auto" : settings.ratio} onChange={(v) => set("ratio", v)} disabled={showThread} />
             {showThread && <p className="text-[11px] text-stone-500">A full thread always uses Auto size. Switch to Carousel to pick a ratio.</p>}
             {!showThread && settings.ratio !== "auto" && (
               <p className="text-[11px] text-stone-500">The full post stays visible; content scales to fit. Click the selected tile again for Auto.</p>
             )}
-          </Section>
+          </CollapsibleSection>
 
-          <Section title="Appearance">
+          <CollapsibleSection title="Appearance">
             <AppearanceTiles settings={settings} onChange={set} />
-          </Section>
+          </CollapsibleSection>
 
-          <Section title="Layout">
+          <CollapsibleSection title="Layout">
             <Slider label="Text size" value={settings.textSize} min={24} max={64} step={4} suffix="px" lowLabel="Smaller" highLabel="Larger" ticks emphasizeHigh onChange={(v) => set("textSize", v)} />
             <Slider label="Padding" value={settings.padding} min={50} max={150} step={5} suffix="%" lowLabel="Tighter" highLabel="Looser" onChange={(v) => set("padding", v)} />
-          </Section>
+          </CollapsibleSection>
         </aside>
 
         {/* Viewer */}

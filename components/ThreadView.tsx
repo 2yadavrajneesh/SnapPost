@@ -197,9 +197,6 @@ function Page({ posts, i, size, orientation, theme, o }: { posts: PostData[]; i:
           <PostBody p={p} i={i} n={posts.length} theme={theme} o={{ ...o, numbers: o.numbers && o.numPos === "none" }} />
         </div>
       </div>
-      <div className="text-[11px]" style={{ position: "absolute", ...(o.numPos === "bottom-left" ? { right: margin } : { left: margin }), bottom: margin * 0.45, color: theme.muted, zIndex: 1 }}>
-        {o.redact.name ? "Thread" : handle(posts[0])}
-      </div>
       <PageNumber text={formatPageNumber(i, posts.length, o.numFormat)} pos={o.numPos} w={w} h={h} margin={margin} theme={theme} />
     </div>
   );

@@ -5,7 +5,8 @@ import SiteHeader from "@/components/SiteHeader";
 import { CollapsibleSection, Label, Section, Segmented } from "@/components/ui";
 import { downloadBlob } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
-import { DEFAULT_LABEL_STRENGTH, LABEL_COLORS, LABEL_PRESETS, NUM_FORMATS, NUM_POSITIONS, PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type NumFormat, type NumPos, type Orientation, type PageLabel, type PageSizeId } from "@/lib/paper";
+import { DEFAULT_LABEL_STRENGTH, LABEL_COLORS, LABEL_PRESETS, NUM_FORMATS, PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type NumFormat, type NumPos, type Orientation, type PageLabel, type PageSizeId } from "@/lib/paper";
+import NumPosPicker from "@/components/NumPosPicker";
 import ScrollTop from "@/components/ScrollTop";
 import HighlightEditor from "@/components/HighlightEditor";
 import { NO_REDACT, Pages, PrintPages, Reading, type Redact } from "@/components/ThreadView";
@@ -371,7 +372,7 @@ export default function Unroller() {
             </div>
             <div>
               <Label>Page number position</Label>
-              <Segmented value={numPos} onChange={setNumPos} wrap options={NUM_POSITIONS} />
+              <NumPosPicker value={numPos} onChange={setNumPos} />
             </div>
             <div>
               <Label>Page number format</Label>
