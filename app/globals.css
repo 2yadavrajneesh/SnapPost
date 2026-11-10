@@ -49,6 +49,51 @@ body {
   }
 }
 
+/* ThreadScroll stage: dots of two sizes that rise upwards like a scrolling page, with a soft pulsing glow */
+.scroll-stage {
+  isolation: isolate;
+  background-color: #eaf1ef;
+  background-image:
+    radial-gradient(circle, rgba(15, 118, 110, 0.34) 1.4px, transparent 1.8px),
+    radial-gradient(circle, rgba(15, 118, 110, 0.16) 2.8px, transparent 3.3px);
+  background-size: 26px 26px, 78px 78px;
+  background-position: 0 0, 13px 13px;
+  animation: scroll-rise 14s linear infinite;
+}
+.scroll-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 42% at 80% 20%, rgba(20, 184, 166, 0.16), transparent 70%),
+    radial-gradient(40% 40% at 15% 85%, rgba(99, 102, 241, 0.12), transparent 70%);
+  animation: scroll-pulse 7s ease-in-out infinite alternate;
+}
+@keyframes scroll-rise {
+  to { background-position: 0 -156px, 13px -143px; }
+}
+@keyframes scroll-pulse {
+  from { opacity: 0.45; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-stage,
+  .scroll-stage::before { animation: none; }
+}
+html[data-theme="dark"] .scroll-stage {
+  background-color: #0f1715;
+  background-image:
+    radial-gradient(circle, rgba(94, 234, 212, 0.3) 1.4px, transparent 1.8px),
+    radial-gradient(circle, rgba(94, 234, 212, 0.14) 2.8px, transparent 3.3px);
+}
+html[data-theme="dark"] .scroll-stage::before {
+  background:
+    radial-gradient(42% 42% at 80% 20%, rgba(20, 184, 166, 0.2), transparent 70%),
+    radial-gradient(40% 40% at 15% 85%, rgba(99, 102, 241, 0.16), transparent 70%);
+}
+
 /* Viewfinder corner brackets */
 .snap-bracket {
   position: absolute;

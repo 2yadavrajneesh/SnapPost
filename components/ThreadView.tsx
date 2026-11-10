@@ -2,10 +2,10 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { compact, formatDate, formatTime, proxied } from "@/lib/format";
-import { PAGE_SIZES, type NumPos, type Orientation, type PageSizeId, type PaperTheme } from "@/lib/paper";
+import { PAGE_SIZES, rgba, type NumPos, type Orientation, type PageLabel, type PageSizeId, type PaperTheme } from "@/lib/paper";
 import type { PostData } from "@/lib/types";
 
-export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos };
+export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; label: PageLabel | null };
 
 const handle = (p: PostData) => `@${p.username}`;
 const MM = 96 / 25.4;
@@ -79,7 +79,9 @@ export function PostBody({ p, i, n, theme, o }: { p: PostData; i: number; n: num
 /** Continuous reading view: header, then every post one under another. */
 export function Reading({ posts, theme, o, width }: { posts: PostData[]; theme: PaperTheme; o: ViewOpts; width: number }) {
   return (
-    <article className="mx-auto w-full p-4" style={{ maxWidth: width, background: theme.bg, color: theme.fg, border: `1px solid ${theme.line}` }}>
+    <article className="relative mx-auto w-full p-4" style={{ maxWidth: width, background: theme.bg, color: theme.fg, border: `1px solid ${theme.line}` }}>
+      <LabelOverlay label={o.label} w={width} />
+      <div style={{ position: "relative", zIndex: 1 }}>
       <AuthorHeader posts={posts} theme={theme} />
       <ol>
         {posts.map((p, i) => (
@@ -88,7 +90,27 @@ export function Reading({ posts, theme, o, width }: { posts: PostData[]; theme: 
           </li>
         ))}
       </ol>
+      </div>
     </article>
+  );
+}
+
+/** Light tint plus a large diagonal label behind the content. Kept faint so the text stays easy to read. */
+function LabelOverlay({ label, w }: { label: PageLabel | null; w: number }) {
+  const text = label?.text.trim();
+  if (!label || !text) return null;
+  const size = Math.max(20, Math.min(w * 0.15, (w * 0.9) / (Math.max(4, text.length) * 0.62)));
+  return (
+    <div aria-hidden="true" style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", background: rgba(label.color, label.strength * 0.004), zIndex: 0 }}>
+      <div
+        style={{
+          position: "absolute", left: "50%", top: "50%", whiteSpace: "nowrap", fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase",
+          fontSize: size, color: rgba(label.color, label.strength / 100), transform: "translate(-50%, -50%) rotate(-28deg)",
+        }}
+      >
+        {text}
+      </div>
+    </div>
   );
 }
 
@@ -131,13 +153,14 @@ function Page({ posts, i, size, orientation, theme, o }: { posts: PostData[]; i:
   const p = posts[i];
   return (
     <div data-page style={{ width: w, height: h, background: theme.bg, color: theme.fg, position: "relative", overflow: "hidden", flex: "none" }}>
-      <div style={{ position: "absolute", left: margin, top: margin, width: boxW, height: boxH, overflow: "hidden" }}>
+      <LabelOverlay label={o.label} w={w} />
+      <div style={{ position: "absolute", left: margin, top: margin, width: boxW, height: boxH, overflow: "hidden", zIndex: 1 }}>
         <div ref={inner} style={{ width: boxW, transform: `scale(${scale})`, transformOrigin: "top center" }}>
           {i === 0 && <AuthorHeader posts={posts} theme={theme} />}
           <PostBody p={p} i={i} n={posts.length} theme={theme} o={o} />
         </div>
       </div>
-      <div className="text-[11px]" style={{ position: "absolute", left: margin, bottom: margin * 0.45, color: theme.muted }}>
+      <div className="text-[11px]" style={{ position: "absolute", left: margin, bottom: margin * 0.45, color: theme.muted, zIndex: 1 }}>
         {handle(posts[0])} · post {i + 1} of {posts.length}
       </div>
       <PageNumber text={`${i + 1} / ${posts.length}`} pos={o.numPos} w={w} h={h} margin={margin} theme={theme} />

@@ -1,12 +1,28 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="border-b border-stone-300 px-5 pb-5 pt-5">
       <h2 className="mb-3 text-sm font-bold text-stone-900">{title}</h2>
       <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
+
+/** Same look as Section, but the body folds away. Closed unless defaultOpen. */
+export function CollapsibleSection({ title, children, defaultOpen = false }: { title: string; children: ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="border-b border-stone-300">
+      <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between px-5 py-4 text-left">
+        <h2 className="text-sm font-bold text-stone-900">{title}</h2>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`text-stone-500 transition-transform ${open ? "rotate-180" : ""}`}>
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {open && <div className="space-y-3 px-5 pb-5">{children}</div>}
     </section>
   );
 }

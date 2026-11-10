@@ -26,6 +26,22 @@ export const PAGE_SIZES: { id: PageSizeId; label: string; w: number; h: number }
   { id: "executive", label: "Executive", w: 184.2, h: 266.7 },
 ];
 
+/** A faint label printed behind the text of every page, e.g. "Confidential". */
+export type PageLabel = { text: string; color: string; strength: number };
+export const LABEL_PRESETS: { text: string; color: string }[] = [
+  { text: "Confidential", color: "#dc2626" },
+  { text: "Important", color: "#d97706" },
+  { text: "Draft", color: "#64748b" },
+  { text: "Internal", color: "#2563eb" },
+];
+export const LABEL_COLORS = ["#dc2626", "#d97706", "#16a34a", "#2563eb", "#7c3aed", "#64748b"];
+export const DEFAULT_LABEL_STRENGTH = 9;
+
+export function rgba(hex: string, a: number): string {
+  const n = parseInt(hex.replace("#", ""), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+
 export type PaperTheme = {
   id: string;
   label: string;

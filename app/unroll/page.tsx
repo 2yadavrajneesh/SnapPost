@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
-import { Label, Section, Segmented } from "@/components/ui";
+import { CollapsibleSection, Label, Section, Segmented } from "@/components/ui";
 import { downloadBlob } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
-import { NUM_POSITIONS, PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type NumPos, type Orientation, type PageSizeId } from "@/lib/paper";
+import { DEFAULT_LABEL_STRENGTH, LABEL_COLORS, LABEL_PRESETS, NUM_POSITIONS, PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type NumPos, type Orientation, type PageLabel, type PageSizeId } from "@/lib/paper";
 import { Pages, PrintPages, Reading } from "@/components/ThreadView";
 import { compact, formatDate, formatTime, proxied } from "@/lib/format";
 import type { PostData } from "@/lib/types";
@@ -90,6 +90,7 @@ export default function Unroller() {
   const [orientation, setOrientation] = useState<Orientation>("portrait");
   const [printing, setPrinting] = useState(false); // true while the PDF is being drawn (videos show as pictures)
   const [numPos, setNumPos] = useState<NumPos>("bottom");
+  const [label, setLabel] = useState<PageLabel | null>(null);
   const [view, setView] = useState<"pages" | "reading">("pages");
   const [stageW, setStageW] = useState(700);
   const stage = useRef<HTMLDivElement>(null);
@@ -321,6 +322,69 @@ export default function Unroller() {
             <p className="text-[11px] leading-snug text-stone-500">Each post gets its own page, so nothing is cut when you print. A post taller than the page is scaled down to fit.</p>
           </Section>
 
+          <CollapsibleSection title="Background label">
+            <p className="text-[11px] leading-snug text-stone-500">Adds a light tint and a faint diagonal label behind the text of every page, for example Confidential. The text stays easy to read.</p>
+            <div className="flex flex-wrap gap-1.5">
+              {LABEL_PRESETS.map((p) => (
+                <button
+                  key={p.text}
+                  type="button"
+                  onClick={() => setLabel((l) => ({ text: p.text, color: p.color, strength: l?.strength ?? DEFAULT_LABEL_STRENGTH }))}
+                  aria-pressed={label?.text === p.text}
+                  className={`flex items-center gap-1.5 border px-2.5 py-1.5 text-xs font-semibold transition ${label?.text === p.text ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300 bg-white text-stone-800 hover:bg-stone-100"}`}
+                >
+                  <span className="h-2.5 w-2.5" style={{ background: p.color }} />
+                  {p.text}
+                </button>
+              ))}
+            </div>
+            <div>
+              <Label>Label text (edit or type your own)</Label>
+              <input
+                value={label?.text ?? ""}
+                maxLength={40}
+                onChange={(e) => setLabel((l) => ({ text: e.target.value, color: l?.color ?? LABEL_COLORS[0], strength: l?.strength ?? DEFAULT_LABEL_STRENGTH }))}
+                placeholder="e.g. Confidential"
+                className="w-full border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-[color:var(--accent)] focus:ring-1 focus:ring-[color:var(--accent)]"
+              />
+            </div>
+            <div>
+              <Label>Colour</Label>
+              <div className="flex flex-wrap items-center gap-2">
+                {LABEL_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-label={`Label colour ${c}`}
+                    aria-pressed={label?.color === c}
+                    onClick={() => setLabel((l) => ({ text: l?.text ?? "", color: c, strength: l?.strength ?? DEFAULT_LABEL_STRENGTH }))}
+                    className={`h-7 w-7 border-2 ${label?.color === c ? "border-stone-900" : "border-transparent"}`}
+                    style={{ background: c }}
+                  />
+                ))}
+                <label className="relative flex h-7 items-center border border-stone-300 bg-white px-2 text-xs font-semibold text-stone-700 hover:bg-stone-100">
+                  Custom
+                  <input type="color" aria-label="Custom label colour" value={label?.color ?? LABEL_COLORS[0]} onChange={(e) => setLabel((l) => ({ text: l?.text ?? "", color: e.target.value, strength: l?.strength ?? DEFAULT_LABEL_STRENGTH }))} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                </label>
+              </div>
+            </div>
+            <div>
+              <Label>Strength ({label?.strength ?? DEFAULT_LABEL_STRENGTH}%)</Label>
+              <input
+                type="range"
+                min={3}
+                max={20}
+                value={label?.strength ?? DEFAULT_LABEL_STRENGTH}
+                aria-label="Label strength"
+                onChange={(e) => setLabel((l) => ({ text: l?.text ?? "", color: l?.color ?? LABEL_COLORS[0], strength: Number(e.target.value) }))}
+                className="w-full accent-stone-900"
+              />
+            </div>
+            <button type="button" className={btn} disabled={!label} onClick={() => setLabel(null)}>
+              Remove label
+            </button>
+          </CollapsibleSection>
+
           <Section title="Save">
             <button type="button" disabled={!thread || printing} onClick={() => void downloadPdf()} className="w-full bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60">
               {printing ? "Making PDF…" : "Download PDF"}
@@ -346,7 +410,7 @@ export default function Unroller() {
         </aside>
 
         <div className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">
-          <div className="snap-stage relative flex max-h-[72vh] flex-1 overflow-hidden lg:max-h-none lg:min-h-0">
+          <div className="scroll-stage relative flex max-h-[72vh] flex-1 overflow-hidden lg:max-h-none lg:min-h-0">
             <div ref={stage} className="relative z-[1] flex flex-1 overflow-auto px-4 py-6 sm:px-8">
               <div className="mx-auto w-full">
                 {!thread ? (
@@ -355,9 +419,9 @@ export default function Unroller() {
                     Paste a link to any post of a thread and press Unroll. You get every post in order, ready to read, copy or download.
                   </div>
                 ) : view === "pages" ? (
-                  <Pages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={{ numbers, media, stats, printing: false, numPos }} containerWidth={stageW} />
+                  <Pages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={{ numbers, media, stats, printing: false, numPos, label }} containerWidth={stageW} />
                 ) : (
-                  <Reading posts={thread.posts} theme={theme} o={{ numbers, media, stats, printing: false, numPos }} width={orientation === "landscape" ? 900 : 640} />
+                  <Reading posts={thread.posts} theme={theme} o={{ numbers, media, stats, printing: false, numPos, label }} width={orientation === "landscape" ? 900 : 640} />
                 )}
               </div>
             </div>
@@ -366,7 +430,7 @@ export default function Unroller() {
       </main>
       {printing && thread && (
         <div ref={printRoot}>
-          <PrintPages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={{ numbers, media, stats, printing: true, numPos }} />
+          <PrintPages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={{ numbers, media, stats, printing: true, numPos, label }} />
         </div>
       )}
     </div>
