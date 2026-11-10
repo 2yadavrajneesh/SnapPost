@@ -2,12 +2,18 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { compact, formatDate, formatTime, proxied } from "@/lib/format";
+import { renderHighlighted, type Highlight } from "@/lib/highlight";
 import { PAGE_SIZES, rgba, type NumPos, type Orientation, type PageLabel, type PageSizeId, type PaperTheme } from "@/lib/paper";
 import type { PostData } from "@/lib/types";
 
-export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; label: PageLabel | null };
+export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; label: PageLabel | null; hl: Record<number, Highlight[]>; redact: Redact };
+
+export type Redact = { name: boolean; avatar: boolean; media: boolean };
+export const NO_REDACT: Redact = { name: false, avatar: false, media: false };
 
 const handle = (p: PostData) => `@${p.username}`;
+const GRAY = "#8b98a5";
+const bar = (w: number, h = 12) => <span style={{ display: "inline-block", width: w, height: h, background: GRAY, borderRadius: 2, verticalAlign: "middle" }} />;
 const MM = 96 / 25.4;
 
 /** Logical pixel size of a page (96 dpi), so the preview and the PDF share one layout. */
@@ -17,16 +23,20 @@ export function pagePx(size: PageSizeId, orientation: Orientation) {
   return { w: Math.round(w * MM), h: Math.round(h * MM), margin: Math.round(Math.max(8, Math.min(14, w * 0.06)) * MM), footer: 30 };
 }
 
-export function AuthorHeader({ posts, theme }: { posts: PostData[]; theme: PaperTheme }) {
+export function AuthorHeader({ posts, theme, redact }: { posts: PostData[]; theme: PaperTheme; redact: Redact }) {
   const a = posts[0];
   return (
     <header className="flex items-center gap-3 pb-4" style={{ borderBottom: `1px solid ${theme.line}`, marginBottom: 16 }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      {a.avatar ? <img src={proxied(a.avatar)} alt="" className="h-11 w-11 rounded-full object-cover" /> : <div className="h-11 w-11 rounded-full" style={{ background: theme.line }} />}
+      {redact.avatar || !a.avatar ? (
+        <div className="h-11 w-11 flex-none rounded-full" style={{ background: redact.avatar ? GRAY : theme.line }} />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={proxied(a.avatar)} alt="" className="h-11 w-11 rounded-full object-cover" />
+      )}
       <div className="min-w-0">
-        <div className="truncate text-sm font-bold">{a.name}</div>
-        <div className="truncate text-xs" style={{ color: theme.muted }}>
-          {handle(a)} · {posts.length} post{posts.length === 1 ? "" : "s"}
+        <div className="truncate text-sm font-bold">{redact.name ? bar(120, 13) : a.name}</div>
+        <div className="mt-0.5 truncate text-xs" style={{ color: theme.muted }}>
+          {redact.name ? bar(80, 10) : handle(a)} · {posts.length} post{posts.length === 1 ? "" : "s"}
           {a.timestamp ? ` · ${formatDate(a.timestamp)}` : ""}
         </div>
       </div>
@@ -36,6 +46,15 @@ export function AuthorHeader({ posts, theme }: { posts: PostData[]; theme: Paper
 
 export function PostBody({ p, i, n, theme, o }: { p: PostData; i: number; n: number; theme: PaperTheme; o: ViewOpts }) {
   const frame = { border: `1px solid ${theme.line}` };
+  // Hidden media is blurred hard; the box clips the blur so it never spills over the text.
+  const blur = (node: React.ReactNode) =>
+    o.redact.media ? (
+      <div style={{ overflow: "hidden" }}>
+        <div style={{ filter: "blur(26px)", transform: "scale(1.15)" }}>{node}</div>
+      </div>
+    ) : (
+      node
+    );
   return (
     <div>
       {o.numbers && n > 1 && (
@@ -43,25 +62,33 @@ export function PostBody({ p, i, n, theme, o }: { p: PostData; i: number; n: num
           {i + 1}/{n}
         </div>
       )}
-      <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{p.text}</p>
+      <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{renderHighlighted(p.text, o.hl[i])}</p>
       {o.media && p.photos.length > 0 && (
-        <div className={`mt-3 grid gap-1.5 ${p.photos.length > 1 ? "grid-cols-2" : ""}`}>
-          {p.photos.map((u) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={u} src={proxied(u)} alt="" loading="eager" className="w-full object-cover" style={frame} />
-          ))}
+        <div className="mt-3">
+          {blur(
+            <div className={`grid gap-1.5 ${p.photos.length > 1 ? "grid-cols-2" : ""}`}>
+              {p.photos.map((u) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={u} src={proxied(u)} alt="" loading="eager" className="w-full object-cover" style={frame} />
+              ))}
+            </div>,
+          )}
         </div>
       )}
-      {o.media &&
-        p.video &&
-        (o.printing ? (
-          p.video.poster ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={proxied(p.video.poster)} alt="Video" className="mt-3 w-full object-cover" style={frame} />
-          ) : null
-        ) : (
-          <video className="mt-3 w-full bg-black" style={frame} controls preload="none" poster={p.video.poster ? proxied(p.video.poster) : undefined} src={p.video.sources[0] ? `/api/video?url=${encodeURIComponent(p.video.sources[0])}` : undefined} />
-        ))}
+      {o.media && p.video && (
+        <div className="mt-3">
+          {blur(
+            o.printing ? (
+              p.video.poster ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={proxied(p.video.poster)} alt="Video" className="w-full object-cover" style={frame} />
+              ) : null
+            ) : (
+              <video className="w-full bg-black" style={frame} controls preload="none" poster={p.video.poster ? proxied(p.video.poster) : undefined} src={p.video.sources[0] ? `/api/video?url=${encodeURIComponent(p.video.sources[0])}` : undefined} />
+            ),
+          )}
+        </div>
+      )}
       <div className="mt-2 flex flex-wrap gap-x-4 text-[11px]" style={{ color: theme.muted }}>
         {p.timestamp && <span>{formatTime(p.timestamp)}</span>}
         {o.stats && (
@@ -82,7 +109,7 @@ export function Reading({ posts, theme, o, width }: { posts: PostData[]; theme: 
     <article className="relative mx-auto w-full p-4" style={{ maxWidth: width, background: theme.bg, color: theme.fg, border: `1px solid ${theme.line}` }}>
       <LabelOverlay label={o.label} w={width} />
       <div style={{ position: "relative", zIndex: 1 }}>
-      <AuthorHeader posts={posts} theme={theme} />
+      <AuthorHeader posts={posts} theme={theme} redact={o.redact} />
       <ol>
         {posts.map((p, i) => (
           <li key={p.id || i} className="py-4" style={{ borderBottom: i < posts.length - 1 ? `1px solid ${theme.line}` : undefined }}>
@@ -156,12 +183,12 @@ function Page({ posts, i, size, orientation, theme, o }: { posts: PostData[]; i:
       <LabelOverlay label={o.label} w={w} />
       <div style={{ position: "absolute", left: margin, top: margin, width: boxW, height: boxH, overflow: "hidden", zIndex: 1 }}>
         <div ref={inner} style={{ width: boxW, transform: `scale(${scale})`, transformOrigin: "top center" }}>
-          {i === 0 && <AuthorHeader posts={posts} theme={theme} />}
+          {i === 0 && <AuthorHeader posts={posts} theme={theme} redact={o.redact} />}
           <PostBody p={p} i={i} n={posts.length} theme={theme} o={o} />
         </div>
       </div>
       <div className="text-[11px]" style={{ position: "absolute", left: margin, bottom: margin * 0.45, color: theme.muted, zIndex: 1 }}>
-        {handle(posts[0])} · post {i + 1} of {posts.length}
+        {o.redact.name ? "Thread" : handle(posts[0])} · post {i + 1} of {posts.length}
       </div>
       <PageNumber text={`${i + 1} / ${posts.length}`} pos={o.numPos} w={w} h={h} margin={margin} theme={theme} />
     </div>

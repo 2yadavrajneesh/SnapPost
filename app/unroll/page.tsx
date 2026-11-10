@@ -6,7 +6,9 @@ import { CollapsibleSection, Label, Section, Segmented } from "@/components/ui";
 import { downloadBlob } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
 import { DEFAULT_LABEL_STRENGTH, LABEL_COLORS, LABEL_PRESETS, NUM_POSITIONS, PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type NumPos, type Orientation, type PageLabel, type PageSizeId } from "@/lib/paper";
-import { Pages, PrintPages, Reading } from "@/components/ThreadView";
+import HighlightEditor from "@/components/HighlightEditor";
+import { NO_REDACT, Pages, PrintPages, Reading, type Redact } from "@/components/ThreadView";
+import { type Highlight } from "@/lib/highlight";
 import { compact, formatDate, formatTime, proxied } from "@/lib/format";
 import type { PostData } from "@/lib/types";
 
@@ -17,14 +19,30 @@ const btn =
 
 const handle = (p: PostData) => `@${p.username}`;
 
+type ExportOpts = { numbers: boolean; media: boolean; hl: Record<number, Highlight[]>; redact: Redact };
+
+/** Hidden ranges (bar / blur) become block characters, so the real words never reach a text export. */
+function mask(text: string, list: Highlight[] | undefined): string {
+  if (!list?.length) return text;
+  let out = "";
+  let at = 0;
+  for (const h of list) {
+    if (h.style !== "bar" && h.style !== "blur") continue;
+    out += text.slice(at, h.start) + text.slice(h.start, h.end).replace(/\S/gu, "█");
+    at = h.end;
+  }
+  return out + text.slice(at);
+}
+
 /** Plain-text version: a header line, then every post numbered "1/N". */
-function toText(t: Thread, o: { numbers: boolean; media: boolean }): string {
+function toText(t: Thread, o: ExportOpts): string {
   const a = t.posts[0];
   const n = t.posts.length;
-  const lines = [`Thread by ${a.name} (${handle(a)}) · ${n} post${n === 1 ? "" : "s"}`, t.link, ""];
+  const who = o.redact.name ? "[hidden]" : `${a.name} (${handle(a)})`;
+  const lines = [`Thread by ${who} · ${n} post${n === 1 ? "" : "s"}`, ...(o.redact.name ? [] : [t.link]), ""];
   t.posts.forEach((p, i) => {
-    lines.push(o.numbers && n > 1 ? `${i + 1}/${n}` : "", p.text.trim());
-    if (o.media) {
+    lines.push(o.numbers && n > 1 ? `${i + 1}/${n}` : "", mask(p.text, o.hl[i]).trim());
+    if (o.media && !o.redact.media) {
       p.photos.forEach((u) => lines.push(u));
       if (p.video) lines.push(`[Video] ${p.video.sources[0] ?? p.video.hls ?? ""}`.trim());
     }
@@ -34,14 +52,16 @@ function toText(t: Thread, o: { numbers: boolean; media: boolean }): string {
 }
 
 /** Markdown version with the author as the title and images inline. */
-function toMarkdown(t: Thread, o: { numbers: boolean; media: boolean }): string {
+function toMarkdown(t: Thread, o: ExportOpts): string {
   const a = t.posts[0];
   const n = t.posts.length;
-  const out = [`# Thread by ${a.name} (${handle(a)})`, "", `[Original post](${t.link}) · ${n} post${n === 1 ? "" : "s"}`, ""];
+  const out = o.redact.name
+    ? [`# Thread (author hidden)`, "", `${n} post${n === 1 ? "" : "s"}`, ""]
+    : [`# Thread by ${a.name} (${handle(a)})`, "", `[Original post](${t.link}) · ${n} post${n === 1 ? "" : "s"}`, ""];
   t.posts.forEach((p, i) => {
     if (o.numbers && n > 1) out.push(`**${i + 1}/${n}**`, "");
-    out.push(p.text.trim(), "");
-    if (o.media) {
+    out.push(mask(p.text, o.hl[i]).trim(), "");
+    if (o.media && !o.redact.media) {
       p.photos.forEach((u) => out.push(`![](${u})`, ""));
       if (p.video) out.push(`[Video](${p.video.sources[0] ?? p.video.hls ?? ""})`, "");
     }
@@ -91,6 +111,9 @@ export default function Unroller() {
   const [printing, setPrinting] = useState(false); // true while the PDF is being drawn (videos show as pictures)
   const [numPos, setNumPos] = useState<NumPos>("bottom");
   const [label, setLabel] = useState<PageLabel | null>(null);
+  const [hl, setHl] = useState<Record<number, Highlight[]>>({});
+  const [redact, setRedact] = useState<Redact>(NO_REDACT);
+  const [editIdx, setEditIdx] = useState(0);
   const [view, setView] = useState<"pages" | "reading">("pages");
   const [stageW, setStageW] = useState(700);
   const stage = useRef<HTMLDivElement>(null);
@@ -117,6 +140,8 @@ export default function Unroller() {
       if (!tr.ok) throw new Error(tj.error || "Couldn't fetch that thread.");
       if (id !== reqId.current) return;
       if (Array.isArray(tj.posts) && tj.posts.length >= 2) {
+        setHl({});
+        setEditIdx(0);
         setThread({ posts: tj.posts, isThread: true, link: url });
         return;
       }
@@ -125,6 +150,8 @@ export default function Unroller() {
       const pj = await pr.json();
       if (!pr.ok) throw new Error(pj.error || "Couldn't fetch that post.");
       if (id !== reqId.current) return;
+      setHl({});
+      setEditIdx(0);
       setThread({ posts: [pj as PostData], isThread: false, link: url });
     } catch (e) {
       if (id === reqId.current) setError(e instanceof Error ? e.message : "Something went wrong.");
@@ -133,7 +160,7 @@ export default function Unroller() {
     }
   }
 
-  const opts = { numbers, media };
+  const opts: ExportOpts = { numbers, media, hl, redact };
 
   // Auto fetch: as soon as the box holds a valid tweet link, unroll it (after a short pause for typing).
   useEffect(() => {
@@ -163,6 +190,7 @@ export default function Unroller() {
     lastFetched.current = "";
     setLink("");
     setThread(null);
+    setHl({});
     setError(null);
     setBusy(false);
     linkInput.current?.focus();
@@ -202,8 +230,9 @@ export default function Unroller() {
       setPrinting(false);
     }
   }
+  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, label, hl, redact });
   const a = thread?.posts[0];
-  const base = a ? `thread-${a.username}-${a.id}` : "thread";
+  const base = a && !redact.name ? `thread-${a.username}-${a.id}` : "thread-redacted";
 
   return (
     <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden" style={{ ["--accent" as string]: "#0f766e" }}>
@@ -322,6 +351,54 @@ export default function Unroller() {
             <p className="text-[11px] leading-snug text-stone-500">Each post gets its own page, so nothing is cut when you print. A post taller than the page is scaled down to fit.</p>
           </Section>
 
+          <CollapsibleSection title="Marker & redact">
+            {!thread ? (
+              <p className="text-[11px] text-stone-500">Unroll a thread first, then pick a post and select its words to highlight or hide them.</p>
+            ) : (
+              <>
+                <div>
+                  <Label>Post to edit</Label>
+                  <select
+                    aria-label="Post to edit"
+                    value={Math.min(editIdx, thread.posts.length - 1)}
+                    onChange={(e) => setEditIdx(Number(e.target.value))}
+                    className="w-full border border-stone-300 bg-white px-2.5 py-2 text-xs font-medium text-stone-800"
+                  >
+                    {thread.posts.map((p, i) => (
+                      <option key={i} value={i}>
+                        {i + 1}/{thread.posts.length} · {p.text.replace(/\s+/g, " ").slice(0, 38)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <HighlightEditor
+                  key={editIdx}
+                  text={thread.posts[Math.min(editIdx, thread.posts.length - 1)].text}
+                  highlights={hl[editIdx] ?? []}
+                  onChange={(h) => setHl((prev) => ({ ...prev, [editIdx]: h }))}
+                  redactExtra={
+                    <div className="space-y-2 border-t border-stone-200 pt-3">
+                      <Label>Hide details</Label>
+                      {(
+                        [
+                          ["name", "Name and handle"],
+                          ["avatar", "Profile picture"],
+                          ["media", "Photos and videos"],
+                        ] as const
+                      ).map(([k, text]) => (
+                        <label key={k} className="flex cursor-pointer items-center gap-2 border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700">
+                          <input type="checkbox" checked={redact[k]} onChange={(e) => setRedact((r) => ({ ...r, [k]: e.target.checked }))} className="h-4 w-4 accent-stone-900" />
+                          {text}
+                        </label>
+                      ))}
+                      <p className="text-[11px] leading-snug text-stone-500">Hidden names, handles and bars are also removed from the copied and downloaded text.</p>
+                    </div>
+                  }
+                />
+              </>
+            )}
+          </CollapsibleSection>
+
           <CollapsibleSection title="Background label">
             <p className="text-[11px] leading-snug text-stone-500">Adds a light tint and a faint diagonal label behind the text of every page, for example Confidential. The text stays easy to read.</p>
             <div className="flex flex-wrap gap-1.5">
@@ -419,9 +496,9 @@ export default function Unroller() {
                     Paste a link to any post of a thread and press Unroll. You get every post in order, ready to read, copy or download.
                   </div>
                 ) : view === "pages" ? (
-                  <Pages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={{ numbers, media, stats, printing: false, numPos, label }} containerWidth={stageW} />
+                  <Pages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={vo(false)} containerWidth={stageW} />
                 ) : (
-                  <Reading posts={thread.posts} theme={theme} o={{ numbers, media, stats, printing: false, numPos, label }} width={orientation === "landscape" ? 900 : 640} />
+                  <Reading posts={thread.posts} theme={theme} o={vo(false)} width={orientation === "landscape" ? 900 : 640} />
                 )}
               </div>
             </div>
@@ -430,7 +507,7 @@ export default function Unroller() {
       </main>
       {printing && thread && (
         <div ref={printRoot}>
-          <PrintPages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={{ numbers, media, stats, printing: true, numPos, label }} />
+          <PrintPages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={vo(true)} />
         </div>
       )}
     </div>
