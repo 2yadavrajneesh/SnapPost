@@ -51,7 +51,13 @@ export type PaperTheme = {
   line: string;
 };
 
-export const PAPER_THEMES: PaperTheme[] = [{ id: "paper", label: "Paper", bg: "#ffffff", fg: "#1c1917", muted: "#78716c", line: "#e7e5e4" }];
+export const PAPER_THEMES: PaperTheme[] = [
+  { id: "paper", label: "Paper", bg: "#ffffff", fg: "#1c1917", muted: "#78716c", line: "#e7e5e4" },
+  { id: "sepia", label: "Sepia", bg: "#f4ecd8", fg: "#433422", muted: "#8a7558", line: "#dccfae" },
+  { id: "dark", label: "Dark", bg: "#16191d", fg: "#e8e6e3", muted: "#9aa0a6", line: "#2d3238" },
+  { id: "newsprint", label: "Newsprint", bg: "#e9e7e1", fg: "#222222", muted: "#6b6a66", line: "#c9c6bd" },
+  { id: "ocean", label: "Ocean", bg: "#e8f3f8", fg: "#0c2a3b", muted: "#4f7488", line: "#bcd8e5" },
+];
 
 /** Builds the PDF from page nodes (one image per page, each exactly the page size). */
 export async function renderPagesPdf(

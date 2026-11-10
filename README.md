@@ -38,6 +38,7 @@ Paste a link, tweak the look, and download or copy the result. Built with Next.j
 - **Page size and orientation:** A4, A3, A5, A6, B5, US Letter, US Legal, Tabloid or Executive, in portrait or landscape.
 - **Print layout preview:** the *Pages* preview shows the pages exactly as they will print. *Reading* shows one continuous page (the default on phones).
 - **One post per page, never cut:** each post gets its own page. A post taller than the page is scaled down to fit. The first page carries the author header, and every page has a footer with the post and page number.
+- **Page themes:** Paper, Sepia, Dark, Newsprint or Ocean. The choice applies to the preview and the PDF.
 - **Page number position:** put the footer number at the top, bottom, left, right or centre (or any corner combination).
 - **Background label:** an optional light, editable watermark such as *Confidential* or *Important* behind every page, subtle enough to keep the text readable.
 - **Marker and redact:** highlight text (16 colours plus a custom one) or hide it with bars or blur. Redactions carry into the PDF and the text exports.

@@ -120,7 +120,8 @@ export default function Unroller() {
   const [stageW, setStageW] = useState(700);
   const stage = useRef<HTMLDivElement>(null);
   const printRoot = useRef<HTMLDivElement>(null);
-  const theme = PAPER_THEMES[0];
+  const [themeId, setThemeId] = useState(PAPER_THEMES[0].id);
+  const theme = PAPER_THEMES.find((t) => t.id === themeId) ?? PAPER_THEMES[0];
   const reqId = useRef(0);
   const lastFetched = useRef("");
   const linkInput = useRef<HTMLInputElement>(null);
@@ -345,6 +346,26 @@ export default function Unroller() {
                   { value: "landscape", label: "Landscape" },
                 ]}
               />
+            </div>
+            <div>
+              <Label>Page theme</Label>
+              <div className="grid grid-cols-5 gap-1.5" role="radiogroup" aria-label="Page theme">
+                {PAPER_THEMES.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={themeId === t.id}
+                    onClick={() => setThemeId(t.id)}
+                    className={`flex flex-col items-center gap-1 border px-1 py-1.5 text-[10px] font-semibold ${themeId === t.id ? "border-accent text-accent" : "border-stone-300 text-stone-600"}`}
+                  >
+                    <span className="block h-6 w-full border" style={{ background: t.bg, borderColor: t.line, color: t.fg }}>
+                      <span className="block px-1 text-[9px] leading-[22px]">Aa</span>
+                    </span>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div>
               <Label>Page number position</Label>
