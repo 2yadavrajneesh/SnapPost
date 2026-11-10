@@ -1,0 +1,247 @@
+"use client";
+
+import { useRef, useState } from "react";
+import SiteHeader from "@/components/SiteHeader";
+import { Label, Section } from "@/components/ui";
+import { compact, formatDate, formatTime, proxied } from "@/lib/format";
+import type { PostData } from "@/lib/types";
+
+type Thread = { posts: PostData[]; isThread: boolean; link: string };
+
+const btn =
+  "inline-flex items-center justify-center border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50";
+
+const handle = (p: PostData) => `@${p.username}`;
+
+/** Plain-text version: a header line, then every post numbered "1/N". */
+function toText(t: Thread, o: { numbers: boolean; media: boolean }): string {
+  const a = t.posts[0];
+  const n = t.posts.length;
+  const lines = [`Thread by ${a.name} (${handle(a)}) · ${n} post${n === 1 ? "" : "s"}`, t.link, ""];
+  t.posts.forEach((p, i) => {
+    lines.push(o.numbers && n > 1 ? `${i + 1}/${n}` : "", p.text.trim());
+    if (o.media) {
+      p.photos.forEach((u) => lines.push(u));
+      if (p.video) lines.push(`[Video] ${p.video.sources[0] ?? p.video.hls ?? ""}`.trim());
+    }
+    lines.push("");
+  });
+  return lines.filter((l, i, arr) => !(l === "" && arr[i - 1] === "")).join("\n").trim() + "\n";
+}
+
+/** Markdown version with the author as the title and images inline. */
+function toMarkdown(t: Thread, o: { numbers: boolean; media: boolean }): string {
+  const a = t.posts[0];
+  const n = t.posts.length;
+  const out = [`# Thread by ${a.name} (${handle(a)})`, "", `[Original post](${t.link}) · ${n} post${n === 1 ? "" : "s"}`, ""];
+  t.posts.forEach((p, i) => {
+    if (o.numbers && n > 1) out.push(`**${i + 1}/${n}**`, "");
+    out.push(p.text.trim(), "");
+    if (o.media) {
+      p.photos.forEach((u) => out.push(`![](${u})`, ""));
+      if (p.video) out.push(`[Video](${p.video.sources[0] ?? p.video.hls ?? ""})`, "");
+    }
+  });
+  return out.join("\n").trim() + "\n";
+}
+
+async function copy(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    return ok;
+  }
+}
+
+function save(name: string, text: string, type: string) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export default function Unroller() {
+  const [link, setLink] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [thread, setThread] = useState<Thread | null>(null);
+  const [numbers, setNumbers] = useState(true);
+  const [media, setMedia] = useState(true);
+  const [stats, setStats] = useState(false);
+  const [notice, setNotice] = useState("");
+  const reqId = useRef(0);
+  const flash = (m: string) => {
+    setNotice(m);
+    setTimeout(() => setNotice(""), 2200);
+  };
+
+  async function unroll() {
+    const url = link.trim();
+    if (!url) return;
+    const id = ++reqId.current;
+    setBusy(true);
+    setError(null);
+    try {
+      const tr = await fetch(`/api/thread?url=${encodeURIComponent(url)}`);
+      const tj = await tr.json();
+      if (!tr.ok) throw new Error(tj.error || "Couldn't fetch that thread.");
+      if (id !== reqId.current) return;
+      if (Array.isArray(tj.posts) && tj.posts.length >= 2) {
+        setThread({ posts: tj.posts, isThread: true, link: url });
+        return;
+      }
+      // Not a thread (or none detected): show the single post so the page is still useful.
+      const pr = await fetch(`/api/tweet?url=${encodeURIComponent(url)}`);
+      const pj = await pr.json();
+      if (!pr.ok) throw new Error(pj.error || "Couldn't fetch that post.");
+      if (id !== reqId.current) return;
+      setThread({ posts: [pj as PostData], isThread: false, link: url });
+    } catch (e) {
+      if (id === reqId.current) setError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      if (id === reqId.current) setBusy(false);
+    }
+  }
+
+  const opts = { numbers, media };
+  const a = thread?.posts[0];
+  const base = a ? `thread-${a.username}-${a.id}` : "thread";
+
+  return (
+    <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
+      <SiteHeader tagline="Thread Unroller. Read a whole thread in one page." />
+
+      <main className="grid w-full flex-1 lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
+        <aside className="order-2 min-w-0 border-t border-stone-300 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:border-r lg:border-t-0">
+          <Section title="Source">
+            <div>
+              <Label>Link to any post in the thread</Label>
+              <div className="flex gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <input
+                    value={link}
+                    onChange={(e) => setLink(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && void unroll()}
+                    placeholder="Paste a tweet link…"
+                    aria-busy={busy}
+                    className="w-full border border-stone-200 bg-white py-2 pl-3 pr-9 text-sm outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-200"
+                  />
+                  {busy && <span className="snap-spinner absolute right-2.5 top-1/2 -mt-2" aria-hidden="true" />}
+                </div>
+                <button type="button" onClick={() => void unroll()} disabled={busy || !link.trim()} className="bg-accent px-4 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60">
+                  Unroll
+                </button>
+              </div>
+              {error && <p className="mt-2 text-xs font-medium text-red-600">{error}</p>}
+              {thread && !thread.isThread && <p className="mt-2 text-xs text-stone-500">This post isn&apos;t part of a thread, so only one post is shown.</p>}
+            </div>
+          </Section>
+
+          <Section title="Display">
+            {[
+              ["Number the posts (1/n)", numbers, setNumbers],
+              ["Show photos and videos", media, setMedia],
+              ["Show likes, reposts and views", stats, setStats],
+            ].map(([label, val, setter]) => (
+              <label key={label as string} className="flex cursor-pointer items-center gap-2 border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700">
+                <input type="checkbox" checked={val as boolean} onChange={(e) => (setter as (v: boolean) => void)(e.target.checked)} className="h-4 w-4 accent-stone-900" />
+                {label as string}
+              </label>
+            ))}
+          </Section>
+
+          <Section title="Save">
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" className={btn} disabled={!thread} onClick={async () => thread && flash((await copy(toText(thread, opts))) ? "Text copied" : "Copy failed")}>
+                Copy as text
+              </button>
+              <button type="button" className={btn} disabled={!thread} onClick={async () => thread && flash((await copy(toMarkdown(thread, opts))) ? "Markdown copied" : "Copy failed")}>
+                Copy Markdown
+              </button>
+              <button type="button" className={btn} disabled={!thread} onClick={() => thread && save(`${base}.txt`, toText(thread, opts), "text/plain;charset=utf-8")}>
+                Download .txt
+              </button>
+              <button type="button" className={btn} disabled={!thread} onClick={() => thread && save(`${base}.md`, toMarkdown(thread, opts), "text/markdown;charset=utf-8")}>
+                Download .md
+              </button>
+            </div>
+            <div className="h-4 text-xs font-medium text-emerald-700" aria-live="polite">
+              {notice}
+            </div>
+          </Section>
+        </aside>
+
+        <div className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">
+          <div className="snap-stage relative flex max-h-[72vh] flex-1 overflow-hidden lg:max-h-none lg:min-h-0">
+            <div className="relative z-[1] flex flex-1 overflow-auto px-4 py-6 sm:px-8">
+              <div className="mx-auto w-full max-w-[640px]" style={{ margin: "0 auto" }}>
+                {!thread ? (
+                  <div className="border border-stone-300 bg-white p-8 text-center text-sm text-stone-600">
+                    <div className="mb-1 text-base font-bold text-stone-900">Unroll a thread</div>
+                    Paste a link to any post of a thread and press Unroll. You get every post in order, ready to read, copy or download.
+                  </div>
+                ) : (
+                  <article className="border border-stone-300 bg-white">
+                    <header className="flex items-center gap-3 border-b border-stone-200 p-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {a?.avatar ? <img src={proxied(a.avatar)} alt="" className="h-11 w-11 rounded-full object-cover" /> : <div className="h-11 w-11 rounded-full bg-stone-200" />}
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-bold text-stone-900">{a?.name}</div>
+                        <div className="truncate text-xs text-stone-500">
+                          {a && handle(a)} · {thread.posts.length} post{thread.posts.length === 1 ? "" : "s"}
+                          {a?.timestamp ? ` · ${formatDate(a.timestamp)}` : ""}
+                        </div>
+                      </div>
+                    </header>
+                    <ol className="divide-y divide-stone-200">
+                      {thread.posts.map((p, i) => (
+                        <li key={p.id || i} className="p-4">
+                          {numbers && thread.posts.length > 1 && <div className="mb-1 text-[11px] font-semibold tabular-nums text-stone-400">{i + 1}/{thread.posts.length}</div>}
+                          <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-stone-900">{p.text}</p>
+                          {media && p.photos.length > 0 && (
+                            <div className={`mt-3 grid gap-1.5 ${p.photos.length > 1 ? "grid-cols-2" : ""}`}>
+                              {p.photos.map((u) => (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img key={u} src={proxied(u)} alt="" loading="lazy" className="w-full border border-stone-200 object-cover" />
+                              ))}
+                            </div>
+                          )}
+                          {media && p.video && (
+                            <video className="mt-3 w-full border border-stone-200 bg-black" controls preload="none" poster={p.video.poster ? proxied(p.video.poster) : undefined} src={p.video.sources[0] ? `/api/video?url=${encodeURIComponent(p.video.sources[0])}` : undefined} />
+                          )}
+                          <div className="mt-2 flex flex-wrap gap-x-4 text-[11px] text-stone-500">
+                            {p.timestamp && <span>{formatTime(p.timestamp)}</span>}
+                            {stats && (
+                              <>
+                                <span>{compact(p.likes)} likes</span>
+                                <span>{compact(p.reposts)} reposts</span>
+                                <span>{compact(p.views)} views</span>
+                              </>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </article>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import SiteHeader from "@/components/SiteHeader";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import AppearanceTiles from "@/components/AppearanceTiles";
@@ -36,7 +37,6 @@ const PAD_X = 44; // breathing room around the card inside the viewer (room for 
 const PAD_Y = 64; // desktop
 const PAD_Y_MOBILE = 46; // the mobile viewer is short, so it needs less room // extra top/bottom room for the status chip and the zoom pill
 const FORMAT_LABEL = { png: "PNG image", pdf: "PDF document", mp4: "MP4 video" } as const;
-const SITE_THEME_KEY = "snappost:siteTheme";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function toTweet(j: any): TweetData {
@@ -68,7 +68,6 @@ export default function Home() {
   const [link, setLink] = useState("");
   const [fetching, setFetching] = useState(false);
   const [hasTweet, setHasTweet] = useState(false); // true once a real tweet was fetched: the sample is never exported
-  const [siteTheme, setSiteTheme] = useState<"light" | "dark">("light");
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showEdit, setShowEdit] = useState(false);
   const [showTools, setShowTools] = useState(false);
@@ -121,25 +120,6 @@ export default function Home() {
   const cardTweet: TweetData = carousel
     ? { ...tweet, ...toTweet(thread![slideAt]), parents: [] }
     : tweet;
-
-  // Light/Dark theme of the website itself (not of the tweet image, which has its own Appearance tile).
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(SITE_THEME_KEY) === "dark") setSiteTheme("dark");
-    } catch {
-      /* ignore */
-    }
-  }, []);
-  const changeSiteTheme = (th: "light" | "dark") => {
-    setSiteTheme(th);
-    document.documentElement.dataset.theme = th;
-    try {
-      localStorage.setItem(SITE_THEME_KEY, th);
-    } catch {
-      /* ignore */
-    }
-  };
-
 
   // Re-measure the card after every render (cheap; setState bails out when unchanged)...
   useLayoutEffect(() => {
@@ -559,51 +539,16 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
-      {/* Navbar: brand on the left, export controls on the right */}
-      <header className="sticky top-0 z-20 border-b border-stone-300 bg-[#faf6f1]/90 backdrop-blur">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <svg width="36" height="36" viewBox="0 0 64 64" aria-hidden="true">
-              <rect width="64" height="64" fill="#1b2420" />
-              <path d="M14 26V14h12M38 14h12v12M50 38v12H38M26 50H14V38" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="square" />
-              <rect x="25" y="25" width="14" height="14" fill="#ea580c" />
-            </svg>
-            <div>
-              <h1 className="text-base font-bold leading-none">SnapPost</h1>
-              <div className="mt-1 hidden text-[11px] text-stone-500 sm:block">Screenshot, upgraded. Posts to PNG, PDF &amp; MP4.</div>
-            </div>
-            <span className="ml-1 bg-stone-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-stone-600">
-              Beta
-            </span>
+      <SiteHeader
+        tagline="Screenshot, upgraded. Posts to PNG, PDF &amp; MP4."
+        actions={
+          <div className="hidden items-center gap-2 lg:flex">
+            {formatPicker}
+            {copyButton()}
+            {downloadButton()}
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              aria-label={siteTheme === "light" ? "Switch to dark theme" : "Switch to light theme"}
-              title={siteTheme === "light" ? "Dark theme" : "Light theme"}
-              onClick={() => changeSiteTheme(siteTheme === "light" ? "dark" : "light")}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-stone-300 bg-white text-stone-800 transition hover:bg-stone-100"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                {siteTheme === "light" ? (
-                  <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
-                ) : (
-                  <>
-                    <circle cx="12" cy="12" r="4" />
-                    <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-                  </>
-                )}
-              </svg>
-            </button>
-            <div className="hidden items-center gap-2 lg:flex">
-              {formatPicker}
-              {copyButton()}
-              {downloadButton()}
-            </div>
-          </div>
-        </div>
-      </header>
+        }
+      />
 
       <main className="grid w-full flex-1 lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
         {/* Controls (scroll on their own on desktop, so the preview never moves) */}
