@@ -114,6 +114,8 @@ export default function Unroller() {
   const [hl, setHl] = useState<Record<number, Highlight[]>>({});
   const [redact, setRedact] = useState<Redact>(NO_REDACT);
   const [editIdx, setEditIdx] = useState(0);
+  // A post that is not part of a thread waits here until the user agrees to continue with just that post.
+  const [pending, setPending] = useState<Thread | null>(null);
   const [view, setView] = useState<"pages" | "reading">("pages");
   const [stageW, setStageW] = useState(700);
   const stage = useRef<HTMLDivElement>(null);
@@ -133,7 +135,9 @@ export default function Unroller() {
     lastFetched.current = url;
     const id = ++reqId.current;
     setBusy(true);
+    setPending(null);
     setError(null);
+    setPending(null);
     try {
       const tr = await fetch(`/api/thread?url=${encodeURIComponent(url)}`);
       const tj = await tr.json();
@@ -145,14 +149,13 @@ export default function Unroller() {
         setThread({ posts: tj.posts, isThread: true, link: url });
         return;
       }
-      // Not a thread (or none detected): show the single post so the page is still useful.
+      // No thread found: load the single post, but ask before showing it.
       const pr = await fetch(`/api/tweet?url=${encodeURIComponent(url)}`);
       const pj = await pr.json();
       if (!pr.ok) throw new Error(pj.error || "Couldn't fetch that post.");
       if (id !== reqId.current) return;
-      setHl({});
-      setEditIdx(0);
-      setThread({ posts: [pj as PostData], isThread: false, link: url });
+      setThread(null);
+      setPending({ posts: [pj as PostData], isThread: false, link: url });
     } catch (e) {
       if (id === reqId.current) setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -161,6 +164,14 @@ export default function Unroller() {
   }
 
   const opts: ExportOpts = { numbers, media, hl, redact };
+
+  function continueSingle() {
+    if (!pending) return;
+    setHl({});
+    setEditIdx(0);
+    setThread(pending);
+    setPending(null);
+  }
 
   // Auto fetch: as soon as the box holds a valid tweet link, unroll it (after a short pause for typing).
   useEffect(() => {
@@ -190,6 +201,8 @@ export default function Unroller() {
     lastFetched.current = "";
     setLink("");
     setThread(null);
+    setPending(null);
+    setPending(null);
     setHl({});
     setError(null);
     setBusy(false);
@@ -289,11 +302,11 @@ export default function Unroller() {
                   {error}
                 </p>
               )}
-              {thread && !thread.isThread && <p className="mt-2 text-xs text-stone-500">This post isn&apos;t part of a thread, so only one post is shown.</p>}
+              {thread && !thread.isThread && <p className="mt-2 text-xs text-stone-500">Showing a single post, because no thread was found.</p>}
             </div>
           </Section>
 
-          <Section title="Display">
+          <CollapsibleSection title="Display">
             {[
               ["Number the posts (1/n)", numbers, setNumbers],
               ["Show photos and videos", media, setMedia],
@@ -304,9 +317,9 @@ export default function Unroller() {
                 {label as string}
               </label>
             ))}
-          </Section>
+          </CollapsibleSection>
 
-          <Section title="Page">
+          <CollapsibleSection title="Page">
             <div>
               <Label>Page size</Label>
               <div className="relative">
@@ -349,7 +362,7 @@ export default function Unroller() {
               />
             </div>
             <p className="text-[11px] leading-snug text-stone-500">Each post gets its own page, so nothing is cut when you print. A post taller than the page is scaled down to fit.</p>
-          </Section>
+          </CollapsibleSection>
 
           <CollapsibleSection title="Marker & redact">
             {!thread ? (
@@ -490,7 +503,20 @@ export default function Unroller() {
           <div className="scroll-stage relative flex max-h-[72vh] flex-1 overflow-hidden lg:max-h-none lg:min-h-0">
             <div ref={stage} className="relative z-[1] flex flex-1 overflow-auto px-4 py-6 sm:px-8">
               <div className="mx-auto w-full">
-                {!thread ? (
+                {pending && !thread ? (
+                  <div role="alert" className="mx-auto max-w-[520px] border border-amber-300 bg-amber-50 p-6 text-center text-amber-900">
+                    <div className="mb-1 text-base font-bold">Thread not found</div>
+                    <p className="text-sm">Do you want to continue with a single tweet?</p>
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                      <button type="button" onClick={continueSingle} className="bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110">
+                        Continue with single tweet
+                      </button>
+                      <button type="button" onClick={() => setPending(null)} className="border border-amber-400 bg-white px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100">
+                        No, try another link
+                      </button>
+                    </div>
+                  </div>
+                ) : !thread ? (
                   <div className="mx-auto max-w-[640px] border border-stone-300 bg-white p-8 text-center text-sm text-stone-600">
                     <div className="mb-1 text-base font-bold text-stone-900">Unroll a thread</div>
                     Paste a link to any post of a thread and press Unroll. You get every post in order, ready to read, copy or download.

@@ -33,11 +33,16 @@ Paste a link, tweak the look, and download or copy the result. Built with Next.j
 ## ThreadScroll features
 
 - **Paste and go:** use the clipboard button (or paste into the box) and the thread loads on its own. The reset button clears everything so you can start with another link. It works from any post in the thread.
-- **Whole thread in order:** every post by the author, numbered 1/n, with photos, videos and (optionally) likes, reposts and views. If the post is not part of a thread, the single post is shown and you are told so.
+- **Whole thread in order:** every post by the author, numbered 1/n, with photos, videos and (optionally) likes, reposts and views. If no thread is found you are asked *"Thread not found. Do you want to continue with a single tweet?"* and can carry on with just that post (PDF included).
 - **Copy or download as text:** *Copy as text*, *Copy Markdown*, *Download .txt* and *Download .md*.
 - **Page size and orientation:** A4, A3, A5, A6, B5, US Letter, US Legal, Tabloid or Executive, in portrait or landscape.
 - **Print layout preview:** the *Pages* preview shows the pages exactly as they will print. *Reading* shows one continuous page (the default on phones).
 - **One post per page, never cut:** each post gets its own page. A post taller than the page is scaled down to fit. The first page carries the author header, and every page has a footer with the post and page number.
+- **Page number position:** put the footer number at the top, bottom, left, right or centre (or any corner combination).
+- **Background label:** an optional light, editable watermark such as *Confidential* or *Important* behind every page, subtle enough to keep the text readable.
+- **Marker and redact:** highlight text (16 colours plus a custom one) or hide it with bars or blur. Redactions carry into the PDF and the text exports.
+- **Collapsed options:** *Display*, *Page*, *Marker & redact* and *Background label* start closed to keep the sidebar short.
+- **Rising-dot stage:** the viewer has its own teal dotted animation, different from SnapPost's.
 - **PDF download:** the PDF is built from the same pages as the preview, so every language and emoji carry over. Pages are images, so the text in the PDF cannot be selected or searched.
 
 ## Quick start
