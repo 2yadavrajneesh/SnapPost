@@ -2,7 +2,9 @@
 
 import { useRef, useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
-import { Label, Section } from "@/components/ui";
+import { Label, Section, Segmented } from "@/components/ui";
+import { downloadBlob } from "@/lib/export";
+import { PAGE_SIZES, PAPER_THEMES, renderThreadPdf, type Orientation, type PageSizeId } from "@/lib/paper";
 import { compact, formatDate, formatTime, proxied } from "@/lib/format";
 import type { PostData } from "@/lib/types";
 
@@ -82,6 +84,11 @@ export default function Unroller() {
   const [media, setMedia] = useState(true);
   const [stats, setStats] = useState(false);
   const [notice, setNotice] = useState("");
+  const [size, setSize] = useState<PageSizeId>("a4");
+  const [orientation, setOrientation] = useState<Orientation>("portrait");
+  const [printing, setPrinting] = useState(false); // true while the PDF is being drawn (videos show as pictures)
+  const paper = useRef<HTMLElement>(null);
+  const theme = PAPER_THEMES[0];
   const reqId = useRef(0);
   const flash = (m: string) => {
     setNotice(m);
@@ -117,6 +124,22 @@ export default function Unroller() {
   }
 
   const opts = { numbers, media };
+
+  async function downloadPdf() {
+    if (!thread || !paper.current) return;
+    setPrinting(true);
+    try {
+      await new Promise((r) => setTimeout(r, 300)); // let video posters replace the players
+      const blocks = Array.from(paper.current.querySelectorAll<HTMLElement>("[data-block]"));
+      const { blob, pages } = await renderThreadPdf(blocks, { size, orientation, theme });
+      downloadBlob(blob, `${base}-${size}-${orientation}.pdf`);
+      flash(`PDF saved · ${pages} page${pages === 1 ? "" : "s"}`);
+    } catch {
+      flash("Couldn't make the PDF");
+    } finally {
+      setPrinting(false);
+    }
+  }
   const a = thread?.posts[0];
   const base = a ? `thread-${a.username}-${a.id}` : "thread";
 
@@ -163,7 +186,39 @@ export default function Unroller() {
             ))}
           </Section>
 
+          <Section title="Page">
+            <div>
+              <Label>Page size</Label>
+              <div className="relative">
+                <select aria-label="Page size" value={size} onChange={(e) => setSize(e.target.value as PageSizeId)} className="w-full appearance-none border border-stone-300 bg-white py-2 pl-2.5 pr-8 text-xs font-medium text-stone-800">
+                  {PAGE_SIZES.map((z) => (
+                    <option key={z.id} value={z.id}>
+                      {z.label} ({z.w} × {z.h} mm)
+                    </option>
+                  ))}
+                </select>
+                <svg className="pointer-events-none absolute right-2.5 top-1/2 -mt-[5px]" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </div>
+            </div>
+            <div>
+              <Label>Orientation</Label>
+              <Segmented
+                value={orientation}
+                onChange={setOrientation}
+                options={[
+                  { value: "portrait", label: "Portrait (vertical)" },
+                  { value: "landscape", label: "Landscape" },
+                ]}
+              />
+            </div>
+          </Section>
+
           <Section title="Save">
+            <button type="button" disabled={!thread || printing} onClick={() => void downloadPdf()} className="w-full bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60">
+              {printing ? "Making PDF…" : "Download PDF"}
+            </button>
             <div className="grid grid-cols-2 gap-2">
               <button type="button" className={btn} disabled={!thread} onClick={async () => thread && flash((await copy(toText(thread, opts))) ? "Text copied" : "Copy failed")}>
                 Copy as text
@@ -187,42 +242,52 @@ export default function Unroller() {
         <div className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">
           <div className="snap-stage relative flex max-h-[72vh] flex-1 overflow-hidden lg:max-h-none lg:min-h-0">
             <div className="relative z-[1] flex flex-1 overflow-auto px-4 py-6 sm:px-8">
-              <div className="mx-auto w-full max-w-[640px]" style={{ margin: "0 auto" }}>
+              <div className="mx-auto w-full" style={{ maxWidth: orientation === "landscape" ? 900 : 640 }}>
                 {!thread ? (
                   <div className="border border-stone-300 bg-white p-8 text-center text-sm text-stone-600">
                     <div className="mb-1 text-base font-bold text-stone-900">Unroll a thread</div>
                     Paste a link to any post of a thread and press Unroll. You get every post in order, ready to read, copy or download.
                   </div>
                 ) : (
-                  <article className="border border-stone-300 bg-white">
-                    <header className="flex items-center gap-3 border-b border-stone-200 p-4">
+                  <article ref={paper} style={{ background: theme.bg, color: theme.fg, border: `1px solid ${theme.line}` }}>
+                    <header data-block className="flex items-center gap-3 p-4" style={{ background: theme.bg, borderBottom: `1px solid ${theme.line}` }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      {a?.avatar ? <img src={proxied(a.avatar)} alt="" className="h-11 w-11 rounded-full object-cover" /> : <div className="h-11 w-11 rounded-full bg-stone-200" />}
+                      {a?.avatar ? <img src={proxied(a.avatar)} alt="" className="h-11 w-11 rounded-full object-cover" /> : <div className="h-11 w-11 rounded-full" style={{ background: theme.line }} />}
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-bold text-stone-900">{a?.name}</div>
-                        <div className="truncate text-xs text-stone-500">
+                        <div className="truncate text-sm font-bold">{a?.name}</div>
+                        <div className="truncate text-xs" style={{ color: theme.muted }}>
                           {a && handle(a)} · {thread.posts.length} post{thread.posts.length === 1 ? "" : "s"}
                           {a?.timestamp ? ` · ${formatDate(a.timestamp)}` : ""}
                         </div>
                       </div>
                     </header>
-                    <ol className="divide-y divide-stone-200">
+                    <ol>
                       {thread.posts.map((p, i) => (
-                        <li key={p.id || i} className="p-4">
-                          {numbers && thread.posts.length > 1 && <div className="mb-1 text-[11px] font-semibold tabular-nums text-stone-400">{i + 1}/{thread.posts.length}</div>}
-                          <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-stone-900">{p.text}</p>
+                        <li key={p.id || i} data-block className="p-4" style={{ background: theme.bg, borderBottom: i < thread.posts.length - 1 ? `1px solid ${theme.line}` : undefined }}>
+                          {numbers && thread.posts.length > 1 && (
+                            <div className="mb-1 text-[11px] font-semibold tabular-nums" style={{ color: theme.muted }}>
+                              {i + 1}/{thread.posts.length}
+                            </div>
+                          )}
+                          <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{p.text}</p>
                           {media && p.photos.length > 0 && (
                             <div className={`mt-3 grid gap-1.5 ${p.photos.length > 1 ? "grid-cols-2" : ""}`}>
                               {p.photos.map((u) => (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img key={u} src={proxied(u)} alt="" loading="lazy" className="w-full border border-stone-200 object-cover" />
+                                <img key={u} src={proxied(u)} alt="" loading="eager" className="w-full object-cover" style={{ border: `1px solid ${theme.line}` }} />
                               ))}
                             </div>
                           )}
-                          {media && p.video && (
-                            <video className="mt-3 w-full border border-stone-200 bg-black" controls preload="none" poster={p.video.poster ? proxied(p.video.poster) : undefined} src={p.video.sources[0] ? `/api/video?url=${encodeURIComponent(p.video.sources[0])}` : undefined} />
-                          )}
-                          <div className="mt-2 flex flex-wrap gap-x-4 text-[11px] text-stone-500">
+                          {media && p.video &&
+                            (printing ? (
+                              p.video.poster ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={proxied(p.video.poster)} alt="Video" className="mt-3 w-full object-cover" style={{ border: `1px solid ${theme.line}` }} />
+                              ) : null
+                            ) : (
+                              <video className="mt-3 w-full bg-black" style={{ border: `1px solid ${theme.line}` }} controls preload="none" poster={p.video.poster ? proxied(p.video.poster) : undefined} src={p.video.sources[0] ? `/api/video?url=${encodeURIComponent(p.video.sources[0])}` : undefined} />
+                            ))}
+                          <div className="mt-2 flex flex-wrap gap-x-4 text-[11px]" style={{ color: theme.muted }}>
                             {p.timestamp && <span>{formatTime(p.timestamp)}</span>}
                             {stats && (
                               <>
