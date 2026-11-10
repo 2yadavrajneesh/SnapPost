@@ -167,8 +167,8 @@ export default function Unroller() {
   const base = a ? `thread-${a.username}-${a.id}` : "thread";
 
   return (
-    <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
-      <SiteHeader tagline="Thread Unroller. Read a whole thread in one page." />
+    <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden" style={{ ["--accent" as string]: "#0f766e" }}>
+      <SiteHeader />
 
       <main className="grid w-full flex-1 lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
         <aside className="order-2 min-w-0 border-t border-stone-300 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:border-r lg:border-t-0">
@@ -183,7 +183,7 @@ export default function Unroller() {
                     onKeyDown={(e) => e.key === "Enter" && void unroll()}
                     placeholder="Paste a tweet link…"
                     aria-busy={busy}
-                    className="w-full border border-stone-200 bg-white py-2 pl-3 pr-9 text-sm outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-200"
+                    className="w-full border border-stone-200 bg-white py-2 pl-3 pr-9 text-sm outline-none focus:border-[color:var(--accent)] focus:ring-1 focus:ring-[color:var(--accent)]"
                   />
                   {busy && <span className="snap-spinner absolute right-2.5 top-1/2 -mt-2" aria-hidden="true" />}
                 </div>

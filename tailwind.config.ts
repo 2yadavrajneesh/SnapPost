@@ -7,7 +7,7 @@ const config: Config = {
       colors: {
         paper: "#faf6f1",
         ink: "#1f1a17",
-        accent: "#c2410c",
+        accent: "var(--accent, #c2410c)",
       },
     },
   },

@@ -540,7 +540,6 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
       <SiteHeader
-        tagline="Screenshot, upgraded. Posts to PNG, PDF &amp; MP4."
         actions={
           <div className="hidden items-center gap-2 lg:flex">
             {formatPicker}
