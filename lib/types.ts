@@ -49,6 +49,8 @@ export type TweetData = {
   reposts: number;
   likes: number;
   views: number;
+  /** Shown instead of the compact count (e.g. "002" for the sample post). */
+  viewsLabel?: string;
   photos: string[];
   video: VideoData | null;
   quote: PostData | null;
@@ -97,12 +99,13 @@ export const DEFAULT_TWEET: TweetData = {
   avatar: "/snappost-logo.svg", // the sample post wears the site logo
   verified: true,
   text: "Turn any tweet into a polished image in seconds. Paste a link, then download it.",
-  time: "8:30 PM",
-  date: "Jul 30, 2026",
+  time: "10:00 AM",
+  date: "2 January 1996",
   replies: 128,
   reposts: 1400,
   likes: 12000,
-  views: 486000,
+  views: 2,
+  viewsLabel: "002",
   photos: [],
   video: null,
   quote: null,

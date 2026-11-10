@@ -109,8 +109,12 @@ export default function Home() {
 
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) => setSettings((s) => ({ ...s, [key]: value }));
   const setT = <K extends keyof TweetData>(key: K, value: TweetData[K]) => setTweet((t) => ({ ...t, [key]: value }));
-  const setCount = (key: "replies" | "reposts" | "likes" | "views", v: string) =>
-    setT(key, Math.max(0, Math.floor(Number(v.replace(/[^\d]/g, "")) || 0)));
+  const setCount = (key: "replies" | "reposts" | "likes" | "views", v: string) => {
+    const digits = v.replace(/[^\d]/g, "");
+    const n = Math.max(0, Math.floor(Number(digits) || 0));
+    if (key === "views") setTweet((t) => ({ ...t, views: n, viewsLabel: /^0\d/.test(digits) ? digits : undefined })); // keep leading zeros as typed
+    else setT(key, n);
+  };
 
   const showThread = shot === "thread" && !!thread && thread.length > 1;
   const carousel = shot === "carousel" && !!thread && thread.length > 1;
@@ -683,7 +687,7 @@ export default function Home() {
                   <TextField label="Replies" value={tweet.replies} onChange={(v) => setCount("replies", v)} />
                   <TextField label="Reposts" value={tweet.reposts} onChange={(v) => setCount("reposts", v)} />
                   <TextField label="Likes" value={tweet.likes} onChange={(v) => setCount("likes", v)} />
-                  <TextField label="Views" value={tweet.views} onChange={(v) => setCount("views", v)} />
+                  <TextField label="Views" value={tweet.viewsLabel ?? tweet.views} onChange={(v) => setCount("views", v)} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <TextField label="Time" value={tweet.time} onChange={(v) => setT("time", v)} />

@@ -890,7 +890,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
                     {showViews && (
                       <>
                         {showTime ? " · " : ""}
-                        <b style={{ color: t.text }}>{compact(tweet.views)}</b> Views
+                        <b style={{ color: t.text }}>{tweet.viewsLabel ?? compact(tweet.views)}</b> Views
                       </>
                     )}
                   </span>
