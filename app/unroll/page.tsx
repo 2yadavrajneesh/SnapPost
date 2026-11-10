@@ -5,7 +5,7 @@ import SiteHeader from "@/components/SiteHeader";
 import { Label, Section, Segmented } from "@/components/ui";
 import { downloadBlob } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
-import { PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type Orientation, type PageSizeId } from "@/lib/paper";
+import { NUM_POSITIONS, PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type NumPos, type Orientation, type PageSizeId } from "@/lib/paper";
 import { Pages, PrintPages, Reading } from "@/components/ThreadView";
 import { compact, formatDate, formatTime, proxied } from "@/lib/format";
 import type { PostData } from "@/lib/types";
@@ -89,6 +89,7 @@ export default function Unroller() {
   const [size, setSize] = useState<PageSizeId>("a4");
   const [orientation, setOrientation] = useState<Orientation>("portrait");
   const [printing, setPrinting] = useState(false); // true while the PDF is being drawn (videos show as pictures)
+  const [numPos, setNumPos] = useState<NumPos>("bottom");
   const [view, setView] = useState<"pages" | "reading">("pages");
   const [stageW, setStageW] = useState(700);
   const stage = useRef<HTMLDivElement>(null);
@@ -303,6 +304,10 @@ export default function Unroller() {
               />
             </div>
             <div>
+              <Label>Page number position</Label>
+              <Segmented value={numPos} onChange={setNumPos} wrap options={NUM_POSITIONS} />
+            </div>
+            <div>
               <Label>Preview</Label>
               <Segmented
                 value={view}
@@ -350,9 +355,9 @@ export default function Unroller() {
                     Paste a link to any post of a thread and press Unroll. You get every post in order, ready to read, copy or download.
                   </div>
                 ) : view === "pages" ? (
-                  <Pages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={{ numbers, media, stats, printing: false }} containerWidth={stageW} />
+                  <Pages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={{ numbers, media, stats, printing: false, numPos }} containerWidth={stageW} />
                 ) : (
-                  <Reading posts={thread.posts} theme={theme} o={{ numbers, media, stats, printing: false }} width={orientation === "landscape" ? 900 : 640} />
+                  <Reading posts={thread.posts} theme={theme} o={{ numbers, media, stats, printing: false, numPos }} width={orientation === "landscape" ? 900 : 640} />
                 )}
               </div>
             </div>
@@ -361,7 +366,7 @@ export default function Unroller() {
       </main>
       {printing && thread && (
         <div ref={printRoot}>
-          <PrintPages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={{ numbers, media, stats, printing: true }} />
+          <PrintPages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={{ numbers, media, stats, printing: true, numPos }} />
         </div>
       )}
     </div>

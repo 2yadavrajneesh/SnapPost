@@ -2,10 +2,10 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { compact, formatDate, formatTime, proxied } from "@/lib/format";
-import { PAGE_SIZES, type Orientation, type PageSizeId, type PaperTheme } from "@/lib/paper";
+import { PAGE_SIZES, type NumPos, type Orientation, type PageSizeId, type PaperTheme } from "@/lib/paper";
 import type { PostData } from "@/lib/types";
 
-export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean };
+export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos };
 
 const handle = (p: PostData) => `@${p.username}`;
 const MM = 96 / 25.4;
@@ -92,6 +92,24 @@ export function Reading({ posts, theme, o, width }: { posts: PostData[]; theme: 
   );
 }
 
+/** The page number, placed on the chosen side of the page. "Centre" is a large, faint number behind the text. */
+function PageNumber({ text, pos, w, h, margin, theme }: { text: string; pos: NumPos; w: number; h: number; margin: number; theme: PaperTheme }) {
+  if (pos === "none") return null;
+  const base = { position: "absolute", color: theme.muted, fontSize: 11, lineHeight: 1, whiteSpace: "nowrap" } as const;
+  const side = margin * 0.45;
+  const style =
+    pos === "top"
+      ? { ...base, top: side, left: 0, width: w, textAlign: "center" as const }
+      : pos === "bottom"
+        ? { ...base, bottom: side, left: 0, width: w, textAlign: "center" as const }
+        : pos === "left"
+          ? { ...base, left: side, top: h / 2, transform: "translate(-50%, -50%) rotate(-90deg)", transformOrigin: "center", marginLeft: 5 }
+          : pos === "right"
+            ? { ...base, right: side, top: h / 2, transform: "translate(50%, -50%) rotate(90deg)", transformOrigin: "center", marginRight: 5 }
+            : { ...base, left: 0, top: h / 2, width: w, textAlign: "center" as const, transform: "translateY(-50%)", fontSize: Math.round(Math.min(w, h) * 0.34), fontWeight: 800, opacity: 0.07, zIndex: 0 };
+  return <div style={style}>{pos === "center" ? text.split(" ")[0] : text}</div>;
+}
+
 /** One post per page. The post is shrunk (never cut) when it is taller than the page. */
 function Page({ posts, i, size, orientation, theme, o }: { posts: PostData[]; i: number; size: PageSizeId; orientation: Orientation; theme: PaperTheme; o: ViewOpts }) {
   const { w, h, margin, footer } = pagePx(size, orientation);
@@ -119,12 +137,10 @@ function Page({ posts, i, size, orientation, theme, o }: { posts: PostData[]; i:
           <PostBody p={p} i={i} n={posts.length} theme={theme} o={o} />
         </div>
       </div>
-      <div className="flex justify-between text-[11px]" style={{ position: "absolute", left: margin, right: margin, bottom: margin * 0.45, color: theme.muted }}>
-        <span>
-          {handle(posts[0])} · post {i + 1} of {posts.length}
-        </span>
-        <span>page {i + 1} / {posts.length}</span>
+      <div className="text-[11px]" style={{ position: "absolute", left: margin, bottom: margin * 0.45, color: theme.muted }}>
+        {handle(posts[0])} · post {i + 1} of {posts.length}
       </div>
+      <PageNumber text={`${i + 1} / ${posts.length}`} pos={o.numPos} w={w} h={h} margin={margin} theme={theme} />
     </div>
   );
 }

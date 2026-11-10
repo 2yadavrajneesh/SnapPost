@@ -3,6 +3,16 @@ import { renderPng } from "./export";
 export type PageSizeId = "a3" | "a4" | "a5" | "a6" | "b5" | "letter" | "legal" | "tabloid" | "executive";
 export type Orientation = "portrait" | "landscape";
 
+export type NumPos = "top" | "bottom" | "left" | "right" | "center" | "none";
+export const NUM_POSITIONS: { value: NumPos; label: string }[] = [
+  { value: "top", label: "Top" },
+  { value: "bottom", label: "Bottom" },
+  { value: "left", label: "Left" },
+  { value: "right", label: "Right" },
+  { value: "center", label: "Centre" },
+  { value: "none", label: "None" },
+];
+
 /** Paper sizes in millimetres (portrait). */
 export const PAGE_SIZES: { id: PageSizeId; label: string; w: number; h: number }[] = [
   { id: "a4", label: "A4", w: 210, h: 297 },
