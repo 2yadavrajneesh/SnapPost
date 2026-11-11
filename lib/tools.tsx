@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type ToolId = "snappost" | "threadscroll" | "archivevault" | "linkdesk";
+export type ToolId = "snappost" | "threadscroll" | "archivevault" | "linkdesk" | "collage";
 
 export type Tool = {
   id: ToolId;
@@ -17,9 +17,10 @@ export const TOOLS: Tool[] = [
   { id: "threadscroll", name: "ThreadScroll", href: "/unroll", tagline: "Unroll any thread into pages, text & PDF.", hint: "Unroll a whole thread to read, print or save", accent: "#0f766e" },
   { id: "archivevault", name: "ArchiveVault", href: "/archive", tagline: "Save any web page to the Wayback Machine and more.", hint: "Archive a link so it never disappears", accent: "#4338ca" },
   { id: "linkdesk", name: "LinkDesk", href: "/links", tagline: "Open, make, extract and clean links in bulk.", hint: "Work with lists of links: batches, spreadsheets, cleaning", accent: "#1f5fd6" },
+  { id: "collage", name: "CollageMaker", href: "/collage", tagline: "Turn several tweets into one neat collage.", hint: "Upload tweet links and make a grid collage", accent: "#be185d" },
 ];
 
-export const toolFor = (path: string): Tool => (path.startsWith("/unroll") ? TOOLS[1] : path.startsWith("/archive") ? TOOLS[2] : path.startsWith("/links") ? TOOLS[3] : TOOLS[0]);
+export const toolFor = (path: string): Tool => (path.startsWith("/unroll") ? TOOLS[1] : path.startsWith("/archive") ? TOOLS[2] : path.startsWith("/links") ? TOOLS[3] : path.startsWith("/collage") ? TOOLS[4] : TOOLS[0]);
 
 /** The icon of each tool: a dark tile with a white glyph and one coloured accent. */
 export function ToolIcon({ id, size = 36 }: { id: ToolId; size?: number }): ReactNode {
@@ -28,6 +29,14 @@ export function ToolIcon({ id, size = 36 }: { id: ToolId; size?: number }): Reac
       <rect width="64" height="64" fill="#1b2420" />
       <path d="M14 26V14h12M38 14h12v12M50 38v12H38M26 50H14V38" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="square" />
       <rect x="25" y="25" width="14" height="14" fill="#ea580c" />
+    </svg>
+  ) : id === "collage" ? (
+    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
+      <rect width="64" height="64" fill="#1b2420" />
+      <rect x="11" y="11" width="20" height="26" fill="#f472b6" />
+      <rect x="35" y="11" width="18" height="14" fill="#fff" opacity=".92" />
+      <rect x="35" y="29" width="18" height="24" fill="#fff" opacity=".92" />
+      <rect x="11" y="41" width="20" height="12" fill="#fff" opacity=".92" />
     </svg>
   ) : id === "linkdesk" ? (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">

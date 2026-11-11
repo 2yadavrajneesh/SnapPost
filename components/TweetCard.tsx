@@ -57,7 +57,7 @@ const BADGE_COLOR = { blue: BLUE, gold: "#e2b719", gray: "#829aab" } as const;
 const BADGE_LABEL = { blue: "Verified", gold: "Verified organization", gray: "Verified government account" } as const;
 
 /** X's scalloped verified badge: blue (individual), gold (organization) or grey (government). */
-function Badge({ size, kind = "blue" }: { size: number; kind?: VerifiedType }) {
+export function Badge({ size, kind = "blue" }: { size: number; kind?: VerifiedType }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-label={BADGE_LABEL[kind]} style={{ flex: "none" }}>
       <path
@@ -68,7 +68,7 @@ function Badge({ size, kind = "blue" }: { size: number; kind?: VerifiedType }) {
   );
 }
 
-function Icon({ name, size }: { name: "reply" | "repost" | "like" | "views"; size: number }) {
+export function Icon({ name, size }: { name: "reply" | "repost" | "like" | "views"; size: number }) {
   const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, style: { flex: "none" as const } };
   switch (name) {
     case "reply":

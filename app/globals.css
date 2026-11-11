@@ -290,3 +290,15 @@ html[data-theme="dark"] .bg-amber-200 { background-color: #4a3b14; }
 html[data-theme="dark"] .text-amber-900,
 html[data-theme="dark"] .text-amber-950 { color: #f3d9a4; }
 html[data-theme="dark"] .border-amber-300 { border-color: #6b5420; }
+
+/* Tweet Collage Maker stage: a soft pink-violet dot grid, like a mood board */
+.collage-stage {
+  isolation: isolate;
+  background-color: #f6eef4;
+  background-image: radial-gradient(circle, rgba(190, 24, 93, 0.2) 1.3px, transparent 1.7px);
+  background-size: 28px 28px;
+}
+html[data-theme="dark"] .collage-stage {
+  background-color: #1a1218;
+  background-image: radial-gradient(circle, rgba(244, 114, 182, 0.2) 1.3px, transparent 1.7px);
+}

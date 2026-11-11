@@ -1,11 +1,12 @@
 # SnapPost
 
-Four small tools, right in your browser. Switch between them with the buttons at the top of the page.
+Five small tools, right in your browser. Switch between them with the buttons at the top of the page.
 
 | Tool | Page | What it does |
 |---|---|---|
 | **SnapPost** | `/` | Turn a post link into a polished, shareable image, PDF or short video. |
 | **ThreadScroll** | `/unroll` | Unroll a whole thread to read, print or save it as text, Markdown or a paged PDF. |
+| **CollageMaker** | `/collage` | Paste several tweet links and make one clean, aligned collage as a PNG or PDF. |
 | **LinkDesk** | `/links` | Bulk link tools for spreadsheets and documents (ported from the LinkDesk project, tool by tool). |
 | **ArchiveVault** | `/archive` | Save any web page to the Wayback Machine and open other archives with your link filled in. |
 
@@ -49,6 +50,16 @@ Paste a link, tweak the look, and download or copy the result. Built with Next.j
 - **Collapsed options:** *Display*, *Page*, *Marker & redact* and *Background label* start closed to keep the sidebar short.
 - **Rising-dot stage:** the viewer has its own teal dotted animation, different from SnapPost's.
 - **PDF download:** the PDF is built from the same pages as the preview, so every language and emoji carry over. Pages are images, so the text in the PDF cannot be selected or searched.
+
+## CollageMaker features
+
+- **Add tweets:** paste up to 12 links at once (one per line or separated by spaces). Each loads on its own, three at a time, with a retry button when one fails. Repeats and non-tweet links are skipped.
+- **Order:** drag tweets in the list, or use the up and down buttons. Remove any tweet.
+- **Even grid:** every tweet gets a cell of the same size, so rows and columns line up exactly. A lone photo or video stretches to fill spare height, and the date and counts stay at the bottom. Tall tweets shrink to fit instead of being cut. The last row can be centred or left-aligned.
+- **Masonry:** tweets keep their own height and fill the columns, and the picture height fits the content.
+- **Columns and shape:** automatic or 1 to 5 columns; picture shape Auto, Square 1:1, Portrait 4:5, Wide 16:9 or Story 9:16 (grid only).
+- **Style:** nine backgrounds plus a custom colour, light or dark cards, sharp, soft or round corners, X or bird logo, text size, gap and margin, and switches for pictures, counts, time and date, card outline and a soft shadow.
+- **Save:** PNG or PDF at 1600 px or 3200 px wide.
 
 ## LinkDesk features
 
@@ -106,6 +117,7 @@ Copy `.env.example` to `.env.local` to change these. None are needed to run.
 | Piece | File |
 |---|---|
 | SnapPost page: controls, auto fetch, thread switch, preview, zoom and export buttons | `app/page.tsx` |
+| CollageMaker page, layout rules and card | `app/collage/page.tsx`, `lib/collage.ts`, `components/collage/*` |
 | LinkDesk page, its four tools and shared list | `app/links/page.tsx`, `components/linkdesk/*`, `lib/linkdesk/*` |
 | ArchiveVault page and its save/lookup route | `app/archive/page.tsx`, `app/api/archive/route.ts`, `lib/archive.ts` |
 | ThreadScroll page: link box, display options, page size, orientation, text and PDF export | `app/unroll/page.tsx` |
