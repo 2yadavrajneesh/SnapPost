@@ -94,7 +94,7 @@ export default function LinkDesk() {
     <div className="flex h-screen flex-col overflow-hidden" style={{ ["--accent" as string]: "#1f5fd6" }}>
       <SiteHeader />
       <div className="desk-stage relative flex min-h-0 flex-1">
-        <div ref={stage} className="min-w-0 flex-1 overflow-auto px-4 py-5 sm:px-8">
+        <div ref={stage} className="relative z-[1] min-w-0 flex-1 overflow-auto px-4 py-5 sm:px-8">
           <div className="mx-auto w-full max-w-[1200px]">
             <LinkProvider>
               <ToastProvider>
