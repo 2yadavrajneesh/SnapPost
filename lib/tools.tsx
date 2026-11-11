@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type ToolId = "snappost" | "threadscroll" | "linkdesk" | "collage";
+export type ToolId = "snappost" | "threadscroll" | "linkdesk" | "collage" | "papernest";
 
 export type Tool = {
   id: ToolId;
@@ -17,9 +17,10 @@ export const TOOLS: Tool[] = [
   { id: "threadscroll", name: "ThreadScroll", href: "/unroll", tagline: "Unroll any thread into pages, text & PDF.", hint: "Unroll a whole thread to read, print or save", accent: "#0f766e" },
   { id: "linkdesk", name: "LinkDesk", href: "/links", tagline: "Open, make, extract, clean and archive links.", hint: "Work with links: batches, spreadsheets, cleaning, archiving", accent: "#1f5fd6" },
   { id: "collage", name: "CollageMaker", href: "/collage", tagline: "Turn several tweets into one neat collage.", hint: "Upload tweet links and make a grid collage", accent: "#be185d" },
+  { id: "papernest", name: "PaperNest", href: "/pdf", tagline: "Merge, split, rotate and convert PDFs.", hint: "PDF tools with a download link", accent: "#6d28d9" },
 ];
 
-const ROUTES: [string, ToolId][] = [["/unroll", "threadscroll"], ["/links", "linkdesk"], ["/collage", "collage"]];
+const ROUTES: [string, ToolId][] = [["/unroll", "threadscroll"], ["/links", "linkdesk"], ["/collage", "collage"], ["/pdf", "papernest"]];
 export const toolFor = (path: string): Tool => TOOLS.find((t) => t.id === (ROUTES.find(([r]) => path.startsWith(r))?.[1] ?? "snappost")) ?? TOOLS[0];
 
 /** The icon of each tool: a dark tile with a white glyph and one coloured accent. */
@@ -37,6 +38,13 @@ export function ToolIcon({ id, size = 36 }: { id: ToolId; size?: number }): Reac
       <rect x="35" y="11" width="18" height="14" fill="#fff" opacity=".92" />
       <rect x="35" y="29" width="18" height="24" fill="#fff" opacity=".92" />
       <rect x="11" y="41" width="20" height="12" fill="#fff" opacity=".92" />
+    </svg>
+  ) : id === "papernest" ? (
+    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
+      <rect width="64" height="64" fill="#1b2420" />
+      <path d="M17 10h22l10 10v34H17z" fill="#fff" opacity=".95" />
+      <path d="M39 10v10h10z" fill="#a78bfa" />
+      <path d="M23 30h20M23 37h20M23 44h13" stroke="#6d28d9" strokeWidth="3" />
     </svg>
   ) : id === "linkdesk" ? (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">

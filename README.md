@@ -7,6 +7,7 @@ Four small tools, right in your browser. Switch between them with the buttons at
 | **SnapPost** | `/` | Turn a post link into a polished, shareable image, PDF or short video. |
 | **ThreadScroll** | `/unroll` | Unroll a whole thread to read, print or save it as text, Markdown or a paged PDF. |
 | **CollageMaker** | `/collage` | Paste several tweet links and make one clean, aligned collage as a PNG or PDF. |
+| **PaperNest** | `/pdf` | PDF tools run on the server: upload, get a download link, files are deleted after 30 minutes. Needs a Vercel Blob store (`BLOB_READ_WRITE_TOKEN`). Phase 1: Merge and Rotate. |
 | **LinkDesk** | `/links` | Link tools: open links in batches, make spreadsheet links clickable, extract and clean links, and archive pages. |
 
 Paste a link, tweak the look, and download or copy the result. Built with Next.js and Tailwind CSS. No environment variables are needed to run it.
@@ -116,6 +117,7 @@ Copy `.env.example` to `.env.local` to change these. None are needed to run.
 |---|---|
 | SnapPost page: controls, auto fetch, thread switch, preview, zoom and export buttons | `app/page.tsx` |
 | CollageMaker page, layout rules and card | `app/collage/page.tsx`, `lib/collage.ts`, `components/collage/*` |
+| PaperNest tools, storage and API | `app/pdf/*`, `app/api/pdf/*`, `lib/pdf/*`, `components/pdf/*` |
 | LinkDesk page, its four tools and shared list | `app/links/page.tsx`, `components/linkdesk/*`, `lib/linkdesk/*` |
 | Archive tab and its save/lookup route | `components/linkdesk/ArchiveTool.tsx`, `app/api/archive/route.ts`, `lib/archive.ts` |
 | ThreadScroll page: link box, display options, page size, orientation, text and PDF export | `app/unroll/page.tsx` |

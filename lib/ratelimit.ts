@@ -20,6 +20,12 @@ export const BUCKETS = {
   download: { name: "download", max: num(process.env.RATE_LIMIT_DOWNLOAD_MAX, 10), windowSec: num(process.env.RATE_LIMIT_DOWNLOAD_WINDOW_SEC, 3600) },
   /** Saving a page to the Wayback Machine (slow, and it uses their service). */
   archive: { name: "archive", max: num(process.env.RATE_LIMIT_ARCHIVE_MAX, 8), windowSec: num(process.env.RATE_LIMIT_ARCHIVE_WINDOW_SEC, 600) },
+  /** PaperNest: asking for an upload slot (one per file). */
+  pdfUpload: { name: "pdfup", max: num(process.env.RATE_LIMIT_PDF_UPLOAD_MAX, 60), windowSec: num(process.env.RATE_LIMIT_PDF_UPLOAD_WINDOW_SEC, 600) },
+  /** PaperNest: running a tool. */
+  pdfRun: { name: "pdfrun", max: num(process.env.RATE_LIMIT_PDF_RUN_MAX, 20), windowSec: num(process.env.RATE_LIMIT_PDF_RUN_WINDOW_SEC, 600) },
+  /** PaperNest: a daily cap per visitor, so the free storage allowance lasts. */
+  pdfDay: { name: "pdfday", max: num(process.env.RATE_LIMIT_PDF_DAY_MAX, 40), windowSec: 86400 },
 } satisfies Record<string, Bucket>;
 
 export function clientIp(req: Request): string {
