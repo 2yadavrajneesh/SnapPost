@@ -588,37 +588,8 @@ export default function Unroller() {
         </aside>
 
         <div className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">
-          {thread && (
-            <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 border border-stone-300 bg-white px-3 py-2" role="toolbar" aria-label="Mark text on the pages">
-              <span className="mr-1 text-xs font-bold text-stone-900">Mark on page</span>
-              <div className="flex border border-stone-300 text-[11px] font-semibold">
-                {(["marker", "underline"] as const).map((m) => (
-                  <button key={m} type="button" aria-pressed={markStyle === m} onClick={() => setMarkStyle(m)} className={`px-2 py-1 capitalize ${markStyle === m ? "bg-stone-900 text-white" : "bg-white text-stone-700"}`}>
-                    {m}
-                  </button>
-                ))}
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {HIGHLIGHT_COLORS.map((c) => (
-                  <button key={c.value} type="button" title={c.name} aria-label={`Mark on page ${c.name}`} disabled={!pageSel} onMouseDown={keepSel} onClick={() => markPage(c.value, markStyle)} className="h-6 w-6 border border-stone-400 disabled:opacity-35" style={{ backgroundColor: c.value }} />
-                ))}
-              </div>
-              {REDACT_STYLES.map((r) => (
-                <button key={r.label} type="button" disabled={!pageSel} onMouseDown={keepSel} onClick={() => markPage(r.color, r.style)} className="border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-35">
-                  {r.label}
-                </button>
-              ))}
-              <button type="button" disabled={!pageSel} onMouseDown={keepSel} onClick={unmarkPage} className="border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-35">
-                Remove
-              </button>
-              <button type="button" disabled={markHist.length === 0} onClick={undoMark} className="border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-35">
-                Undo
-              </button>
-              <span className="w-full text-[11px] text-stone-500">{pageSel ? "Pick a colour to mark the selected words." : "Select words on a page, then pick a colour. What you mark is saved in the PDF."}</span>
-            </div>
-          )}
           <div className="scroll-stage relative flex max-h-[72vh] flex-1 overflow-hidden lg:max-h-none lg:min-h-0">
-            <div ref={stage} className="relative z-[1] flex flex-1 overflow-auto px-4 py-6 sm:px-8">
+            <div ref={stage} onPointerDown={() => setPageSel(null)} className="relative z-[1] flex flex-1 overflow-auto px-4 py-6 sm:px-8">
               <div className="mx-auto w-full">
                 {pending && !thread ? (
                   <div role="alert" className="mx-auto max-w-[520px] border border-amber-300 bg-amber-50 p-6 text-center text-amber-900">
@@ -645,6 +616,41 @@ export default function Unroller() {
                 )}
               </div>
             </div>
+            {thread && (pageSel || markHist.length > 0) && (
+              <div className="pointer-events-none absolute inset-x-3 bottom-3 z-10 sm:inset-x-16 flex justify-center">
+                <div className="pointer-events-auto flex max-w-full flex-wrap items-center gap-x-2 gap-y-1.5 border border-stone-300 bg-white/95 px-2.5 py-2 shadow-lg backdrop-blur" role="toolbar" aria-label="Mark text on the pages">
+                  {pageSel && (
+                    <>
+                      <div className="flex border border-stone-300 text-[11px] font-semibold">
+                        {(["marker", "underline"] as const).map((m) => (
+                          <button key={m} type="button" aria-pressed={markStyle === m} onMouseDown={keepSel} onClick={() => setMarkStyle(m)} className={`px-2 py-1 capitalize ${markStyle === m ? "bg-stone-900 text-white" : "bg-white text-stone-700"}`}>
+                            {m}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap gap-0.5">
+                        {HIGHLIGHT_COLORS.map((c) => (
+                          <button key={c.value} type="button" title={c.name} aria-label={`Mark on page ${c.name}`} onMouseDown={keepSel} onClick={() => markPage(c.value, markStyle)} className="h-5 w-5 border border-stone-400" style={{ backgroundColor: c.value }} />
+                        ))}
+                      </div>
+                      {REDACT_STYLES.map((r) => (
+                        <button key={r.label} type="button" onMouseDown={keepSel} onClick={() => markPage(r.color, r.style)} className="border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-800 hover:bg-stone-100">
+                          {r.label}
+                        </button>
+                      ))}
+                      <button type="button" onMouseDown={keepSel} onClick={unmarkPage} className="border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-100">
+                        Remove
+                      </button>
+                    </>
+                  )}
+                  {markHist.length > 0 && (
+                    <button type="button" onMouseDown={keepSel} onClick={undoMark} className="border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-100">
+                      Undo
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
             <ScrollTop target={stage} />
           </div>
         </div>
