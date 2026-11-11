@@ -8,7 +8,7 @@ import { useSiteTheme } from "@/lib/useSiteTheme";
 
 /**
  * Top bar shared by every tool. On wide screens the five tools sit in the bar; on tablets and phones they
- * fold into a menu button, so the bar stays one tidy row (brand, page actions, theme switch, menu).
+ * fold into a small app-switcher button, so the bar stays one tidy row (brand, page actions, theme switch, menu).
  */
 export default function SiteHeader({ actions }: { actions?: ReactNode }) {
   const path = usePathname();
@@ -93,41 +93,38 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
               )}
             </svg>
           </button>
-          {/* tablets and phones: one button that opens the tool list */}
+          {/* tablets and phones: a small app switcher */}
           <button
             ref={menuBtn}
             type="button"
-            aria-label={open ? "Close tools menu" : "Open tools menu"}
+            aria-label={open ? "Close tool switcher" : "Switch tool"}
             aria-expanded={open}
             aria-controls="tools-menu"
             onClick={() => setOpen((o) => !o)}
-            className="flex h-9 items-center gap-2 border border-stone-300 bg-white px-2.5 text-xs font-semibold text-stone-800 transition hover:bg-stone-100 xl:hidden"
+            className={`flex h-9 w-9 items-center justify-center rounded-full border transition xl:hidden ${open ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300 bg-white text-stone-800 hover:bg-stone-100"}`}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-              {open ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              {[4, 14].flatMap((y) => [4, 14].map((x) => <rect key={`${x}${y}`} x={x} y={y} width="6" height="6" rx="1.5" />))}
             </svg>
-            <span className="hidden sm:inline">Tools</span>
           </button>
         </div>
       </div>
 
       {open && (
-        <div id="tools-menu" className="border-t border-stone-300 bg-[#faf6f1] shadow-lg xl:hidden">
-          <nav aria-label="Tools" className="mx-auto grid max-w-[1440px] gap-1.5 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-3">
+        <div id="tools-menu" className="absolute right-3 top-full z-40 mt-2 w-[232px] border border-stone-300 bg-[#faf6f1] p-2 shadow-xl sm:right-6 xl:hidden">
+          <nav aria-label="Tools" className="grid grid-cols-2 gap-1.5">
             {TOOLS.map((n) => {
               const here = n.id === tool.id;
               return (
                 <Link
                   key={n.id}
                   href={n.href}
+                  title={n.hint}
                   aria-current={here ? "page" : undefined}
-                  className={`flex items-center gap-3 border p-2.5 transition ${here ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300 bg-white text-stone-800 hover:bg-stone-100"}`}
+                  className={`flex flex-col items-center gap-1.5 px-1 py-2.5 text-center text-xs font-semibold transition ${here ? "bg-stone-900 text-white" : "bg-white text-stone-800 hover:bg-stone-100"}`}
                 >
-                  <ToolIcon id={n.id} size={36} />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-bold leading-tight">{n.name}</span>
-                    <span className={`block truncate text-[11px] ${here ? "text-stone-300" : "text-stone-500"}`}>{n.hint}</span>
-                  </span>
+                  <ToolIcon id={n.id} size={40} />
+                  {n.name}
                 </Link>
               );
             })}
