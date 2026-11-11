@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import CleanerTool from "@/components/linkdesk/CleanerTool";
 import ExtractTool from "@/components/linkdesk/ExtractTool";
 import MakerTool from "@/components/linkdesk/MakerTool";
 import BatchTool from "@/components/linkdesk/BatchTool";
@@ -13,17 +14,24 @@ const TABS = [
   { id: "maker", label: "Make links" },
   { id: "batch", label: "Open in batches" },
   { id: "extract", label: "Extract links" },
+  { id: "clean", label: "Link Cleaner" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
 export default function LinkDesk() {
   const [tab, setTab] = useState<TabId>("batch");
   const stage = useRef<HTMLDivElement>(null);
+  const [inbox, setInbox] = useState<{ text: string; name: string; n: number } | null>(null);
 
   // remember the tab in the address (#batch) so a refresh or shared link opens the same tool
   useEffect(() => {
-    const h = window.location.hash.slice(1) as TabId;
-    if (TABS.some((t) => t.id === h)) setTab(h);
+    const read = () => {
+      const h = window.location.hash.slice(1) as TabId;
+      if (TABS.some((t) => t.id === h)) setTab(h);
+    };
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
   }, []);
   const go = (t: TabId) => {
     setTab(t);
@@ -58,7 +66,16 @@ export default function LinkDesk() {
                   <MakerTool onSent={() => go("batch")} />
                 </div>
                 <div role="tabpanel" id="view-extract" aria-labelledby="tab-extract" hidden={tab !== "extract"}>
-                  <ExtractTool onSent={() => go("batch")} />
+                  <ExtractTool
+                    onSent={() => go("batch")}
+                    onClean={(text, name) => {
+                      setInbox((i) => ({ text, name, n: (i?.n ?? 0) + 1 }));
+                      go("clean");
+                    }}
+                  />
+                </div>
+                <div role="tabpanel" id="view-clean" aria-labelledby="tab-clean" hidden={tab !== "clean"}>
+                  <CleanerTool inbox={inbox} onSent={() => go("batch")} />
                 </div>
                 <div role="tabpanel" id="view-batch" aria-labelledby="tab-batch" hidden={tab !== "batch"}>
                   <BatchTool active={tab === "batch"} />

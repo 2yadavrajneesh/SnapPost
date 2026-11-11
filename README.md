@@ -52,11 +52,14 @@ Paste a link, tweak the look, and download or copy the result. Built with Next.j
 
 ## LinkDesk features
 
-Everything runs in the browser. Files are never uploaded. Tools are added one at a time:
+Everything runs in the browser. Files are never uploaded. The four tabs share one link list, so any tool can *Send to batches*:
 
 - **Open in batches:** load a spreadsheet (.xlsx, .xls, .csv), paste links or use the sample list, then open them 10, 20, 30, 50 or any number up to 100 at a time. Progress, next-up batch, a one-link-per-click fallback when pop-ups are blocked, a status table with search and filters, *Copy report*, and `Alt + O` to open the next batch. The list is saved in this browser.
 - **Make links:** upload an Excel or CSV file and download a copy where every plain-text address is clickable (optionally bare domains too). Previews each sheet, and can send the links to the batch tool.
 - **Extract links:** paste text or add a Word (.docx), PDF, text or HTML file and pull out every web address, including links hidden behind clickable words. Options to remove duplicates, join links split across lines and find bare domains. Copy them, download an .xlsx or send them to batches.
+- **Link Cleaner:** paste messy links or add a spreadsheet or text file. It removes everything after the `?` when a page does not need it (for example `x.com/user/status/123?a=abc` becomes `x.com/user/status/123`), removes tracking codes (`utm_`, `fbclid`, `gclid` and others), unwraps redirect links from Google, Facebook, Outlook and similar, fixes broken schemes and defanged links (`hxxp`, `[.]`), drops invalid lines and duplicates, and can check that each site responds. *Clean these links* in Extract links hands its list straight over.
+
+LinkDesk limits: files up to 100 MB, spreadsheets up to 1,000,000 cells, up to 5,000 links per list, pasted text up to 2 million characters, PDFs read up to 300 pages. SheetJS, JSZip and PDF.js load from cdnjs only when a tool needs them. *Check they respond* needs to reach other websites, and it shows whether a site answers; it cannot tell whether one specific page exists. Scanned PDFs have no selectable text. Allow pop-ups so a whole batch of tabs can open at once.
 
 ## ArchiveVault features
 
@@ -103,6 +106,7 @@ Copy `.env.example` to `.env.local` to change these. None are needed to run.
 | Piece | File |
 |---|---|
 | SnapPost page: controls, auto fetch, thread switch, preview, zoom and export buttons | `app/page.tsx` |
+| LinkDesk page, its four tools and shared list | `app/links/page.tsx`, `components/linkdesk/*`, `lib/linkdesk/*` |
 | ArchiveVault page and its save/lookup route | `app/archive/page.tsx`, `app/api/archive/route.ts`, `lib/archive.ts` |
 | ThreadScroll page: link box, display options, page size, orientation, text and PDF export | `app/unroll/page.tsx` |
 | ThreadScroll views: reading view and the one-post-per-page layout | `components/ThreadView.tsx` |
