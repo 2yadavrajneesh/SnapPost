@@ -1,11 +1,12 @@
 # SnapPost
 
-Two small tools for X (Twitter) posts, right in your browser. Switch between them with the buttons at the top of the page.
+Three small tools, right in your browser. Switch between them with the buttons at the top of the page.
 
 | Tool | Page | What it does |
 |---|---|---|
 | **SnapPost** | `/` | Turn a post link into a polished, shareable image, PDF or short video. |
 | **ThreadScroll** | `/unroll` | Unroll a whole thread to read, print or save it as text, Markdown or a paged PDF. |
+| **ArchiveVault** | `/archive` | Save any web page to the Wayback Machine and open other archives with your link filled in. |
 
 Paste a link, tweak the look, and download or copy the result. Built with Next.js and Tailwind CSS. No environment variables are needed to run it.
 
@@ -48,6 +49,15 @@ Paste a link, tweak the look, and download or copy the result. Built with Next.j
 - **Rising-dot stage:** the viewer has its own teal dotted animation, different from SnapPost's.
 - **PDF download:** the PDF is built from the same pages as the preview, so every language and emoji carry over. Pages are images, so the text in the PDF cannot be selected or searched.
 
+## ArchiveVault features
+
+- **No account or API key:** the server asks the Internet Archive's public endpoints directly.
+- **Auto check:** paste any web link and it looks up the newest Wayback snapshot on its own.
+- **Save to the Wayback Machine:** *Save now* captures the page (it can take up to a minute) and gives you the snapshot link to open or copy.
+- **Other archives:** archive.today and Ghost Archive open in a new tab with your link filled in, because they ask for a check on their own sites. *Save everywhere* does the Wayback save and opens archive.today in one click.
+- **Saved list:** pages you save are listed in this browser only, with *Copy all* and *Clear list*.
+- **Limits:** saving is limited per IP (`RATE_LIMIT_ARCHIVE_MAX`, default 8 per 10 minutes). Some sites block archiving, and a saved copy is public.
+
 ## Quick start
 
 Requires Node.js 20.9 or newer.
@@ -76,7 +86,7 @@ Copy `.env.example` to `.env.local` to change these. None are needed to run.
 | `FX_API_BASE` | Base URL of the FxEmbed API (default `https://api.fxtwitter.com`). Set it to your own instance if you self-host FxEmbed. |
 | `MEDIA_PROXY_HOSTS` | Extra hosts (comma-separated) the image and video proxies may fetch from. By default only X's own media hosts are allowed. |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Optional. Stores per-IP rate-limit counts in Upstash Redis so limits are exact across servers. Without them, counts are kept in server memory. |
-| `RATE_LIMIT_*` | Optional overrides for the per-IP limits (`API`, `MEDIA`, `DOWNLOAD`, each with `_MAX` and `_WINDOW_SEC`). See `.env.example`. By default an IP may make 30 tweet or thread requests per 10 minutes, 300 media requests per 10 minutes and 10 video downloads per hour. Over the limit it gets a "try again in N minutes" message and can use the site again when the window ends. |
+| `RATE_LIMIT_*` | Optional overrides for the per-IP limits (`API`, `MEDIA`, `DOWNLOAD`, `ARCHIVE`, each with `_MAX` and `_WINDOW_SEC`). See `.env.example`. By default an IP may make 30 tweet or thread requests per 10 minutes, 300 media requests per 10 minutes and 10 video downloads per hour. Over the limit it gets a "try again in N minutes" message and can use the site again when the window ends. |
 | `NEXT_PUBLIC_MAX_VIDEO_MB` | Largest video that can be downloaded (default 100). Bigger videos show "Too large" in the download picker and are refused by the server. |
 
 ## How it works
@@ -84,6 +94,7 @@ Copy `.env.example` to `.env.local` to change these. None are needed to run.
 | Piece | File |
 |---|---|
 | SnapPost page: controls, auto fetch, thread switch, preview, zoom and export buttons | `app/page.tsx` |
+| ArchiveVault page and its save/lookup route | `app/archive/page.tsx`, `app/api/archive/route.ts`, `lib/archive.ts` |
 | ThreadScroll page: link box, display options, page size, orientation, text and PDF export | `app/unroll/page.tsx` |
 | ThreadScroll views: reading view and the one-post-per-page layout | `components/ThreadView.tsx` |
 | Top bar shared by both tools (names, icons, tool buttons, theme switch) | `components/SiteHeader.tsx`, `lib/tools.tsx`, `lib/useSiteTheme.ts` |

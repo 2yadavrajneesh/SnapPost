@@ -18,6 +18,8 @@ export const BUCKETS = {
   media: { name: "media", max: num(process.env.RATE_LIMIT_MEDIA_MAX, 300), windowSec: num(process.env.RATE_LIMIT_MEDIA_WINDOW_SEC, 600) },
   /** Video file downloads. */
   download: { name: "download", max: num(process.env.RATE_LIMIT_DOWNLOAD_MAX, 10), windowSec: num(process.env.RATE_LIMIT_DOWNLOAD_WINDOW_SEC, 3600) },
+  /** Saving a page to the Wayback Machine (slow, and it uses their service). */
+  archive: { name: "archive", max: num(process.env.RATE_LIMIT_ARCHIVE_MAX, 8), windowSec: num(process.env.RATE_LIMIT_ARCHIVE_WINDOW_SEC, 600) },
 } satisfies Record<string, Bucket>;
 
 export function clientIp(req: Request): string {

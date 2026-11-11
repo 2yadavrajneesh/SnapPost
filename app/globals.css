@@ -241,3 +241,30 @@ html[data-theme="dark"] .bg-white\/60 { background-color: rgba(20, 17, 15, 0.6);
     background-size: 24px 24px;
   }
 }
+
+/* ArchiveVault stage: a faint indigo grid that drifts diagonally, like shelves in a vault */
+.vault-stage {
+  isolation: isolate;
+  background-color: #eeeefb;
+  background-image:
+    linear-gradient(rgba(67, 56, 202, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(67, 56, 202, 0.1) 1px, transparent 1px);
+  background-size: 36px 36px;
+  animation: vault-drift 24s linear infinite;
+}
+.vault-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(46% 46% at 50% 0%, rgba(99, 102, 241, 0.2), transparent 70%);
+}
+@keyframes vault-drift { to { background-position: 36px 36px, 36px 36px; } }
+@media (prefers-reduced-motion: reduce) { .vault-stage { animation: none; } }
+html[data-theme="dark"] .vault-stage {
+  background-color: #121326;
+  background-image:
+    linear-gradient(rgba(165, 180, 252, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(165, 180, 252, 0.1) 1px, transparent 1px);
+}
