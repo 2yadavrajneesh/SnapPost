@@ -168,36 +168,132 @@ function PageNumber({ text, pos, w, h, margin, theme }: { text: string; pos: Num
   return <div style={style}>{pos === "center" ? text.replace(/\D*(\w+).*/, "$1") : text}</div>;
 }
 
-/** One post per page. The post is shrunk (never cut) when it is taller than the page. */
-function Page({ posts, i, size, orientation, theme, o }: { posts: PostData[]; i: number; size: PageSizeId; orientation: Orientation; theme: PaperTheme; o: ViewOpts }) {
+type Group = { items: number[]; header: boolean; media: boolean };
+
+/** A post with a numbered marker and a dotted line running down to the next post. */
+function PostRow({ p, i, n, theme, o }: { p: PostData; i: number; n: number; theme: PaperTheme; o: ViewOpts }) {
+  const last = i === n - 1;
+  return (
+    <div style={{ display: "flex", gap: 12 }}>
+      <div style={{ width: 26, flex: "none", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        {o.numbers ? (
+          <div style={{ width: 26, height: 26, borderRadius: 13, background: theme.fg, color: theme.bg, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</div>
+        ) : (
+          <div style={{ width: 10, height: 10, borderRadius: 5, background: theme.muted, marginTop: 4 }} />
+        )}
+        {!last && <div style={{ flex: 1, minHeight: 12, marginTop: 4, borderLeft: `2px dotted ${theme.muted}`, opacity: 0.7 }} />}
+      </div>
+      <div style={{ flex: 1, minWidth: 0, paddingBottom: last ? 0 : 18 }}>
+        <PostBody p={p} i={i} n={n} theme={theme} o={{ ...o, numbers: false }} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Splits the thread into pages. A post with a picture or video gets a page of its own; short text posts
+ * are packed together so a page is not left mostly empty.
+ */
+function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation, theme: PaperTheme, o: ViewOpts) {
+  const { w, h, margin, footer } = pagePx(size, orientation);
+  const boxW = w - margin * 2;
+  const boxH = h - margin * 2 - footer;
+  const ref = useRef<HTMLDivElement>(null);
+  const [hs, setHs] = useState<Record<string, number>>({});
+  const hasMedia = (p: PostData) => o.media && (p.photos.length > 0 || !!p.video);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => {
+      const next: Record<string, number> = {};
+      el.querySelectorAll<HTMLElement>("[data-m]").forEach((n) => (next[n.dataset.m!] = n.offsetHeight));
+      setHs((prev) => (Object.keys(next).length === Object.keys(prev).length && Object.keys(next).every((k) => prev[k] === next[k]) ? prev : next));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    el.querySelectorAll("[data-m]").forEach((n) => ro.observe(n));
+    return () => ro.disconnect();
+  }, [posts, boxW, o.stats, o.media, o.numbers, o.hl, o.redact.name, o.redact.avatar]);
+
+  const groups: Group[] = [];
+  let cur: (Group & { used: number }) | null = null;
+  let headerPending = true;
+  const hH = hs.h ?? 90;
+  const flush = () => {
+    if (cur) groups.push({ items: cur.items, header: cur.header, media: false });
+    cur = null;
+  };
+  posts.forEach((p, i) => {
+    if (hasMedia(p)) {
+      flush();
+      groups.push({ items: [i], header: headerPending, media: true });
+      headerPending = false;
+      return;
+    }
+    const add = hs[i] ?? boxH;
+    if (cur && cur.used + add > boxH) flush();
+    if (!cur) {
+      cur = { items: [], used: headerPending ? hH : 0, header: headerPending, media: false };
+      headerPending = false;
+    }
+    (cur as Group & { used: number }).items.push(i);
+    (cur as Group & { used: number }).used += add;
+  });
+  flush();
+
+  const measurer = (
+    <div ref={ref} aria-hidden="true" style={{ position: "fixed", left: -100000, top: 0, width: boxW, visibility: "hidden", pointerEvents: "none" }}>
+      <div data-m="h"><AuthorHeader posts={posts} theme={theme} redact={o.redact} showCount={false} /></div>
+      {posts.map((p, i) => (hasMedia(p) ? null : <div key={i} data-m={i}><PostRow p={p} i={i} n={posts.length} theme={theme} o={o} /></div>))}
+    </div>
+  );
+  return { groups, measurer };
+}
+
+/** One page: its posts keep their natural size. Text pages grow a little to fill spare room; tall pages shrink to fit. */
+function Page({ posts, group, idx, total, size, orientation, theme, o }: { posts: PostData[]; group: Group; idx: number; total: number; size: PageSizeId; orientation: Orientation; theme: PaperTheme; o: ViewOpts }) {
   const { w, h, margin, footer } = pagePx(size, orientation);
   const boxW = w - margin * 2;
   const boxH = h - margin * 2 - footer;
   const inner = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
 
   useLayoutEffect(() => {
     const el = inner.current;
     if (!el) return;
-    const fit = () => setScale(Math.min(1, boxH / Math.max(1, el.offsetHeight)));
+    const apply = (width: number, s: number, origin: string) => {
+      el.style.width = `${width}px`;
+      el.style.transform = `scale(${s})`;
+      el.style.transformOrigin = origin;
+    };
+    const fit = () => {
+      if (!group.media) {
+        for (const s of [1.4, 1.3, 1.2, 1.1]) {
+          el.style.width = `${boxW / s}px`;
+          if (el.offsetHeight * s <= boxH) return apply(boxW / s, s, "top left");
+        }
+      }
+      el.style.width = `${boxW}px`;
+      apply(boxW, Math.min(1, boxH / Math.max(1, el.offsetHeight)), "top center");
+    };
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [boxH, boxW, i]);
+  });
 
-  const p = posts[i];
   return (
     <div data-page style={{ width: w, height: h, background: theme.bg, color: theme.fg, position: "relative", overflow: "hidden", flex: "none" }}>
       <LabelOverlay label={o.label} w={w} />
       <div style={{ position: "absolute", left: margin, top: margin, width: boxW, height: boxH, overflow: "hidden", zIndex: 1 }}>
-        <div ref={inner} style={{ width: boxW, transform: `scale(${scale})`, transformOrigin: "top center" }}>
-          {i === 0 && <AuthorHeader posts={posts} theme={theme} redact={o.redact} showCount={false} />}
-          {/* each post has its own page, so the page number already says "n of N": show the count only once */}
-          <PostBody p={p} i={i} n={posts.length} theme={theme} o={{ ...o, numbers: o.numbers && o.numPos === "none" }} />
+        <div ref={inner}>
+          {group.header && <AuthorHeader posts={posts} theme={theme} redact={o.redact} showCount={false} />}
+          {group.items.map((i) => (
+            <PostRow key={i} p={posts[i]} i={i} n={posts.length} theme={theme} o={o} />
+          ))}
         </div>
       </div>
-      <PageNumber text={formatPageNumber(i, posts.length, o.numFormat)} pos={o.numPos} w={w} h={h} margin={margin} theme={theme} />
+      <PageNumber text={formatPageNumber(idx, total, o.numFormat)} pos={o.numPos} w={w} h={h} margin={margin} theme={theme} />
     </div>
   );
 }
@@ -206,12 +302,14 @@ function Page({ posts, i, size, orientation, theme, o }: { posts: PostData[]; i:
 export function Pages({ posts, size, orientation, theme, o, containerWidth }: { posts: PostData[]; size: PageSizeId; orientation: Orientation; theme: PaperTheme; o: ViewOpts; containerWidth: number }) {
   const { w, h } = pagePx(size, orientation);
   const k = Math.min(1, Math.max(0.2, containerWidth / w));
+  const { groups, measurer } = usePages(posts, size, orientation, theme, o);
   return (
     <div className="flex flex-col items-center gap-5">
-      {posts.map((_, i) => (
-        <div key={i} style={{ width: w * k, height: h * k, boxShadow: "0 2px 14px rgba(0,0,0,.18)", flex: "none" }}>
+      {measurer}
+      {groups.map((g, i) => (
+        <div key={g.items[0]} style={{ width: w * k, height: h * k, boxShadow: "0 2px 14px rgba(0,0,0,.18)", flex: "none" }}>
           <div style={{ width: w, height: h, transform: `scale(${k})`, transformOrigin: "top left" }}>
-            <Page posts={posts} i={i} size={size} orientation={orientation} theme={theme} o={o} />
+            <Page posts={posts} group={g} idx={i} total={groups.length} size={size} orientation={orientation} theme={theme} o={o} />
           </div>
         </div>
       ))}
@@ -221,10 +319,12 @@ export function Pages({ posts, size, orientation, theme, o, containerWidth }: { 
 
 /** The same pages at full size, kept off screen so they can be photographed into the PDF. */
 export function PrintPages(props: { posts: PostData[]; size: PageSizeId; orientation: Orientation; theme: PaperTheme; o: ViewOpts }) {
+  const { groups, measurer } = usePages(props.posts, props.size, props.orientation, props.theme, props.o);
   return (
     <div aria-hidden="true" style={{ position: "fixed", left: -100000, top: 0, display: "flex", flexDirection: "column" }}>
-      {props.posts.map((_, i) => (
-        <Page key={i} {...props} i={i} />
+      {measurer}
+      {groups.map((g, i) => (
+        <Page key={g.items[0]} {...props} group={g} idx={i} total={groups.length} />
       ))}
     </div>
   );
