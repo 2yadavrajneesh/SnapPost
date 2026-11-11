@@ -71,7 +71,6 @@ export default function Home() {
   const [hasTweet, setHasTweet] = useState(false); // true once a real tweet was fetched: the sample is never exported
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showEdit, setShowEdit] = useState(false);
-  const [showTools, setShowTools] = useState(false);
   const [showQuote, setShowQuote] = useState(true);
   const [displayInfo, setDisplayInfo] = useState<DisplayInfo>(ALL_INFO);
   const setInfo = (key: keyof DisplayInfo, v: boolean) => setDisplayInfo((s) => ({ ...s, [key]: v }));
@@ -408,7 +407,6 @@ export default function Home() {
     setShot("single");
     setSlide(0);
     setShowEdit(false);
-    setShowTools(false);
     setFormat("png");
     resetAll();
     linkInput.current?.focus();
@@ -735,29 +733,6 @@ export default function Home() {
                 </div>
               </div>
             )}
-
-            {!showThread && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setShowTools((v) => !v)}
-                  className="flex w-full items-center justify-between bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-200"
-                  aria-expanded={showTools}
-                >
-                  {!listMode && tweet.text ? "Highlight & redact" : "Redact"}
-                  <span>{showTools ? "−" : "+"}</span>
-                </button>
-                {showTools && (
-                  <div className="space-y-3">
-                    {!listMode && tweet.text ? (
-                      <HighlightEditor text={tweet.text} highlights={highlights} onChange={setHighlights} redactExtra={hideDetails} />
-                    ) : (
-                      hideDetails
-                    )}
-                  </div>
-                )}
-              </>
-            )}
           </Section>
 
           {/* Mobile: export controls live under the source, like the reference layout */}
@@ -830,6 +805,16 @@ export default function Home() {
               <p className="text-[11px] text-stone-500">The full post stays visible; content scales to fit. Click the selected tile again for Auto.</p>
             )}
           </CollapsibleSection>
+
+          {!showThread && (
+            <CollapsibleSection title={!listMode && tweet.text ? "Highlight & redact" : "Redact"}>
+              {!listMode && tweet.text ? (
+                <HighlightEditor text={tweet.text} highlights={highlights} onChange={setHighlights} redactExtra={hideDetails} />
+              ) : (
+                hideDetails
+              )}
+            </CollapsibleSection>
+          )}
 
           <CollapsibleSection title="Appearance">
             <AppearanceTiles settings={settings} onChange={set} />

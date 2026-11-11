@@ -88,3 +88,12 @@ export function renderHighlighted(text: string, list: Highlight[] | undefined, m
     </span>
   ));
 }
+
+/** Character offset in the text for a DOM position inside an element whose pieces carry data-start. */
+export function offsetIn(root: HTMLElement, node: Node, off: number): number {
+  const holder = (node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as HTMLElement))?.closest("[data-start]") as HTMLElement | null;
+  if (holder && root.contains(holder)) return Number(holder.dataset.start) + (node.nodeType === Node.TEXT_NODE ? off : 0);
+  const child = node.childNodes[off] as HTMLElement | undefined;
+  if (child && "dataset" in child && child.dataset.start != null) return Number(child.dataset.start);
+  return (root.textContent ?? "").length;
+}

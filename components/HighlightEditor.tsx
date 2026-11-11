@@ -1,18 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { addHighlight, HIGHLIGHT_COLORS, REDACT_STYLES, removeHighlight, renderHighlighted, type Highlight, type HighlightStyle } from "@/lib/highlight";
+import { addHighlight, offsetIn as offsetOf, HIGHLIGHT_COLORS, REDACT_STYLES, removeHighlight, renderHighlighted, type Highlight, type HighlightStyle } from "@/lib/highlight";
 import { Segmented } from "./ui";
-
-/** Character offset in the text for a DOM position inside the selectable copy of the tweet text. */
-function offsetOf(root: HTMLElement, node: Node, off: number): number {
-  const holder = (node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as HTMLElement))?.closest("[data-start]") as HTMLElement | null;
-  if (holder && root.contains(holder)) return Number(holder.dataset.start) + (node.nodeType === Node.TEXT_NODE ? off : 0);
-  // Selection edge sits on the container itself: use the child at that index.
-  const child = node.childNodes[off] as HTMLElement | undefined;
-  if (child && "dataset" in child && child.dataset.start != null) return Number(child.dataset.start);
-  return (root.textContent ?? "").length;
-}
 
 /**
  * Select some of the tweet's text, then tap a colour to highlight it. Highlights are kept as

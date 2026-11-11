@@ -6,7 +6,7 @@ import { renderHighlighted, type Highlight } from "@/lib/highlight";
 import { PAGE_SIZES, formatPageNumber, rgba, type NumFormat, type NumPos, type Orientation, type PageLabel, type PageSizeId, type PaperTheme } from "@/lib/paper";
 import type { PostData } from "@/lib/types";
 
-export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; numFormat: NumFormat; label: PageLabel | null; hl: Record<number, Highlight[]>; redact: Redact };
+export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; numFormat: NumFormat; label: PageLabel | null; hl: Record<number, Highlight[]>; redact: Redact; pick?: boolean };
 
 export type Redact = { name: boolean; avatar: boolean; media: boolean };
 export const NO_REDACT: Redact = { name: false, avatar: false, media: false };
@@ -62,7 +62,7 @@ export function PostBody({ p, i, n, theme, o }: { p: PostData; i: number; n: num
           {i + 1}/{n}
         </div>
       )}
-      <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{renderHighlighted(p.text, o.hl[i])}</p>
+      <p data-post={o.pick ? i : undefined} className={`whitespace-pre-wrap break-words text-[15px] leading-relaxed${o.pick ? " select-text" : ""}`}>{renderHighlighted(p.text, o.hl[i], !!o.pick)}</p>
       {o.media && p.photos.length > 0 && (
         <div className="mt-3">
           {blur(
@@ -245,7 +245,7 @@ function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation,
   const measurer = (
     <div ref={ref} aria-hidden="true" style={{ position: "fixed", left: -100000, top: 0, width: boxW, visibility: "hidden", pointerEvents: "none" }}>
       <div data-m="h"><AuthorHeader posts={posts} theme={theme} redact={o.redact} showCount={false} /></div>
-      {posts.map((p, i) => (hasMedia(p) ? null : <div key={i} data-m={i}><PostRow p={p} i={i} n={posts.length} theme={theme} o={o} /></div>))}
+      {posts.map((p, i) => (hasMedia(p) ? null : <div key={i} data-m={i}><PostRow p={p} i={i} n={posts.length} theme={theme} o={{ ...o, pick: false }} /></div>))}
     </div>
   );
   return { groups, measurer };

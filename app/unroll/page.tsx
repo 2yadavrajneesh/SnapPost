@@ -9,6 +9,7 @@ import { DEFAULT_LABEL_STRENGTH, LABEL_COLORS, LABEL_PRESETS, NUM_FORMATS, PAGE_
 import NumPosPicker from "@/components/NumPosPicker";
 import ScrollTop from "@/components/ScrollTop";
 import HighlightEditor from "@/components/HighlightEditor";
+import { addHighlight, HIGHLIGHT_COLORS, offsetIn, REDACT_STYLES, removeHighlight, type HighlightStyle } from "@/lib/highlight";
 import { NO_REDACT, Pages, PrintPages, Reading, type Redact } from "@/components/ThreadView";
 import { type Highlight } from "@/lib/highlight";
 import { compact, formatDate, formatTime, proxied } from "@/lib/format";
@@ -117,6 +118,10 @@ export default function Unroller() {
   const [hl, setHl] = useState<Record<number, Highlight[]>>({});
   const [redact, setRedact] = useState<Redact>(NO_REDACT);
   const [editIdx, setEditIdx] = useState(0);
+  // Marking straight on the pages: the selected words, the style, and the earlier states for Undo.
+  const [pageSel, setPageSel] = useState<{ post: number; start: number; end: number } | null>(null);
+  const [markStyle, setMarkStyle] = useState<"marker" | "underline">("marker");
+  const [markHist, setMarkHist] = useState<Record<number, Highlight[]>[]>([]);
   // A post that is not part of a thread waits here until the user agrees to continue with just that post.
   const [pending, setPending] = useState<Thread | null>(null);
   const [view, setView] = useState<"pages" | "reading">("pages");
@@ -226,6 +231,56 @@ export default function Unroller() {
     return () => ro.disconnect();
   }, []);
 
+  useEffect(() => {
+    setMarkHist([]);
+    setPageSel(null);
+  }, [thread]);
+
+  useEffect(() => {
+    const onSel = () => {
+      const root = stage.current;
+      const s = window.getSelection();
+      if (!root || !s || s.rangeCount === 0 || s.isCollapsed) return;
+      const r = s.getRangeAt(0);
+      const host = (n: Node) => (n.nodeType === Node.TEXT_NODE ? n.parentElement : (n as HTMLElement))?.closest<HTMLElement>("[data-post]") ?? null;
+      const a = host(r.startContainer);
+      const b = host(r.endContainer);
+      if (!a || a !== b || !root.contains(a)) return;
+      const x = offsetIn(a, r.startContainer, r.startOffset);
+      const y = offsetIn(a, r.endContainer, r.endOffset);
+      const [start, end] = x <= y ? [x, y] : [y, x];
+      const post = Number(a.dataset.post);
+      if (end > start) setPageSel((c) => (c && c.post === post && c.start === start && c.end === end ? c : { post, start, end }));
+    };
+    document.addEventListener("selectionchange", onSel);
+    return () => document.removeEventListener("selectionchange", onSel);
+  }, []);
+
+  function markPage(color: string, style: HighlightStyle) {
+    if (!pageSel) return;
+    const { post, start, end } = pageSel;
+    setMarkHist((h) => [...h.slice(-49), hl]);
+    setHl((prev) => ({ ...prev, [post]: addHighlight(prev[post] ?? [], { start, end, color, style }) }));
+    setPageSel(null);
+    window.getSelection()?.removeAllRanges();
+  }
+  function unmarkPage() {
+    if (!pageSel) return;
+    const { post, start, end } = pageSel;
+    setMarkHist((h) => [...h.slice(-49), hl]);
+    setHl((prev) => ({ ...prev, [post]: removeHighlight(prev[post] ?? [], start, end) }));
+    setPageSel(null);
+    window.getSelection()?.removeAllRanges();
+  }
+  function undoMark() {
+    const prev = markHist[markHist.length - 1];
+    if (!prev) return;
+    setMarkHist((h) => h.slice(0, -1));
+    setHl(prev);
+    setPageSel(null);
+  }
+  const keepSel = (e: React.SyntheticEvent) => e.preventDefault();
+
   async function downloadPdf() {
     if (!thread) return;
     setPrinting(true);
@@ -247,7 +302,7 @@ export default function Unroller() {
       setPrinting(false);
     }
   }
-  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, numFormat, label, hl, redact });
+  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, numFormat, label, hl, redact, pick: !printing });
   const a = thread?.posts[0];
   const base = a && !redact.name ? `thread-${a.username}-${a.id}` : "thread-redacted";
 
@@ -533,6 +588,35 @@ export default function Unroller() {
         </aside>
 
         <div className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">
+          {thread && (
+            <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 border border-stone-300 bg-white px-3 py-2" role="toolbar" aria-label="Mark text on the pages">
+              <span className="mr-1 text-xs font-bold text-stone-900">Mark on page</span>
+              <div className="flex border border-stone-300 text-[11px] font-semibold">
+                {(["marker", "underline"] as const).map((m) => (
+                  <button key={m} type="button" aria-pressed={markStyle === m} onClick={() => setMarkStyle(m)} className={`px-2 py-1 capitalize ${markStyle === m ? "bg-stone-900 text-white" : "bg-white text-stone-700"}`}>
+                    {m}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {HIGHLIGHT_COLORS.map((c) => (
+                  <button key={c.value} type="button" title={c.name} aria-label={`Mark on page ${c.name}`} disabled={!pageSel} onMouseDown={keepSel} onClick={() => markPage(c.value, markStyle)} className="h-6 w-6 border border-stone-400 disabled:opacity-35" style={{ backgroundColor: c.value }} />
+                ))}
+              </div>
+              {REDACT_STYLES.map((r) => (
+                <button key={r.label} type="button" disabled={!pageSel} onMouseDown={keepSel} onClick={() => markPage(r.color, r.style)} className="border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-35">
+                  {r.label}
+                </button>
+              ))}
+              <button type="button" disabled={!pageSel} onMouseDown={keepSel} onClick={unmarkPage} className="border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-35">
+                Remove
+              </button>
+              <button type="button" disabled={markHist.length === 0} onClick={undoMark} className="border border-stone-300 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-35">
+                Undo
+              </button>
+              <span className="w-full text-[11px] text-stone-500">{pageSel ? "Pick a colour to mark the selected words." : "Select words on a page, then pick a colour. What you mark is saved in the PDF."}</span>
+            </div>
+          )}
           <div className="scroll-stage relative flex max-h-[72vh] flex-1 overflow-hidden lg:max-h-none lg:min-h-0">
             <div ref={stage} className="relative z-[1] flex flex-1 overflow-auto px-4 py-6 sm:px-8">
               <div className="mx-auto w-full">
