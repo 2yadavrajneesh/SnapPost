@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
-import { CollapsibleSection, Label, Section, Segmented } from "@/components/ui";
+import { CollapsibleSection, Label, Section, Segmented, Slider } from "@/components/ui";
 import { downloadBlob } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
 import { DEFAULT_LABEL_STRENGTH, LABEL_COLORS, LABEL_PRESETS, NUM_FORMATS, PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type NumFormat, type NumPos, type Orientation, type PageLabel, type PageSizeId } from "@/lib/paper";
@@ -112,6 +112,7 @@ export default function Unroller() {
   const [size, setSize] = useState<PageSizeId>("a4");
   const [orientation, setOrientation] = useState<Orientation>("portrait");
   const [printing, setPrinting] = useState(false); // true while the PDF is being drawn (videos show as pictures)
+  const [fontSize, setFontSize] = useState(16);
   const [numPos, setNumPos] = useState<NumPos>("bottom");
   const [numFormat, setNumFormat] = useState<NumFormat>("of");
   const [label, setLabel] = useState<PageLabel | null>(null);
@@ -302,7 +303,7 @@ export default function Unroller() {
       setPrinting(false);
     }
   }
-  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, numFormat, label, hl, redact, pick: !printing });
+  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, numFormat, label, hl, redact, pick: !printing, fontSize });
   const a = thread?.posts[0];
   const base = a && !redact.name ? `thread-${a.username}-${a.id}` : "thread-redacted";
 
@@ -376,6 +377,7 @@ export default function Unroller() {
                 {label as string}
               </label>
             ))}
+            <Slider label="Text size" value={fontSize} min={12} max={28} step={1} suffix="px" lowLabel="Smaller" highLabel="Larger" onChange={setFontSize} />
           </CollapsibleSection>
 
           <CollapsibleSection title="Page">

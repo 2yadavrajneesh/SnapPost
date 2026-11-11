@@ -6,7 +6,7 @@ import { renderHighlighted, type Highlight } from "@/lib/highlight";
 import { PAGE_SIZES, formatPageNumber, rgba, type NumFormat, type NumPos, type Orientation, type PageLabel, type PageSizeId, type PaperTheme } from "@/lib/paper";
 import type { PostData } from "@/lib/types";
 
-export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; numFormat: NumFormat; label: PageLabel | null; hl: Record<number, Highlight[]>; redact: Redact; pick?: boolean };
+export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; numFormat: NumFormat; label: PageLabel | null; hl: Record<number, Highlight[]>; redact: Redact; pick?: boolean; fontSize?: number };
 
 export type Redact = { name: boolean; avatar: boolean; media: boolean };
 export const NO_REDACT: Redact = { name: false, avatar: false, media: false };
@@ -62,7 +62,7 @@ export function PostBody({ p, i, n, theme, o }: { p: PostData; i: number; n: num
           {i + 1}/{n}
         </div>
       )}
-      <p data-post={o.pick ? i : undefined} className={`whitespace-pre-wrap break-words text-[15px] leading-relaxed${o.pick ? " select-text" : ""}`}>{renderHighlighted(p.text, o.hl[i], !!o.pick)}</p>
+      <p data-post={o.pick ? i : undefined} style={{ fontSize: o.fontSize ?? 16 }} className={`whitespace-pre-wrap break-words leading-relaxed${o.pick ? " select-text" : ""}`}>{renderHighlighted(p.text, o.hl[i], !!o.pick)}</p>
       {o.media && p.photos.length > 0 && (
         <div className="mt-3">
           {blur(
@@ -89,7 +89,7 @@ export function PostBody({ p, i, n, theme, o }: { p: PostData; i: number; n: num
           )}
         </div>
       )}
-      <div className="mt-2 flex flex-wrap gap-x-4 text-[11px]" style={{ color: theme.muted }}>
+      <div className="mt-2 flex flex-wrap gap-x-4" style={{ color: theme.muted, fontSize: Math.max(11, Math.round((o.fontSize ?? 16) * 0.72)) }}>
         {p.timestamp && <span>{formatDate(p.timestamp)} · {formatTime(p.timestamp)}</span>}
         {o.stats && (
           <>
@@ -251,7 +251,7 @@ function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation,
   return { groups, measurer };
 }
 
-/** One page: its posts keep their natural size. Text pages grow a little to fill spare room; tall pages shrink to fit. */
+/** One page: its posts keep the same text size on every page; only a post taller than the page shrinks to fit. */
 function Page({ posts, group, idx, total, size, orientation, theme, o }: { posts: PostData[]; group: Group; idx: number; total: number; size: PageSizeId; orientation: Orientation; theme: PaperTheme; o: ViewOpts }) {
   const { w, h, margin, footer } = pagePx(size, orientation);
   const boxW = w - margin * 2;
@@ -267,12 +267,6 @@ function Page({ posts, group, idx, total, size, orientation, theme, o }: { posts
       el.style.transformOrigin = origin;
     };
     const fit = () => {
-      if (!group.media) {
-        for (const s of [1.4, 1.3, 1.2, 1.1]) {
-          el.style.width = `${boxW / s}px`;
-          if (el.offsetHeight * s <= boxH) return apply(boxW / s, s, "top left");
-        }
-      }
       el.style.width = `${boxW}px`;
       apply(boxW, Math.min(1, boxH / Math.max(1, el.offsetHeight)), "top center");
     };
