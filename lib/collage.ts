@@ -70,7 +70,12 @@ export function layoutCollage(o: LayoutInput): { cells: Cell[]; height: number; 
     height = Math.round(FRAME_W / o.ratio);
     cellH = (height - 2 * o.pad - (rows - 1) * o.gap) / rows;
   } else {
-    cellH = Math.max(...o.natural.slice(0, n).map((_, i) => nat(i) * sW));
+    // fit to content: the tallest tweet sets the row height, but one very tall outlier must not leave the rest
+    // floating in blank space. It is capped, and that tweet is drawn wider so its text wraps less.
+    const hs = o.natural.slice(0, n).map((_, i) => nat(i) * sW);
+    const sorted = [...hs].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    cellH = Math.min(Math.max(...hs), Math.max(median * 1.1, cellW * 1.2));
     height = Math.round(2 * o.pad + rows * cellH + (rows - 1) * o.gap);
   }
   cellH = Math.max(60, cellH);

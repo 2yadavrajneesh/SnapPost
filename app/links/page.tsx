@@ -6,7 +6,7 @@ import CleanerTool from "@/components/linkdesk/CleanerTool";
 import ExtractTool from "@/components/linkdesk/ExtractTool";
 import MakerTool from "@/components/linkdesk/MakerTool";
 import BatchTool from "@/components/linkdesk/BatchTool";
-import { ToastProvider } from "@/components/linkdesk/ui";
+import { ToastProvider, useToast } from "@/components/linkdesk/ui";
 import ScrollTop from "@/components/ScrollTop";
 import SiteHeader from "@/components/SiteHeader";
 import { LinkProvider, useLinks } from "@/lib/linkdesk/store";
@@ -26,6 +26,22 @@ const TABS = [
   { id: "archive", label: "Archive a page", sub: "Save to Wayback Machine" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
+
+/** Tells the person when a saved list was dropped for being idle, or could not be saved. */
+function SessionNotices() {
+  const { expired, ackExpired, saveFailed } = useLinks();
+  const toast = useToast();
+  useEffect(() => {
+    if (expired) {
+      toast("Your saved list was cleared after 7 days without use.", "warn");
+      ackExpired();
+    }
+  }, [expired, ackExpired, toast]);
+  useEffect(() => {
+    if (saveFailed) toast("This list is too big to keep in the browser. It will be gone if you reload.", "warn");
+  }, [saveFailed, toast]);
+  return null;
+}
 
 function TabBar({ tab, go }: { tab: TabId; go: (t: TabId) => void }) {
   const { items } = useLinks();
@@ -98,6 +114,7 @@ export default function LinkDesk() {
           <div className="mx-auto w-full max-w-[1200px]">
             <LinkProvider>
               <ToastProvider>
+                <SessionNotices />
                 <TabBar tab={tab} go={go} />
                 <div role="tabpanel" id="view-maker" aria-labelledby="tab-maker" hidden={tab !== "maker"}>
                   <MakerTool onSent={() => go("batch")} />

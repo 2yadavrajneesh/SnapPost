@@ -1,20 +1,28 @@
 "use client";
 
-import { forwardRef, useCallback, useMemo } from "react";
+import { forwardRef, useCallback, useMemo, useState } from "react";
 import { CARD_W, FRAME_W, layoutCollage, type Cell, type LastRow, type LayoutMode } from "@/lib/collage";
 import type { PostData } from "@/lib/types";
-import CollageCard, { type CardStyle } from "./CollageCard";
+import CollageCard, { cardBorder, type CardStyle } from "./CollageCard";
 
 export type FrameLook = { background: string; gap: number; pad: number; cellRadius: number; shadow: boolean };
 
 export type Item = { key: string; post: PostData };
 
+const BORDER_PX = { none: 0, thin: 2, thick: 7, double: 7, dashed: 4, dotted: 5 } as const;
+
 function CellView({ item, cell, style, look, onNatural, stretch }: { stretch: boolean; item: Item; cell: Cell; style: CardStyle; look: FrameLook; onNatural: (key: string, h: number) => void }) {
   const onHeight = useCallback((h: number) => onNatural(item.key, h), [item.key, onNatural]);
+  const [fit, setFit] = useState<{ w: number; h: number } | null>(null);
+  const onFit = useCallback((w: number, h: number) => setFit((c) => (c && c.w === w && Math.abs(c.h - h) < 1 ? c : { w, h })), []);
   const card = style.theme === "dark" ? "#000000" : "#ffffff";
-  const border = style.theme === "dark" ? "#2f3336" : "#cfd9de";
-  const inner = CARD_W * cell.scale;
-  const fill = stretch ? cell.h / cell.scale : undefined; // grid cells: the card grows to the cell's height
+  const bw = BORDER_PX[style.border];
+  // grid cells: the tweet is drawn at the width that fills the cell; masonry keeps the fixed card width
+  const box = { w: cell.w - 2 * bw, h: cell.h - 2 * bw };
+  const cardW = stretch && fit ? fit.w : CARD_W;
+  const scale = stretch && fit ? Math.min(box.w / fit.w, box.h / fit.h) : cell.scale;
+  const inner = cardW * scale;
+  const fill = stretch ? box.h / scale : undefined;
   return (
     <div
       style={{
@@ -26,13 +34,13 @@ function CellView({ item, cell, style, look, onNatural, stretch }: { stretch: bo
         overflow: "hidden",
         background: card,
         borderRadius: look.cellRadius,
-        border: style.border ? `2px solid ${border}` : "none",
+        border: cardBorder(style),
         boxShadow: look.shadow ? "0 10px 30px rgba(0,0,0,.18)" : "none",
         boxSizing: "border-box",
       }}
     >
-      <div style={{ width: CARD_W, transform: `scale(${cell.scale})`, transformOrigin: "top left", marginLeft: Math.max(0, (cell.w - inner) / 2) }}>
-        <CollageCard post={item.post} style={style} fill={fill} onHeight={onHeight} />
+      <div style={{ width: cardW, transform: `scale(${scale})`, transformOrigin: "top left", marginLeft: Math.max(0, (box.w - inner) / 2) }}>
+        <CollageCard post={item.post} style={style} fill={fill} width={cardW} onHeight={onHeight} fitBox={stretch ? box : undefined} onFit={stretch ? onFit : undefined} />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge, BIRD, Icon, XLOGO } from "@/components/TweetCard";
 import { compact, formatDate, formatTime, photoSize, proxied } from "@/lib/format";
 import { CARD_W } from "@/lib/collage";
@@ -14,7 +14,23 @@ export type CardStyle = {
   stats: boolean;
   media: boolean;
   dateTime: boolean;
-  border: boolean;
+  border: BorderKind;
+  borderColor: string; // "auto" follows the card theme
+};
+
+export type BorderKind = "none" | "thin" | "thick" | "double" | "dashed" | "dotted";
+export const BORDERS: Record<BorderKind, { label: string; css: string | null }> = {
+  none: { label: "None", css: null },
+  thin: { label: "Thin", css: "2px solid" },
+  thick: { label: "Thick", css: "7px solid" },
+  double: { label: "Double", css: "7px double" },
+  dashed: { label: "Dashed", css: "4px dashed" },
+  dotted: { label: "Dotted", css: "5px dotted" },
+};
+export const cardBorder = (style: CardStyle): string => {
+  const b = BORDERS[style.border].css;
+  if (!b) return "none";
+  return `${b} ${style.borderColor === "auto" ? (style.theme === "dark" ? "#2f3336" : "#cfd9de") : style.borderColor}`;
 };
 
 const THEMES = {
@@ -66,7 +82,7 @@ function Media({ post, radius, t }: { post: PostData; radius: number; t: (typeof
  * One tweet, drawn at a fixed width (CARD_W) so every card has the same proportions.
  * The collage scales it into its cell; `onHeight` reports how tall it is at that width.
  */
-function Body({ post, style, fill }: { post: PostData; style: CardStyle; fill?: number }) {
+function Body({ post, style, fill, width = CARD_W }: { post: PostData; style: CardStyle; fill?: number; width?: number }) {
   const t = THEMES[style.theme];
   const fs = style.textSize;
 
@@ -75,7 +91,7 @@ function Body({ post, style, fill }: { post: PostData; style: CardStyle; fill?: 
   if (post.views > 0) stats.push(["views", post.views]);
 
   return (
-    <div style={{ width: CARD_W, minHeight: fill, boxSizing: "border-box", padding: 28, background: t.card, color: t.text, fontFamily: FONT, display: "flex", flexDirection: "column" }}>
+    <div style={{ width, minHeight: fill, boxSizing: "border-box", padding: 28, background: t.card, color: t.text, fontFamily: FONT, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={proxied(post.avatar)} alt="" crossOrigin="anonymous" style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", flex: "none", background: t.soft }} />
@@ -133,26 +149,67 @@ function Body({ post, style, fill }: { post: PostData; style: CardStyle; fill?: 
 }
 
 /**
- * One tweet, drawn at a fixed width (CARD_W) so every card has the same proportions.
- * `fill` stretches it to a cell's height (a lone photo or video grows, the date and counts stay at the bottom).
- * `onHeight` reports how tall the tweet is on its own, measured from a hidden copy so stretching never skews it.
+ * One tweet. By default it is drawn at CARD_W so every card has the same proportions.
+ * With `fitBox` (a cell's size in the picture) the card works out the width that lets the whole tweet fill
+ * that box as large as possible: a tall tweet is drawn wider so its text wraps less, a short one narrower so
+ * its text grows. `onFit` reports that width and the tweet's height at it.
+ * `onHeight` reports how tall the tweet is at CARD_W, measured from a hidden copy so stretching never skews it.
  */
-export default function CollageCard({ post, style, fill, onHeight }: { post: PostData; style: CardStyle; fill?: number; onHeight?: (h: number) => void }) {
+export default function CollageCard({ post, style, fill, width = CARD_W, onHeight, fitBox, onFit }: { post: PostData; style: CardStyle; fill?: number; width?: number; onHeight?: (h: number) => void; fitBox?: { w: number; h: number }; onFit?: (w: number, h: number) => void }) {
   const ref = useRef<HTMLDivElement>(null);
+  const fitRef = useRef<HTMLDivElement>(null);
+  const [natH, setNatH] = useState(0);
   useEffect(() => {
     const el = ref.current;
     if (!el || !onHeight) return;
-    const report = () => onHeight(el.offsetHeight);
+    const report = () => {
+      onHeight(el.offsetHeight);
+      setNatH(el.offsetHeight);
+    };
     report();
     const ro = new ResizeObserver(report);
     ro.observe(el);
     return () => ro.disconnect();
   }, [onHeight]);
+
+  const fw = fitBox?.w ?? 0;
+  const fh = fitBox?.h ?? 0;
+  useEffect(() => {
+    const el = fitRef.current?.firstElementChild as HTMLElement | null | undefined;
+    if (!el || !fw || !fh || !onFit) return;
+    const hAt = (w: number) => {
+      el.style.width = `${w}px`;
+      return el.offsetHeight;
+    };
+    // the output height of the tweet at logical width w is hAt(w) * fw / w; find the narrowest w that fits
+    const fits = (w: number) => (hAt(w) * fw) / w <= fh;
+    let lo = 340;
+    let hi = Math.max(CARD_W, fw / 0.3);
+    let w: number;
+    if (fits(lo)) w = lo;
+    else if (!fits(hi)) w = hi;
+    else {
+      for (let k = 0; k < 12; k++) {
+        const mid = (lo + hi) / 2;
+        if (fits(mid)) hi = mid;
+        else lo = mid;
+      }
+      w = hi;
+    }
+    onFit(Math.round(w), hAt(Math.round(w)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fw, fh, post, style, natH]);
+
   return (
-    <div style={{ position: "relative", width: CARD_W }}>
-      <Body post={post} style={style} fill={fill} />
+    <div style={{ position: "relative", width }}>
+      <Body post={post} style={style} fill={fill} width={width} />
       {onHeight && (
         <div ref={ref} data-no-export="" aria-hidden="true" style={{ position: "absolute", top: 0, left: 0, visibility: "hidden", pointerEvents: "none" }}>
+          <Body post={post} style={style} />
+        </div>
+      )}
+      {fitBox && (
+        <div ref={fitRef} data-no-export="" aria-hidden="true" style={{ position: "absolute", top: 0, left: 0, visibility: "hidden", pointerEvents: "none" }}>
           <Body post={post} style={style} />
         </div>
       )}

@@ -56,6 +56,7 @@ export default function BatchTool({ active }: { active: boolean }) {
   const [limit, setLimit] = useState(PAGE);
   const [manual, setManual] = useState<number[]>([]);
   const [manualTotal, setManualTotal] = useState(0);
+  const [resetArmed, setResetArmed] = useState(false);
   const [clearArmed, setClearArmed] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState("");
@@ -316,6 +317,7 @@ export default function BatchTool({ active }: { active: boolean }) {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card step={1} title="Load links" chip={L.source && <Chip>{L.source.sample ? "Sample data" : L.source.name}</Chip>}>
+          <p className="text-[11px] leading-snug text-stone-500">Your list and progress are saved in this browser, so a reload keeps them. They stay until you press Reset, and clear themselves after 7 days without use.</p>
           <DropZone accept=".xlsx,.xls,.csv,.txt" title="Drop a spreadsheet or browse" note=".xlsx, .xls or .csv. Links are found in any column." onFile={(f) => void readFile(f)} />
           {sheets.length > 0 && (
             <div className="grid gap-2 sm:grid-cols-3">
@@ -396,12 +398,22 @@ export default function BatchTool({ active }: { active: boolean }) {
             <Check checked={L.dedupe} onChange={L.setDedupe}>Remove duplicates</Check>
             <button
               type="button"
-              className={`${btnSm} sm:ml-auto`}
-              disabled={size === 20 && L.auto && !L.dedupe}
-              title="Back to 20 per batch, https:// added, duplicates kept"
-              onClick={() => (L.setSize(20), L.setAuto(true), L.setDedupe(false), toast("Settings reset."))}
+              className={`${btnSm} sm:ml-auto ${resetArmed ? "!border-red-600 !bg-red-600 !text-white" : ""}`}
+              disabled={!total && size === 20 && L.auto && !L.dedupe}
+              title="Clear the saved list and put every setting back to its default"
+              onClick={() => {
+                if (total && !resetArmed) {
+                  setResetArmed(true);
+                  setTimeout(() => setResetArmed(false), 3500);
+                  return;
+                }
+                setResetArmed(false);
+                forgetSheet();
+                L.resetSession();
+                toast("Session reset. The list and settings are cleared.");
+              }}
             >
-              Reset
+              {resetArmed ? "Click again to reset" : "Reset"}
             </button>
           </div>
         </Card>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CollageFrame, { type FrameLook, type Item } from "@/components/collage/CollageFrame";
-import type { CardStyle } from "@/components/collage/CollageCard";
+import { BORDERS, type BorderKind, type CardStyle } from "@/components/collage/CollageCard";
 import ScrollTop from "@/components/ScrollTop";
 import SiteHeader from "@/components/SiteHeader";
 import { CollapsibleSection, Label, Section, Segmented, Slider, Toggle } from "@/components/ui";
@@ -35,7 +35,7 @@ export default function CollageMaker() {
   // style
   const [bgId, setBgId] = useState("cream");
   const [customBg, setCustomBg] = useState("#f4d8e6");
-  const [card, setCard] = useState<CardStyle>({ theme: "light", corners: "soft", logo: "x", textSize: 24, stats: true, media: true, dateTime: true, border: true });
+  const [card, setCard] = useState<CardStyle>({ theme: "light", corners: "soft", logo: "x", textSize: 24, stats: true, media: true, dateTime: true, border: "thin", borderColor: "auto" });
   const [shadow, setShadow] = useState(false);
   // export
   const [format, setFormat] = useState<"png" | "pdf">("png");
@@ -301,6 +301,22 @@ export default function CollageMaker() {
               <Segmented value={card.corners} onChange={(v) => setCard({ ...card, corners: v })} options={[{ value: "sharp", label: "Sharp" }, { value: "soft", label: "Soft" }, { value: "round", label: "Round" }]} />
             </div>
             <div>
+              <Label>Card border</Label>
+              <Segmented value={card.border} onChange={(v) => setCard({ ...card, border: v })} wrap options={(Object.keys(BORDERS) as BorderKind[]).map((k) => ({ value: k, label: BORDERS[k].label }))} />
+              {card.border !== "none" && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="Border colour">
+                  {[["auto", "Auto"], ["#111111", "Black"], ["#ffffff", "White"], ["#be185d", "Pink"], ["#1d9bf0", "Blue"], ["#d4a017", "Gold"]].map(([v, name]) => (
+                    <button key={v} type="button" role="radio" aria-checked={card.borderColor === v} aria-label={name} title={name} onClick={() => setCard({ ...card, borderColor: v })} className={`h-7 min-w-7 border-2 px-1 text-[10px] font-bold ${card.borderColor === v ? "border-accent" : "border-stone-300"}`} style={v === "auto" ? undefined : { background: v }}>
+                      {v === "auto" ? "Auto" : ""}
+                    </button>
+                  ))}
+                  <label title="Custom colour" className={`relative flex h-7 w-7 cursor-pointer items-center justify-center border-2 text-[10px] font-bold ${!["auto", "#111111", "#ffffff", "#be185d", "#1d9bf0", "#d4a017"].includes(card.borderColor) ? "border-accent" : "border-stone-300"}`} style={{ background: "conic-gradient(red, yellow, lime, cyan, blue, magenta, red)" }}>
+                    <input type="color" aria-label="Custom border colour" value={card.borderColor === "auto" ? "#888888" : card.borderColor} onChange={(e) => setCard({ ...card, borderColor: e.target.value })} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                  </label>
+                </div>
+              )}
+            </div>
+            <div>
               <Label>Logo</Label>
               <Segmented value={card.logo} onChange={(v) => setCard({ ...card, logo: v })} options={[{ value: "x", label: "X" }, { value: "bird", label: "Bird" }, { value: "none", label: "None" }]} />
             </div>
@@ -309,7 +325,6 @@ export default function CollageMaker() {
               <Toggle label="Show pictures and video" checked={card.media} onChange={(v) => setCard({ ...card, media: v })} />
               <Toggle label="Show likes, reposts and replies" checked={card.stats} onChange={(v) => setCard({ ...card, stats: v })} />
               <Toggle label="Show time and date" checked={card.dateTime} onChange={(v) => setCard({ ...card, dateTime: v })} />
-              <Toggle label="Card outline" checked={card.border} onChange={(v) => setCard({ ...card, border: v })} />
               <Toggle label="Soft shadow" checked={shadow} onChange={setShadow} />
             </div>
           </CollapsibleSection>
