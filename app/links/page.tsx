@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import ExtractTool from "@/components/linkdesk/ExtractTool";
 import MakerTool from "@/components/linkdesk/MakerTool";
 import BatchTool from "@/components/linkdesk/BatchTool";
 import { ToastProvider } from "@/components/linkdesk/ui";
@@ -11,6 +12,7 @@ import { LinkProvider } from "@/lib/linkdesk/store";
 const TABS = [
   { id: "maker", label: "Make links" },
   { id: "batch", label: "Open in batches" },
+  { id: "extract", label: "Extract links" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -54,6 +56,9 @@ export default function LinkDesk() {
                 </nav>
                 <div role="tabpanel" id="view-maker" aria-labelledby="tab-maker" hidden={tab !== "maker"}>
                   <MakerTool onSent={() => go("batch")} />
+                </div>
+                <div role="tabpanel" id="view-extract" aria-labelledby="tab-extract" hidden={tab !== "extract"}>
+                  <ExtractTool onSent={() => go("batch")} />
                 </div>
                 <div role="tabpanel" id="view-batch" aria-labelledby="tab-batch" hidden={tab !== "batch"}>
                   <BatchTool active={tab === "batch"} />

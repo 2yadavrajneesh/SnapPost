@@ -56,6 +56,7 @@ Everything runs in the browser. Files are never uploaded. Tools are added one at
 
 - **Open in batches:** load a spreadsheet (.xlsx, .xls, .csv), paste links or use the sample list, then open them 10, 20, 30, 50 or any number up to 100 at a time. Progress, next-up batch, a one-link-per-click fallback when pop-ups are blocked, a status table with search and filters, *Copy report*, and `Alt + O` to open the next batch. The list is saved in this browser.
 - **Make links:** upload an Excel or CSV file and download a copy where every plain-text address is clickable (optionally bare domains too). Previews each sheet, and can send the links to the batch tool.
+- **Extract links:** paste text or add a Word (.docx), PDF, text or HTML file and pull out every web address, including links hidden behind clickable words. Options to remove duplicates, join links split across lines and find bare domains. Copy them, download an .xlsx or send them to batches.
 
 ## ArchiveVault features
 
