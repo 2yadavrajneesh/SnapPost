@@ -191,8 +191,8 @@ function PostRow({ p, i, n, theme, o }: { p: PostData; i: number; n: number; the
 }
 
 /**
- * Splits the thread into pages. A post with a picture or video gets a page of its own; short text posts
- * are packed together so a page is not left mostly empty.
+ * Splits the thread into pages by measured height. Posts, with or without pictures, share a page whenever
+ * they fit at their natural size; nothing is shrunk to squeeze in. A post too big to share gets its own page.
  */
 function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation, theme: PaperTheme, o: ViewOpts) {
   const { w, h, margin, footer } = pagePx(size, orientation);
@@ -200,7 +200,6 @@ function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation,
   const boxH = h - margin * 2 - footer;
   const ref = useRef<HTMLDivElement>(null);
   const [hs, setHs] = useState<Record<string, number>>({});
-  const hasMedia = (p: PostData) => o.media && (p.photos.length > 0 || !!p.video);
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -225,12 +224,6 @@ function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation,
     cur = null;
   };
   posts.forEach((p, i) => {
-    if (hasMedia(p)) {
-      flush();
-      groups.push({ items: [i], header: headerPending, media: true });
-      headerPending = false;
-      return;
-    }
     const add = hs[i] ?? boxH;
     if (cur && cur.used + add > boxH) flush();
     if (!cur) {
@@ -245,7 +238,7 @@ function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation,
   const measurer = (
     <div ref={ref} aria-hidden="true" style={{ position: "fixed", left: -100000, top: 0, width: boxW, visibility: "hidden", pointerEvents: "none" }}>
       <div data-m="h"><AuthorHeader posts={posts} theme={theme} redact={o.redact} showCount={false} /></div>
-      {posts.map((p, i) => (hasMedia(p) ? null : <div key={i} data-m={i}><PostRow p={p} i={i} n={posts.length} theme={theme} o={{ ...o, pick: false }} /></div>))}
+      {posts.map((p, i) => (<div key={i} data-m={i}><PostRow p={p} i={i} n={posts.length} theme={theme} o={{ ...o, pick: false }} /></div>))}
     </div>
   );
   return { groups, measurer };

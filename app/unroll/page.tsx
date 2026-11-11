@@ -446,7 +446,7 @@ export default function Unroller() {
                 ]}
               />
             </div>
-            <p className="text-[11px] leading-snug text-stone-500">Posts with a picture or video get their own page. Short text posts share a page, numbered and joined by a dotted line, so no page is left mostly empty. A post taller than the page is scaled down to fit.</p>
+            <p className="text-[11px] leading-snug text-stone-500">Posts share a page when they fit together at full size, numbered and joined by a dotted line. A post that needs a whole page gets one, and a post taller than the page is scaled down to fit.</p>
           </CollapsibleSection>
 
           <CollapsibleSection title="Marker & redact">
