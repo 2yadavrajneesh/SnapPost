@@ -55,6 +55,7 @@ Paste a link, tweak the look, and download or copy the result. Built with Next.j
 Everything runs in the browser. Files are never uploaded. Tools are added one at a time:
 
 - **Open in batches:** load a spreadsheet (.xlsx, .xls, .csv), paste links or use the sample list, then open them 10, 20, 30, 50 or any number up to 100 at a time. Progress, next-up batch, a one-link-per-click fallback when pop-ups are blocked, a status table with search and filters, *Copy report*, and `Alt + O` to open the next batch. The list is saved in this browser.
+- **Make links:** upload an Excel or CSV file and download a copy where every plain-text address is clickable (optionally bare domains too). Previews each sheet, and can send the links to the batch tool.
 
 ## ArchiveVault features
 
