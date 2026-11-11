@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type ToolId = "snappost" | "threadscroll" | "archivevault" | "linkdesk" | "collage";
+export type ToolId = "snappost" | "threadscroll" | "linkdesk" | "collage";
 
 export type Tool = {
   id: ToolId;
@@ -15,12 +15,12 @@ export type Tool = {
 export const TOOLS: Tool[] = [
   { id: "snappost", name: "SnapPost", href: "/", tagline: "Screenshot, upgraded. Posts to PNG, PDF & MP4.", hint: "Turn a post into a polished image, PDF or video", accent: "#c2410c" },
   { id: "threadscroll", name: "ThreadScroll", href: "/unroll", tagline: "Unroll any thread into pages, text & PDF.", hint: "Unroll a whole thread to read, print or save", accent: "#0f766e" },
-  { id: "archivevault", name: "ArchiveVault", href: "/archive", tagline: "Save any web page to the Wayback Machine and more.", hint: "Archive a link so it never disappears", accent: "#4338ca" },
-  { id: "linkdesk", name: "LinkDesk", href: "/links", tagline: "Open, make, extract and clean links in bulk.", hint: "Work with lists of links: batches, spreadsheets, cleaning", accent: "#1f5fd6" },
+  { id: "linkdesk", name: "LinkDesk", href: "/links", tagline: "Open, make, extract, clean and archive links.", hint: "Work with links: batches, spreadsheets, cleaning, archiving", accent: "#1f5fd6" },
   { id: "collage", name: "CollageMaker", href: "/collage", tagline: "Turn several tweets into one neat collage.", hint: "Upload tweet links and make a grid collage", accent: "#be185d" },
 ];
 
-export const toolFor = (path: string): Tool => (path.startsWith("/unroll") ? TOOLS[1] : path.startsWith("/archive") ? TOOLS[2] : path.startsWith("/links") ? TOOLS[3] : path.startsWith("/collage") ? TOOLS[4] : TOOLS[0]);
+const ROUTES: [string, ToolId][] = [["/unroll", "threadscroll"], ["/links", "linkdesk"], ["/collage", "collage"]];
+export const toolFor = (path: string): Tool => TOOLS.find((t) => t.id === (ROUTES.find(([r]) => path.startsWith(r))?.[1] ?? "snappost")) ?? TOOLS[0];
 
 /** The icon of each tool: a dark tile with a white glyph and one coloured accent. */
 export function ToolIcon({ id, size = 36 }: { id: ToolId; size?: number }): ReactNode {
@@ -42,12 +42,6 @@ export function ToolIcon({ id, size = 36 }: { id: ToolId; size?: number }): Reac
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
       <rect width="64" height="64" fill="#1b2420" />
       {[12, 26, 40].flatMap((y) => [12, 26, 40].map((x) => <rect key={`${x}${y}`} x={x} y={y} width="12" height="12" fill={y === 12 || (y === 26 && x === 12) ? "#60a5fa" : "#fff"} opacity={y === 12 || (y === 26 && x === 12) ? 1 : 0.9} />))}
-    </svg>
-  ) : id === "archivevault" ? (
-    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
-      <rect width="64" height="64" fill="#1b2420" />
-      <path d="M12 14h40v10H12zM16 24v26h32V24" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="square" />
-      <rect x="26" y="32" width="12" height="8" fill="#818cf8" />
     </svg>
   ) : (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">

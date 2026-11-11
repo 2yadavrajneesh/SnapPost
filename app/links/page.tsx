@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import ArchiveTool from "@/components/linkdesk/ArchiveTool";
 import CleanerTool from "@/components/linkdesk/CleanerTool";
 import ExtractTool from "@/components/linkdesk/ExtractTool";
 import MakerTool from "@/components/linkdesk/MakerTool";
@@ -15,6 +16,7 @@ const TABS = [
   { id: "batch", label: "Open in batches" },
   { id: "extract", label: "Extract links" },
   { id: "clean", label: "Link Cleaner" },
+  { id: "archive", label: "Archive a page" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -76,6 +78,9 @@ export default function LinkDesk() {
                 </div>
                 <div role="tabpanel" id="view-clean" aria-labelledby="tab-clean" hidden={tab !== "clean"}>
                   <CleanerTool inbox={inbox} onSent={() => go("batch")} />
+                </div>
+                <div role="tabpanel" id="view-archive" aria-labelledby="tab-archive" hidden={tab !== "archive"}>
+                  <ArchiveTool />
                 </div>
                 <div role="tabpanel" id="view-batch" aria-labelledby="tab-batch" hidden={tab !== "batch"}>
                   <BatchTool active={tab === "batch"} />
