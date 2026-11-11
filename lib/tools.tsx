@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type ToolId = "snappost" | "threadscroll" | "archivevault";
+export type ToolId = "snappost" | "threadscroll" | "archivevault" | "linkdesk";
 
 export type Tool = {
   id: ToolId;
@@ -16,9 +16,10 @@ export const TOOLS: Tool[] = [
   { id: "snappost", name: "SnapPost", href: "/", tagline: "Screenshot, upgraded. Posts to PNG, PDF & MP4.", hint: "Turn a post into a polished image, PDF or video", accent: "#c2410c" },
   { id: "threadscroll", name: "ThreadScroll", href: "/unroll", tagline: "Unroll any thread into pages, text & PDF.", hint: "Unroll a whole thread to read, print or save", accent: "#0f766e" },
   { id: "archivevault", name: "ArchiveVault", href: "/archive", tagline: "Save any web page to the Wayback Machine and more.", hint: "Archive a link so it never disappears", accent: "#4338ca" },
+  { id: "linkdesk", name: "LinkDesk", href: "/links", tagline: "Open, make, extract and clean links in bulk.", hint: "Work with lists of links: batches, spreadsheets, cleaning", accent: "#1f5fd6" },
 ];
 
-export const toolFor = (path: string): Tool => (path.startsWith("/unroll") ? TOOLS[1] : path.startsWith("/archive") ? TOOLS[2] : TOOLS[0]);
+export const toolFor = (path: string): Tool => (path.startsWith("/unroll") ? TOOLS[1] : path.startsWith("/archive") ? TOOLS[2] : path.startsWith("/links") ? TOOLS[3] : TOOLS[0]);
 
 /** The icon of each tool: a dark tile with a white glyph and one coloured accent. */
 export function ToolIcon({ id, size = 36 }: { id: ToolId; size?: number }): ReactNode {
@@ -27,6 +28,11 @@ export function ToolIcon({ id, size = 36 }: { id: ToolId; size?: number }): Reac
       <rect width="64" height="64" fill="#1b2420" />
       <path d="M14 26V14h12M38 14h12v12M50 38v12H38M26 50H14V38" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="square" />
       <rect x="25" y="25" width="14" height="14" fill="#ea580c" />
+    </svg>
+  ) : id === "linkdesk" ? (
+    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
+      <rect width="64" height="64" fill="#1b2420" />
+      {[12, 26, 40].flatMap((y) => [12, 26, 40].map((x) => <rect key={`${x}${y}`} x={x} y={y} width="12" height="12" fill={y === 12 || (y === 26 && x === 12) ? "#60a5fa" : "#fff"} opacity={y === 12 || (y === 26 && x === 12) ? 1 : 0.9} />))}
     </svg>
   ) : id === "archivevault" ? (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">

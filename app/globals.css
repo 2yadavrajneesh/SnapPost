@@ -268,3 +268,25 @@ html[data-theme="dark"] .vault-stage {
     linear-gradient(rgba(165, 180, 252, 0.1) 1px, transparent 1px),
     linear-gradient(90deg, rgba(165, 180, 252, 0.1) 1px, transparent 1px);
 }
+
+/* LinkDesk stage: a quiet blue dot grid */
+.desk-stage {
+  background-color: #edf1f7;
+  background-image: radial-gradient(circle, rgba(31, 95, 214, 0.18) 1.2px, transparent 1.6px);
+  background-size: 24px 24px;
+}
+html[data-theme="dark"] .desk-stage {
+  background-color: #10151c;
+  background-image: radial-gradient(circle, rgba(107, 155, 255, 0.16) 1.2px, transparent 1.6px);
+}
+/* status colours used by LinkDesk follow the dark theme */
+html[data-theme="dark"] .bg-emerald-100 { background-color: #12332a; }
+html[data-theme="dark"] .text-emerald-800,
+html[data-theme="dark"] .text-emerald-700 { color: #4fcb91; }
+html[data-theme="dark"] .border-emerald-300 { border-color: #1f5f48; }
+html[data-theme="dark"] .bg-amber-50 { background-color: #2b2410; }
+html[data-theme="dark"] .bg-amber-100 { background-color: #3a2f12; }
+html[data-theme="dark"] .bg-amber-200 { background-color: #4a3b14; }
+html[data-theme="dark"] .text-amber-900,
+html[data-theme="dark"] .text-amber-950 { color: #f3d9a4; }
+html[data-theme="dark"] .border-amber-300 { border-color: #6b5420; }

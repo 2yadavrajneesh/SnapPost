@@ -1,11 +1,12 @@
 # SnapPost
 
-Three small tools, right in your browser. Switch between them with the buttons at the top of the page.
+Four small tools, right in your browser. Switch between them with the buttons at the top of the page.
 
 | Tool | Page | What it does |
 |---|---|---|
 | **SnapPost** | `/` | Turn a post link into a polished, shareable image, PDF or short video. |
 | **ThreadScroll** | `/unroll` | Unroll a whole thread to read, print or save it as text, Markdown or a paged PDF. |
+| **LinkDesk** | `/links` | Bulk link tools for spreadsheets and documents (ported from the LinkDesk project, tool by tool). |
 | **ArchiveVault** | `/archive` | Save any web page to the Wayback Machine and open other archives with your link filled in. |
 
 Paste a link, tweak the look, and download or copy the result. Built with Next.js and Tailwind CSS. No environment variables are needed to run it.
@@ -48,6 +49,12 @@ Paste a link, tweak the look, and download or copy the result. Built with Next.j
 - **Collapsed options:** *Display*, *Page*, *Marker & redact* and *Background label* start closed to keep the sidebar short.
 - **Rising-dot stage:** the viewer has its own teal dotted animation, different from SnapPost's.
 - **PDF download:** the PDF is built from the same pages as the preview, so every language and emoji carry over. Pages are images, so the text in the PDF cannot be selected or searched.
+
+## LinkDesk features
+
+Everything runs in the browser. Files are never uploaded. Tools are added one at a time:
+
+- **Open in batches:** load a spreadsheet (.xlsx, .xls, .csv), paste links or use the sample list, then open them 10, 20, 30, 50 or any number up to 100 at a time. Progress, next-up batch, a one-link-per-click fallback when pop-ups are blocked, a status table with search and filters, *Copy report*, and `Alt + O` to open the next batch. The list is saved in this browser.
 
 ## ArchiveVault features
 
