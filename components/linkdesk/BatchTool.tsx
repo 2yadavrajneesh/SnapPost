@@ -394,6 +394,15 @@ export default function BatchTool({ active }: { active: boolean }) {
             </div>
             <Check checked={L.auto} onChange={L.setAuto}>Add <code>https://</code></Check>
             <Check checked={L.dedupe} onChange={L.setDedupe}>Remove duplicates</Check>
+            <button
+              type="button"
+              className={`${btnSm} sm:ml-auto`}
+              disabled={size === 20 && L.auto && !L.dedupe}
+              title="Back to 20 per batch, https:// added, duplicates kept"
+              onClick={() => (L.setSize(20), L.setAuto(true), L.setDedupe(false), toast("Settings reset."))}
+            >
+              Reset
+            </button>
           </div>
         </Card>
       </div>
@@ -459,16 +468,38 @@ export default function BatchTool({ active }: { active: boolean }) {
       <section className="border border-stone-300 bg-white">
         <div className="flex flex-wrap items-center gap-2 border-b border-stone-200 p-3">
           <h2 className="mr-auto text-sm font-bold text-stone-900">Links</h2>
-          <div role="group" aria-label="Filter by status" className="flex gap-1 bg-stone-100 p-1">
+          <div role="group" aria-label="Filter by status" className="flex h-9 items-stretch gap-1 bg-stone-100 p-1">
             {(["all", "pending", "opened"] as const).map((f) => (
               <button key={f} type="button" aria-pressed={status === f} onClick={() => (setStatus(f), setLimit(PAGE))} className={`px-2.5 py-1 text-xs font-medium capitalize ${status === f ? "bg-white text-stone-900" : "text-stone-500 hover:text-stone-800"}`}>{f}</button>
             ))}
           </div>
-          <select aria-label="Filter by batch" value={bf} onChange={(e) => (setBatchFilter(e.target.value), setLimit(PAGE))} className={`${field} !w-auto`}>
-            <option value="all">All batches</option>
-            {Array.from({ length: nBatches }, (_, k) => k + 1).map((b) => <option key={b} value={b}>Batch {b} ({start(b) + 1} to {Math.min(b * size, total)})</option>)}
-          </select>
-          <input type="search" value={query} onChange={(e) => (setQuery(e.target.value), setLimit(PAGE))} placeholder="Search title or link" aria-label="Search links" className={`${field} !w-48`} />
+          <div className="relative">
+            <select aria-label="Filter by batch" value={bf} onChange={(e) => (setBatchFilter(e.target.value), setLimit(PAGE))} className={`${field} h-9 !w-auto cursor-pointer appearance-none !py-0 !pl-3 !pr-8`}>
+              <option value="all">All batches</option>
+              {Array.from({ length: nBatches }, (_, k) => k + 1).map((b) => <option key={b} value={b}>Batch {b} ({start(b) + 1} to {Math.min(b * size, total)})</option>)}
+            </select>
+            <svg className="pointer-events-none absolute right-2.5 top-1/2 -mt-[5px] text-stone-500" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+          </div>
+          <button type="button" className={`${btnSm} !h-9`} disabled={!total} onClick={resetAll}>Reset status</button>
+          <button
+            type="button"
+            disabled={!total}
+            className={`${btnSm} !h-9 ${clearArmed ? "!border-red-600 !bg-red-600 !text-white" : "!text-red-700"}`}
+            onClick={() => {
+              if (!clearArmed) {
+                setClearArmed(true);
+                setTimeout(() => setClearArmed(false), 3500);
+                return;
+              }
+              setClearArmed(false);
+              forgetSheet();
+              L.clear();
+              toast("Cleared the list.");
+            }}
+          >
+            {clearArmed ? "Click again to confirm" : "Clear all"}
+          </button>
+          <input type="search" value={query} onChange={(e) => (setQuery(e.target.value), setLimit(PAGE))} placeholder="Search title or link" aria-label="Search links" className={`${field} h-9 !w-48 !py-0`} />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-xs">
@@ -511,24 +542,6 @@ export default function BatchTool({ active }: { active: boolean }) {
             <span>Showing {shown.length} of {rows.length} {rows.length === 1 ? "link" : "links"}</span>
             <span className="flex items-center gap-3">
               {rows.length > shown.length && <button type="button" className={btnSm} onClick={() => setLimit((l) => l + PAGE)}>Show {Math.min(PAGE, rows.length - shown.length)} more</button>}
-              <button type="button" className="font-semibold hover:underline" onClick={resetAll}>Reset status</button>
-              <button
-                type="button"
-                className="font-semibold text-red-700 hover:underline"
-                onClick={() => {
-                  if (!clearArmed) {
-                    setClearArmed(true);
-                    setTimeout(() => setClearArmed(false), 3500);
-                    return;
-                  }
-                  setClearArmed(false);
-                  forgetSheet();
-                  L.clear();
-                  toast("Cleared the list.");
-                }}
-              >
-                {clearArmed ? "Click again to clear everything" : "Clear all"}
-              </button>
             </span>
           </div>
         )}
