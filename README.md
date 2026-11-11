@@ -51,6 +51,8 @@ Paste a link, tweak the look, and download or copy the result. Built with Next.j
 - **Rising-dot stage:** the viewer has its own teal dotted animation, different from SnapPost's.
 - **PDF download:** the PDF is built from the same pages as the preview, so every language and emoji carry over. Pages are images, so the text in the PDF cannot be selected or searched.
 
+- **Top bar:** on wide screens (1280 px and up) the five tools sit in the bar; on laptops, tablets and phones they fold into a *Tools* menu button, which closes after you pick a tool, on Escape or when you tap outside it.
+
 ## CollageMaker features
 
 - **Add tweets:** paste up to 12 links at once (one per line or separated by spaces). Each loads on its own, three at a time, with a retry button when one fails. Repeats and non-tweet links are skipped.
