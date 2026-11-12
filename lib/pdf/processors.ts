@@ -1,5 +1,8 @@
 import "server-only";
 import { degrees, PDFDocument, PDFFont, PDFPage, rgb, StandardFonts } from "pdf-lib";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import JSZip from "jszip";
 import sharp from "sharp";
 import { parseOrder, parsePages } from "./pages";
@@ -717,4 +720,87 @@ async function compress({ inputs, options }: Ctx): Promise<Output> {
   }
 }
 
-export const PROCESSORS: Record<string, (c: Ctx) => Promise<Output>> = { merge, rotate, split, remove, extract, organize, "images-to-pdf": imagesToPdf, "pdf-to-images": pdfToImages, "page-numbers": pageNumbers, watermark, crop, "add-text": addText, protect, unlock, metadata, "pdf-to-text": pdfToText, "pdf-to-markdown": pdfToMarkdown, "pdf-to-word": pdfToWord, "pdf-to-excel": pdfToExcel, "pdf-to-powerpoint": pdfToPowerpoint, compare, redact, compress };
+const TESS_LANGS = new Set(["eng", "hin", "spa", "fra", "deu"]);
+/** Copies the bundled language files to a writable folder once, so the OCR engine can read them. */
+async function langDir(codes: string[]): Promise<string> {
+  const dir = path.join(os.tmpdir(), "papernest-tess");
+  await fs.mkdir(dir, { recursive: true });
+  for (const c of codes) {
+    const dest = path.join(dir, `${c}.traineddata.gz`);
+    if (await fs.stat(dest).then(() => true, () => false)) continue;
+    const src = path.join(process.cwd(), "node_modules", "@tesseract.js-data", c, "4.0.0_best_int", `${c}.traineddata.gz`);
+    await fs.copyFile(src, `${dest}.tmp`).catch(() => {
+      throw new Error("The reading engine is not available on this server.");
+    });
+    await fs.rename(`${dest}.tmp`, dest);
+  }
+  return dir;
+}
+
+async function ocr({ inputs, options }: Ctx): Promise<Output> {
+  const started = Date.now();
+  const input = inputs[0];
+  const lang = str(options.lang, "eng");
+  const codes = lang.split("+");
+  if (!codes.every((c) => TESS_LANGS.has(c))) throw new Error("That language is not available.");
+  const wantPdf = str(options.output, "pdf") !== "txt";
+  const DPI = 200;
+  // 1. get page pictures
+  const pics: { png: Buffer; wPt: number; hPt: number; label: number }[] = [];
+  if (input.bytes[0] === 0x25 && input.bytes[1] === 0x50) {
+    const { mupdf, doc } = await openMu(input);
+    try {
+      const idx = parsePages(str(options.pages, "all"), doc.countPages());
+      if (idx.length > 40) throw new Error(`Reading ${idx.length} pages would take too long. Use the Pages box to do 40 or fewer at a time, for example 1-40.`);
+      for (const i of idx) {
+        const page = doc.loadPage(i);
+        const [x0, y0, x1, y1] = page.getBounds();
+        const pix = page.toPixmap(mupdf.Matrix.scale(DPI / 72, DPI / 72), mupdf.ColorSpace.DeviceRGB, false, true);
+        pics.push({ png: Buffer.from(pix.asPNG()), wPt: x1 - x0, hPt: y1 - y0, label: i + 1 });
+        pix.destroy();
+        page.destroy();
+      }
+    } finally {
+      doc.destroy();
+    }
+  } else {
+    try {
+      const img = sharp(input.bytes, { limitInputPixels: 120_000_000 }).rotate();
+      const png = await img.png().toBuffer({ resolveWithObject: true });
+      pics.push({ png: png.data, wPt: (png.info.width * 72) / DPI, hPt: (png.info.height * 72) / DPI, label: 1 });
+    } catch {
+      throw new Error(`"${input.name}" could not be read as an image or PDF.`);
+    }
+  }
+  // 2. read the text
+  const { createWorker } = await import("tesseract.js");
+  const worker = await createWorker(codes, 1, { langPath: await langDir(codes), gzip: true, cachePath: path.join(os.tmpdir(), "papernest-tess-cache") });
+  let text = "";
+  let words = 0;
+  const out = wantPdf ? await PDFDocument.create() : null;
+  try {
+    for (const pic of pics) {
+      if (Date.now() - started > 240_000) throw new Error("This took too long. Try fewer pages at a time using the Pages box.");
+      const { data } = await worker.recognize(pic.png, {}, { pdf: wantPdf, text: true });
+      const t = (data.text ?? "").trim();
+      words += t ? t.split(/\s+/).length : 0;
+      text += `${pics.length > 1 ? `--- Page ${pic.label} ---\n\n` : ""}${t}\n\n`;
+      if (out) {
+        const one = await PDFDocument.load(new Uint8Array(data.pdf as number[]));
+        const [pg] = await out.copyPages(one, [0]);
+        const k = Math.min(pic.wPt / pg.getWidth(), pic.hPt / pg.getHeight());
+        pg.scaleContent(k, k);
+        pg.setSize(pic.wPt, pic.hPt);
+        out.addPage(pg);
+      }
+    }
+  } finally {
+    await worker.terminate();
+  }
+  if (!words) throw new Error("No text could be read. Check that the language is right and the scan is clear.");
+  const note = `Read about ${words.toLocaleString("en")} words on ${pics.length} page${pics.length === 1 ? "" : "s"}. Check names and numbers, as scans can be misread.`;
+  if (out) return { name: `${stem(input.name)}-searchable.pdf`, bytes: await out.save(), type: "application/pdf", note };
+  return { ...textOut(`${stem(input.name)}.txt`, text.trimEnd() + "\n", "text/plain; charset=utf-8"), note };
+}
+
+export const PROCESSORS: Record<string, (c: Ctx) => Promise<Output>> = { merge, rotate, split, remove, extract, organize, "images-to-pdf": imagesToPdf, "pdf-to-images": pdfToImages, "page-numbers": pageNumbers, watermark, crop, "add-text": addText, protect, unlock, metadata, "pdf-to-text": pdfToText, "pdf-to-markdown": pdfToMarkdown, "pdf-to-word": pdfToWord, "pdf-to-excel": pdfToExcel, "pdf-to-powerpoint": pdfToPowerpoint, compare, redact, compress, ocr };

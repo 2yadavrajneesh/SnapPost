@@ -12,6 +12,11 @@
     "start": "next start"
   },
   "dependencies": {
+    "@tesseract.js-data/deu": "^1.0.0",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "@tesseract.js-data/fra": "^1.0.0",
+    "@tesseract.js-data/hin": "^1.0.0",
+    "@tesseract.js-data/spa": "^1.0.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^2.9.0",
     "@vercel/speed-insights": "^2.0.0",
@@ -28,7 +33,8 @@
     "pptxgenjs": "^4.0.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@types/diff": "^7.0.2",

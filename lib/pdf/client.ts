@@ -2,7 +2,7 @@
 
 import { upload } from "@vercel/blob/client";
 
-export type PdfConfig = { mode: "blob" | "local" | "off"; maxFileBytes: number; maxFiles: number; ttlMinutes: number };
+export type PdfConfig = { mode: "blob" | "local" | "off"; maxFileBytes: number; maxImageBytes: number; maxFiles: number; ttlMinutes: number };
 export type Uploaded = { url: string; name: string };
 export type RunResult = { url: string; name: string; size: number; expiresAt: number; note?: string };
 
@@ -13,11 +13,13 @@ const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xx
 const safe = (n: string) => n.replace(/[^\w.\- ]+/g, "_").slice(-90) || "file";
 
 /** Sends one file to storage and returns its private link. */
+export const isImageFile = (f: File) => /^image\//.test(f.type);
+
 export async function uploadFile(file: File, mode: PdfConfig["mode"], onProgress?: (pct: number) => void): Promise<Uploaded> {
   if (mode === "off") throw new Error("File storage is not set up on this site yet.");
   const name = safe(file.name);
   if (mode === "local") {
-    const res = await fetch(`/api/pdf/upload-local?name=${encodeURIComponent(name)}`, { method: "PUT", body: file, headers: { "content-type": file.type || "application/octet-stream" } });
+    const res = await fetch(`/api/pdf/upload-local?name=${encodeURIComponent(name)}&kind=${isImageFile(file) ? "image" : "pdf"}`, { method: "PUT", body: file, headers: { "content-type": file.type || "application/octet-stream" } });
     const j = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(j.error ?? "Upload failed.");
     onProgress?.(100);
@@ -26,6 +28,7 @@ export async function uploadFile(file: File, mode: PdfConfig["mode"], onProgress
   const blob = await upload(`papernest/in/${uuid()}/${name}`, file, {
     access: "public",
     handleUploadUrl: "/api/pdf/upload",
+    clientPayload: isImageFile(file) ? "image" : "pdf",
     multipart: file.size > 20 * 1024 * 1024,
     contentType: file.type || undefined,
     onUploadProgress: (p) => onProgress?.(p.percentage),

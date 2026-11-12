@@ -33,13 +33,16 @@ export default function ToolWorkspace({ tool }: { tool: PdfTool }) {
     setResult(null);
     const next: Item[] = [];
     for (const f of Array.from(list)) {
-      const okType = tool.kind === "pdf" ? /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name) : /^image\//.test(f.type);
+      const isPdf = /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name);
+      const isImg = /^image\//.test(f.type);
+      const okType = tool.kind === "pdf" ? isPdf : tool.kind === "image" ? isImg : isPdf || isImg;
       if (!okType) {
-        setError(`${f.name} is not a ${tool.kind === "pdf" ? "PDF" : "supported image"}.`);
+        setError(`${f.name} is not a ${tool.kind === "pdf" ? "PDF" : tool.kind === "image" ? "supported image" : "PDF or image"}.`);
         continue;
       }
-      if (f.size > max) {
-        setError(`${f.name} is larger than ${size(max)}.`);
+      const cap = isImg ? (cfg?.maxImageBytes ?? 25 * 1048576) : max;
+      if (f.size > cap) {
+        setError(`${f.name} is larger than ${size(cap)}${isImg ? " (pictures are limited to " + size(cap) + ")" : ""}.`);
         continue;
       }
       next.push({ id: ++seq, file: f });
@@ -101,7 +104,7 @@ export default function ToolWorkspace({ tool }: { tool: PdfTool }) {
             <input ref={input} type="file" hidden multiple={tool.multiple} accept={tool.accept} onChange={(e) => { if (e.target.files) add(e.target.files); e.target.value = ""; }} />
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14" /></svg>
             <strong className="text-sm text-stone-900">Drop {tool.multiple ? "files" : "a file"} here, or click to choose</strong>
-            <small className="text-[11px] text-stone-500">Up to {size(max)} each{tool.multiple ? `, ${limit} files at most` : ""}</small>
+            <small className="text-[11px] text-stone-500">{tool.kind === "image" ? `Up to ${size(cfg?.maxImageBytes ?? 25 * 1048576)} each` : tool.kind === "both" ? `PDFs up to ${size(max)}, pictures up to ${size(cfg?.maxImageBytes ?? 25 * 1048576)}` : `Up to ${size(max)} each`}{tool.multiple ? `, ${limit} files at most` : ""}</small>
           </label>
           {items.length > 0 && (
             <ul className="mt-3 divide-y divide-stone-200 border border-stone-200 bg-white">

@@ -30,7 +30,7 @@ export type PdfTool = {
   category: CategoryId;
   /** What the file picker accepts. */
   accept: string;
-  kind: "pdf" | "image";
+  kind: "pdf" | "image" | "both";
   multiple: boolean;
   /** Fewest files needed. */
   min: number;
@@ -418,6 +418,23 @@ export const PDF_TOOLS: PdfTool[] = [
       PAGES,
     ],
     icon: "M4 5h16v11H4zM12 16v4M8 20h8",
+  },
+  {
+    id: "ocr",
+    title: "OCR (scanned PDF)",
+    blurb: "Read the text in a scanned PDF or photo and make it searchable.",
+    category: "convert",
+    accept: "application/pdf,.pdf,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp",
+    kind: "both",
+    multiple: false,
+    min: 1,
+    action: "Read the text",
+    options: [
+      { id: "lang", label: "Language", type: "select", default: "eng", choices: [{ value: "eng", label: "English" }, { value: "hin", label: "Hindi" }, { value: "eng+hin", label: "English and Hindi" }, { value: "spa", label: "Spanish" }, { value: "fra", label: "French" }, { value: "deu", label: "German" }] },
+      { id: "output", label: "Give me", type: "select", default: "pdf", choices: [{ value: "pdf", label: "Searchable PDF (looks the same, text can be selected)" }, { value: "txt", label: "Plain text file" }] },
+      { id: "pages", label: "Pages", type: "text", default: "all", placeholder: "all, or 1-10", help: "Reading takes a few seconds per page, so up to 40 pages at a time." },
+    ],
+    icon: "M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 9h8M8 12h8M8 15h5",
   },
 ];
 

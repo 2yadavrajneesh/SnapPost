@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
     let total = 0;
     for (let i = 0; i < urls.length; i++) {
       const bytes = await readFile(urls[i], "in", PDF_LIMITS.maxFileBytes);
+      const isPdf = bytes[0] === 0x25 && bytes[1] === 0x50;
+      if (!isPdf && bytes.length > PDF_LIMITS.maxImageBytes) throw new Error(`Pictures can be up to ${Math.round(PDF_LIMITS.maxImageBytes / 1048576)} MB.`);
       total += bytes.length;
       if (total > PDF_LIMITS.maxTotalBytes) throw new Error("The files add up to too much. Use fewer or smaller files.");
       inputs.push({ name: cleanName(String(files[i].name ?? ""), `file-${i + 1}`), bytes });

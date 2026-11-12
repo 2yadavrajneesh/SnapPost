@@ -11,7 +11,8 @@ export async function PUT(req: NextRequest) {
   const limited = await rateLimit(req, BUCKETS.pdfUpload);
   if (limited) return limited;
   const bytes = new Uint8Array(await req.arrayBuffer());
-  if (!bytes.length || bytes.length > PDF_LIMITS.maxFileBytes) return NextResponse.json({ error: "That file is empty or too large." }, { status: 400 });
+  const max = req.nextUrl.searchParams.get("kind") === "image" ? PDF_LIMITS.maxImageBytes : PDF_LIMITS.maxFileBytes;
+  if (!bytes.length || bytes.length > max) return NextResponse.json({ error: "That file is empty or too large." }, { status: 400 });
   const { url } = await saveFile("in", req.nextUrl.searchParams.get("name") ?? "file", bytes, req.headers.get("content-type") ?? "application/octet-stream");
   return NextResponse.json({ url });
 }

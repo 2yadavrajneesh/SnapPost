@@ -23,9 +23,9 @@ export async function POST(req: NextRequest) {
     const json = await handleUpload({
       body,
       request: req,
-      onBeforeGenerateToken: async (pathname) => {
+      onBeforeGenerateToken: async (pathname, clientPayload) => {
         if (!/^papernest\/in\/[\w-]{36}\/[^/]{1,100}$/.test(pathname)) throw new Error("Bad file path.");
-        return { allowedContentTypes: TYPES, maximumSizeInBytes: PDF_LIMITS.maxFileBytes, addRandomSuffix: false };
+        return { allowedContentTypes: TYPES, maximumSizeInBytes: clientPayload === "image" ? PDF_LIMITS.maxImageBytes : PDF_LIMITS.maxFileBytes, addRandomSuffix: false };
       },
       onUploadCompleted: async () => {},
     });
