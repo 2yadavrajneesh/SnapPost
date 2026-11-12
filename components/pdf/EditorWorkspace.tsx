@@ -505,6 +505,8 @@ export default function EditorWorkspace() {
     }
   }
 
+  // rough size after saving: the original plus the pictures, drawings and text that get added
+  const extra = annots.reduce((n, a) => n + (a.k === "image" ? Math.round(a.data.length * 0.75) : a.k === "ink" ? a.pts.length * 14 + 200 : a.k === "text" ? 300 + a.text.length * 2 : 220), 0);
   const selAnn = annots.find((a) => a.id === selected) ?? null;
   const goto = (n: number) => pageEls.current.get(clamp(n, 0, sizes.length - 1))?.scrollIntoView({ block: "start", behavior: "smooth" });
 
@@ -589,7 +591,11 @@ export default function EditorWorkspace() {
         <aside className="space-y-3 self-start lg:sticky lg:top-[112px]">
           <Card title={result ? "Your PDF is ready" : "Save"}>
             <p className="mb-2 truncate text-xs font-semibold text-stone-800">{file.name}</p>
-            <p className="mb-3 text-[11px] text-stone-500">{sizes.length} page{sizes.length === 1 ? "" : "s"} · {annots.length} edit{annots.length === 1 ? "" : "s"}</p>
+            <p className="mb-2 text-[11px] text-stone-500">{sizes.length} page{sizes.length === 1 ? "" : "s"} · {annots.length} edit{annots.length === 1 ? "" : "s"}</p>
+            <dl className="mb-3 space-y-1 text-xs">
+              <div className="flex justify-between"><dt className="text-stone-500">Now</dt><dd className="font-bold text-stone-900">{size(file.size)}</dd></div>
+              <div className="flex justify-between"><dt className="text-stone-500">After saving</dt><dd className="font-bold text-stone-900">about {size(file.size + extra + (annots.length ? 2500 : 0))}</dd></div>
+            </dl>
             {!result && (
               <button type="button" className={`${btnPrimary} w-full`} disabled={!annots.length || !!busy || cfg?.mode === "off"} onClick={save}>
                 {busy === "upload" ? `Uploading ${pct}%` : busy === "process" ? "Saving…" : "Save edits"}
@@ -599,7 +605,7 @@ export default function EditorWorkspace() {
             {result && (
               <div className="space-y-2">
                 {result.note && <p className="bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-800">{result.note}</p>}
-                <p className="text-[11px] text-stone-500">{size(result.size)}. The link works for about {cfg?.ttlMinutes ?? 30} minutes, then the file is deleted.</p>
+                <p className="text-[11px] text-stone-500">Actual size {size(result.size)}. The link works for about {cfg?.ttlMinutes ?? 30} minutes, then the file is deleted.</p>
                 <a className={`${btnPrimary} w-full`} href={downloadHref(result.url)} download={result.name}>Download</a>
                 <button type="button" className={`${btnPlain} w-full`} onClick={() => copy(result.url, "Link copied.")}>Copy link</button>
                 <button type="button" className={`${btnPlain} w-full`} onClick={() => { deleteResult(result.url); setResult(null); }}>Keep editing</button>

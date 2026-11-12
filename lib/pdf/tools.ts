@@ -32,7 +32,7 @@ export type PdfTool = {
   accept: string;
   kind: "pdf" | "image" | "both";
   /** Tools with their own page layout instead of the standard upload form. */
-  ui?: "news" | "editor";
+  ui?: "news" | "editor" | "studio";
   multiple: boolean;
   /** Fewest files needed. */
   min: number;
@@ -466,6 +466,20 @@ export const PDF_TOOLS: PdfTool[] = [
     action: "Save edits",
     options: [],
     icon: "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z",
+  },
+  {
+    id: "page-studio",
+    title: "Page Studio",
+    blurb: "See every page as a thumbnail. Drag to reorder, turn, delete, copy or add blank pages, with a live size estimate.",
+    category: "organize",
+    ui: "studio",
+    accept: "application/pdf,.pdf",
+    kind: "pdf",
+    multiple: false,
+    min: 1,
+    action: "Save PDF",
+    options: [],
+    icon: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM15 16h4M17 14v4",
   },
 ];
 

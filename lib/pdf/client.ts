@@ -47,3 +47,28 @@ export const deleteResult = (url: string) => fetch("/api/pdf/delete", { method: 
 
 /** Adds ?download=1 so the browser saves the file instead of opening it. */
 export const downloadHref = (url: string) => url + (url.includes("?") ? "&" : "?") + "download=1";
+
+export type PageWeights = { big: [number, number][]; small: number };
+export type Analysis = { total: number; pages: PageWeights[]; streams: number; partial: boolean };
+
+export async function analyze(url: string): Promise<Analysis> {
+  const res = await fetch("/api/pdf/analyze", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ url }) });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(j.error ?? "Could not analyse this file.");
+  return j as Analysis;
+}
+
+/** Estimated size in bytes if only the listed source pages (repeats allowed) are kept. Shared pictures and fonts are counted once. */
+export function estimateSize(a: Analysis, srcPages: number[], blankCount = 0): number {
+  const seen = new Set<number>();
+  let streams = 0;
+  for (const i of new Set(srcPages)) {
+    const p = a.pages[i];
+    if (!p) continue;
+    streams += p.small;
+    for (const [id, n] of p.big) if (!seen.has(id)) (seen.add(id), (streams += n));
+  }
+  const overhead = Math.max(0, a.total - a.streams);
+  const keep = new Set(srcPages).size / Math.max(1, a.pages.length);
+  return Math.round(streams + overhead * keep + srcPages.length * 400 + blankCount * 250 + 1500);
+}

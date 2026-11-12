@@ -1129,4 +1129,34 @@ async function editPdf({ inputs, options }: Ctx): Promise<Output> {
   return { ...pdfOut(`${stem(inputs[0].name)}-edited.pdf`, await doc.save()), note: `${applied} edit${applied === 1 ? "" : "s"} saved into the PDF.` };
 }
 
-export const PROCESSORS: Record<string, (c: Ctx) => Promise<Output>> = { merge, rotate, split, remove, extract, organize, "images-to-pdf": imagesToPdf, "pdf-to-images": pdfToImages, "page-numbers": pageNumbers, watermark, crop, "add-text": addText, protect, unlock, metadata, "pdf-to-text": pdfToText, "pdf-to-markdown": pdfToMarkdown, "pdf-to-word": pdfToWord, "pdf-to-excel": pdfToExcel, "pdf-to-powerpoint": pdfToPowerpoint, compare, redact, compress, ocr, "news-pdf": newsPdf, "edit-pdf": editPdf };
+type StudioOp = { src?: number; rot?: number; w?: number; h?: number };
+/** Builds the PDF from the page list made in the visual page studio: order, turns, deletions, copies and blank pages. */
+async function pageStudio({ inputs, options }: Ctx): Promise<Output> {
+  const ops = Array.isArray(options.ops) ? (options.ops as StudioOp[]) : [];
+  if (!ops.length) throw new Error("There are no pages left. Keep at least one page.");
+  if (ops.length > 2000) throw new Error("That would make too many pages.");
+  const doc = await open(inputs[0]);
+  const total = doc.getPageCount();
+  const srcs = ops.filter((o) => Number(o.src) >= 0).map((o) => Number(o.src));
+  if (srcs.some((s) => !Number.isInteger(s) || s >= total)) throw new Error("The page list does not match this file. Open it again.");
+  const out = await PDFDocument.create();
+  const copied = srcs.length ? await out.copyPages(doc, srcs) : [];
+  let k = 0;
+  for (const o of ops) {
+    if (Number(o.src) >= 0) {
+      const pg = copied[k++];
+      const extra = [0, 90, 180, 270].includes(Number(o.rot)) ? Number(o.rot) : 0;
+      if (extra) pg.setRotation(degrees((pg.getRotation().angle + extra) % 360));
+      out.addPage(pg);
+    } else {
+      const w = Math.min(2000, Math.max(50, Number(o.w) || 595));
+      const h = Math.min(2000, Math.max(50, Number(o.h) || 842));
+      out.addPage([w, h]);
+    }
+  }
+  const title = doc.getTitle();
+  if (title) out.setTitle(title);
+  return { ...pdfOut(`${stem(inputs[0].name)}-pages.pdf`, await out.save()), note: `${ops.length} page${ops.length === 1 ? "" : "s"} saved.` };
+}
+
+export const PROCESSORS: Record<string, (c: Ctx) => Promise<Output>> = { merge, rotate, split, remove, extract, organize, "images-to-pdf": imagesToPdf, "pdf-to-images": pdfToImages, "page-numbers": pageNumbers, watermark, crop, "add-text": addText, protect, unlock, metadata, "pdf-to-text": pdfToText, "pdf-to-markdown": pdfToMarkdown, "pdf-to-word": pdfToWord, "pdf-to-excel": pdfToExcel, "pdf-to-powerpoint": pdfToPowerpoint, compare, redact, compress, ocr, "news-pdf": newsPdf, "edit-pdf": editPdf, "page-studio": pageStudio };
