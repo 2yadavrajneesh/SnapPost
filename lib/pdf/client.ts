@@ -4,7 +4,7 @@ import { upload } from "@vercel/blob/client";
 
 export type PdfConfig = { mode: "blob" | "local" | "off"; maxFileBytes: number; maxFiles: number; ttlMinutes: number };
 export type Uploaded = { url: string; name: string };
-export type RunResult = { url: string; name: string; size: number; expiresAt: number };
+export type RunResult = { url: string; name: string; size: number; expiresAt: number; note?: string };
 
 let cached: Promise<PdfConfig> | null = null;
 export const getConfig = () => (cached ??= fetch("/api/pdf/config").then((r) => r.json() as Promise<PdfConfig>));

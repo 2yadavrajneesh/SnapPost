@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
   const run = tool && PROCESSORS[tool.id];
   const files = Array.isArray(body.files) ? body.files : [];
   if (!tool || !run) return NextResponse.json({ error: "Unknown tool." }, { status: 400 });
-  if (files.length < tool.min || files.length > (tool.multiple ? PDF_LIMITS.maxFiles : 1)) {
-    return NextResponse.json({ error: tool.multiple ? `Add ${tool.min} to ${PDF_LIMITS.maxFiles} files.` : "Add one file." }, { status: 400 });
+  if (files.length < tool.min || files.length > (tool.multiple ? Math.min(tool.max ?? 99, PDF_LIMITS.maxFiles) : 1)) {
+    return NextResponse.json({ error: tool.multiple ? `Add ${tool.min === (tool.max ?? 0) ? tool.min : `${tool.min} to ${Math.min(tool.max ?? 99, PDF_LIMITS.maxFiles)}`} files.` : "Add one file." }, { status: 400 });
   }
   const urls = files.map((f) => String(f.url ?? ""));
   if (!urls.every((u) => ownUrl(u, "in"))) return NextResponse.json({ error: "Those files were not uploaded here." }, { status: 400 });
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const out = await run({ inputs, options: body.options ?? {} });
     const { url } = await saveFile("out", out.name, out.bytes, out.type);
     void sweepOld();
-    return NextResponse.json({ url, name: out.name, size: out.bytes.length, expiresAt: Date.now() + PDF_LIMITS.ttlMinutes * 60_000 });
+    return NextResponse.json({ url, name: out.name, size: out.bytes.length, note: out.note, expiresAt: Date.now() + PDF_LIMITS.ttlMinutes * 60_000 });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Something went wrong while processing the file." }, { status: 422 });
   } finally {

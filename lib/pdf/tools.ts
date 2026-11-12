@@ -3,7 +3,7 @@
 export type OptionDef = {
   id: string;
   label: string;
-  type: "select" | "text" | "number" | "checkbox" | "password";
+  type: "select" | "text" | "number" | "checkbox" | "password" | "textarea";
   choices?: { value: string; label: string }[];
   default: string | number | boolean;
   placeholder?: string;
@@ -34,6 +34,8 @@ export type PdfTool = {
   multiple: boolean;
   /** Fewest files needed. */
   min: number;
+  /** Most files allowed (defaults to the site limit when several files are allowed). */
+  max?: number;
   /** Label of the main button. */
   action: string;
   options: OptionDef[];
@@ -319,6 +321,103 @@ export const PDF_TOOLS: PdfTool[] = [
       { id: "marks", label: "Add a line between pages", type: "checkbox", default: false },
     ],
     icon: "M3 6h18v12H3zM7 15V9l3 3 3-3v6M17 9v6M15 13l2 2 2-2",
+  },
+  {
+    id: "redact",
+    title: "Redact PDF",
+    blurb: "Permanently black out words, emails or numbers. The text underneath is removed.",
+    category: "security",
+    accept: "application/pdf,.pdf",
+    kind: "pdf",
+    multiple: false,
+    min: 1,
+    action: "Redact",
+    options: [
+      { id: "terms", label: "Words or phrases to redact", type: "textarea", default: "", placeholder: "One per line", help: "Matches are found anywhere in the text, ignoring capital letters." },
+      { id: "emails", label: "Also redact email addresses", type: "checkbox", default: false },
+      { id: "phones", label: "Also redact phone numbers", type: "checkbox", default: false },
+      { id: "mode", label: "What to do", type: "select", default: "redact", choices: [{ value: "preview", label: "Preview only (highlight matches, change nothing)" }, { value: "redact", label: "Redact for real" }] },
+      PAGES,
+    ],
+    icon: "M4 7h16M4 12h10M4 17h16",
+  },
+  {
+    id: "compress",
+    title: "Compress PDF",
+    blurb: "Make the file smaller.",
+    category: "convert",
+    accept: "application/pdf,.pdf",
+    kind: "pdf",
+    multiple: false,
+    min: 1,
+    action: "Compress",
+    options: [
+      { id: "level", label: "Level", type: "select", default: "normal", choices: [{ value: "normal", label: "Normal (keeps text and quality)" }, { value: "strong", label: "Smallest (turns pages into pictures, text is no longer selectable)" }] },
+      { id: "dpi", label: "Picture quality for Smallest", type: "select", default: "110", choices: [{ value: "80", label: "Low (80 dpi)" }, { value: "110", label: "Medium (110 dpi)" }, { value: "150", label: "High (150 dpi)" }], showIf: { id: "level", value: "strong" } },
+    ],
+    icon: "M8 3v6l-3-3M8 9L5 6M16 21v-6l3 3M16 15l3 3M4 12h16",
+  },
+  {
+    id: "compare",
+    title: "Compare PDFs",
+    blurb: "See what changed in the text between two versions.",
+    category: "more",
+    accept: "application/pdf,.pdf",
+    kind: "pdf",
+    multiple: true,
+    min: 2,
+    max: 2,
+    action: "Compare",
+    options: [
+      { id: "ignore", label: "Ignore differences in spaces and line breaks", type: "checkbox", default: true },
+    ],
+    icon: "M8 3v18M16 3v18M4 8h8M12 16h8",
+  },
+  {
+    id: "pdf-to-word",
+    title: "PDF to Word",
+    blurb: "Make an editable .docx from a text PDF.",
+    category: "convert",
+    accept: "application/pdf,.pdf",
+    kind: "pdf",
+    multiple: false,
+    min: 1,
+    action: "Convert to Word",
+    options: [
+      PAGES,
+    ],
+    icon: "M6 3h9l4 4v14H6zM9 12l1.5 5L12 13l1.5 4L15 12",
+  },
+  {
+    id: "pdf-to-excel",
+    title: "PDF to Excel",
+    blurb: "Pull table-like text into a spreadsheet, one sheet per page.",
+    category: "convert",
+    accept: "application/pdf,.pdf",
+    kind: "pdf",
+    multiple: false,
+    min: 1,
+    action: "Convert to Excel",
+    options: [
+      PAGES,
+    ],
+    icon: "M4 4h16v16H4zM4 10h16M10 4v16",
+  },
+  {
+    id: "pdf-to-powerpoint",
+    title: "PDF to PowerPoint",
+    blurb: "Turn each page into a slide.",
+    category: "convert",
+    accept: "application/pdf,.pdf",
+    kind: "pdf",
+    multiple: false,
+    min: 1,
+    action: "Convert to PowerPoint",
+    options: [
+      { id: "mode", label: "Slides contain", type: "select", default: "picture", choices: [{ value: "picture", label: "The page as a picture (looks the same)" }, { value: "text", label: "The text (editable, simpler look)" }] },
+      PAGES,
+    ],
+    icon: "M4 5h16v11H4zM12 16v4M8 20h8",
   },
 ];
 

@@ -7,7 +7,7 @@ Four small tools, right in your browser. Switch between them with the buttons at
 | **SnapPost** | `/` | Turn a post link into a polished, shareable image, PDF or short video. |
 | **ThreadScroll** | `/unroll` | Unroll a whole thread to read, print or save it as text, Markdown or a paged PDF. |
 | **CollageMaker** | `/collage` | Paste several tweet links and make one clean, aligned collage as a PNG or PDF. |
-| **PaperNest** | `/pdf` | PDF tools run on the server: upload, get a download link, files are deleted after 30 minutes. Needs a Vercel Blob store (`BLOB_READ_WRITE_TOKEN`). Tools so far: Merge, Rotate, Split, Remove pages, Extract pages, Organize, Images to PDF, PDF to images, Page numbers, Watermark, Crop, Add text, Protect, Unlock, Edit metadata, PDF to text, PDF to Markdown. |
+| **PaperNest** | `/pdf` | PDF tools run on the server: upload, get a download link, files are deleted after 30 minutes. Needs a Vercel Blob store (`BLOB_READ_WRITE_TOKEN`). Tools so far: Merge, Rotate, Split, Remove pages, Extract pages, Organize, Images to PDF, PDF to images, Page numbers, Watermark, Crop, Add text, Protect, Unlock, Edit metadata, PDF to text, PDF to Markdown, Redact, Compress, Compare, PDF to Word, PDF to Excel, PDF to PowerPoint. |
 | **LinkDesk** | `/links` | Link tools: open links in batches, make spreadsheet links clickable, extract and clean links, and archive pages. |
 
 Paste a link, tweak the look, and download or copy the result. Built with Next.js and Tailwind CSS. No environment variables are needed to run it.

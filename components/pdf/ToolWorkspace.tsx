@@ -26,7 +26,7 @@ export default function ToolWorkspace({ tool }: { tool: PdfTool }) {
   }, []);
 
   const max = cfg?.maxFileBytes ?? 100 * 1048576;
-  const limit = tool.multiple ? (cfg?.maxFiles ?? 20) : 1;
+  const limit = tool.multiple ? Math.min(tool.max ?? 99, cfg?.maxFiles ?? 20) : 1;
 
   function add(list: FileList | File[]) {
     setError("");
@@ -133,6 +133,8 @@ export default function ToolWorkspace({ tool }: { tool: PdfTool }) {
                     <select className={`${field} mt-1`} value={String(opts[o.id])} onChange={(e) => setOpts({ ...opts, [o.id]: e.target.value })}>
                       {o.choices?.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                     </select>
+                  ) : o.type === "textarea" ? (
+                    <textarea className={`${field} mt-1 min-h-[96px]`} placeholder={o.placeholder} value={String(opts[o.id])} onChange={(e) => setOpts({ ...opts, [o.id]: e.target.value })} />
                   ) : o.type === "checkbox" ? (
                     <span className="flex items-center gap-2"><input type="checkbox" checked={!!opts[o.id]} onChange={(e) => setOpts({ ...opts, [o.id]: e.target.checked })} />{o.label}</span>
                   ) : (
@@ -159,6 +161,7 @@ export default function ToolWorkspace({ tool }: { tool: PdfTool }) {
           {result && (
             <div className="space-y-2">
               <p className="truncate text-xs font-semibold text-stone-800">{result.name}</p>
+              {result.note && <p className="bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-800">{result.note}</p>}
               <p className="text-[11px] text-stone-500">{size(result.size)}. The link works for about {cfg?.ttlMinutes ?? 30} minutes, then the file is deleted.</p>
               <a className={`${btnPrimary} w-full`} href={downloadHref(result.url)} download={result.name}>Download</a>
               <button type="button" className={`${btnPlain} w-full`} onClick={() => copy(result.url, "Link copied.")}>Copy link</button>
