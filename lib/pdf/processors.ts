@@ -869,14 +869,33 @@ async function ocr({ inputs, options }: Ctx): Promise<Output> {
   }
   // 2. read the text
   const { createWorker } = await import("tesseract.js");
-  const worker = await createWorker(codes, 1, { langPath: await langDir(codes), gzip: true, cachePath: path.join(os.tmpdir(), "papernest-tess-cache") });
+  // If the engine's worker crashes it never answers, so listen for that and give up quickly instead of hanging until the time limit.
+  let crash: (e: Error) => void = () => {};
+  const crashed = new Promise<never>((_, reject) => (crash = reject));
+  crashed.catch(() => {});
+  const withTimeout = <T,>(p: Promise<T>, ms: number, msg: string) => {
+    let t: ReturnType<typeof setTimeout>;
+    return Promise.race([p, crashed, new Promise<never>((_, rej) => (t = setTimeout(() => rej(new Error(msg)), ms)))]).finally(() => clearTimeout(t));
+  };
+  const engineError = "The text reader could not start on the server. Please try again, and tell the site owner if it keeps happening.";
+  const worker = await withTimeout(
+    createWorker(codes, 1, { langPath: await langDir(codes), gzip: true, cachePath: path.join(os.tmpdir(), "papernest-tess-cache"), errorHandler: (e: unknown) => crash(new Error(typeof e === "string" ? e : engineError)) }),
+    60_000,
+    engineError,
+  ).catch((e) => {
+    console.error("[ocr] start failed:", e);
+    throw new Error(engineError);
+  });
   let text = "";
   let words = 0;
   const out = wantPdf ? await PDFDocument.create() : null;
   try {
     for (const pic of pics) {
       if (Date.now() - started > 240_000) throw new Error("This took too long. Try fewer pages at a time using the Pages box.");
-      const { data } = await worker.recognize(pic.png, {}, { pdf: wantPdf, text: true });
+      const { data } = await withTimeout(worker.recognize(pic.png, {}, { pdf: wantPdf, text: true }), 90_000, "Reading one page took too long. Try fewer pages or a smaller scan.").catch((e) => {
+        console.error("[ocr] page failed:", e);
+        throw e instanceof Error ? e : new Error(engineError);
+      });
       const t = (data.text ?? "").trim();
       words += t ? t.split(/\s+/).length : 0;
       text += `${pics.length > 1 ? `--- Page ${pic.label} ---\n\n` : ""}${t}\n\n`;
@@ -890,7 +909,7 @@ async function ocr({ inputs, options }: Ctx): Promise<Output> {
       }
     }
   } finally {
-    await worker.terminate();
+    await worker.terminate().catch(() => {});
   }
   if (!words) throw new Error("No text could be read. Check that the language is right and the scan is clear.");
   const note = `Read about ${words.toLocaleString("en")} words on ${pics.length} page${pics.length === 1 ? "" : "s"}. Check names and numbers, as scans can be misread.`;
