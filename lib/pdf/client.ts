@@ -26,6 +26,7 @@ export async function uploadFile(file: File, mode: PdfConfig["mode"], onProgress
   const blob = await upload(`papernest/in/${uuid()}/${name}`, file, {
     access: "public",
     handleUploadUrl: "/api/pdf/upload",
+    multipart: file.size > 20 * 1024 * 1024,
     contentType: file.type || undefined,
     onUploadProgress: (p) => onProgress?.(p.percentage),
   });
