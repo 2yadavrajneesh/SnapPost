@@ -968,4 +968,71 @@ async function newsPdf({ inputs, options }: Ctx): Promise<Output> {
   return { name: `${safe}${when ? `-${when}` : ""}.pdf`, bytes: await doc.save(), type: "application/pdf", note: `${inputs.length} screenshot${inputs.length === 1 ? "" : "s"} on ${total} page${total === 1 ? "" : "s"}.` };
 }
 
-export const PROCESSORS: Record<string, (c: Ctx) => Promise<Output>> = { merge, rotate, split, remove, extract, organize, "images-to-pdf": imagesToPdf, "pdf-to-images": pdfToImages, "page-numbers": pageNumbers, watermark, crop, "add-text": addText, protect, unlock, metadata, "pdf-to-text": pdfToText, "pdf-to-markdown": pdfToMarkdown, "pdf-to-word": pdfToWord, "pdf-to-excel": pdfToExcel, "pdf-to-powerpoint": pdfToPowerpoint, compare, redact, compress, ocr, "news-pdf": newsPdf };
+type EditAnn = { page?: number; k?: string; x?: number; y?: number; w?: number; h?: number; text?: string; size?: number; color?: string; bold?: boolean; width?: number; pts?: [number, number][]; data?: string };
+const hexRgb = (hex: unknown): [number, number, number] => {
+  const m = /^#([0-9a-f]{6})$/i.exec(typeof hex === "string" ? hex : "");
+  if (!m) return [0, 0, 0];
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+};
+const unit = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.min(2, Math.max(-1, v)) : 0);
+
+/** Applies the edits made in the page editor: text, shapes, highlights, drawings, signatures and pictures. */
+async function editPdf({ inputs, options }: Ctx): Promise<Output> {
+  const list = Array.isArray(options.annotations) ? (options.annotations as EditAnn[]) : [];
+  if (!list.length) throw new Error("Nothing to save yet. Add some text, a highlight, a drawing or a signature first.");
+  if (list.length > 2000) throw new Error("There are too many edits on this file. Save in two rounds.");
+  const doc = await open(inputs[0]);
+  const fonts = await loadFonts(doc);
+  const pages = doc.getPages();
+  const images = new Map<string, Awaited<ReturnType<PDFDocument["embedPng"]>>>();
+  let applied = 0;
+  for (const a of list) {
+    const pi = Number(a.page);
+    if (!Number.isInteger(pi) || pi < 0 || pi >= pages.length) continue;
+    const page = pages[pi];
+    if (page.getRotation().angle % 360 !== 0) throw new Error(`Page ${pi + 1} is rotated. Use Rotate PDF to turn it upright first, then edit it.`);
+    const box = page.getCropBox();
+    const W = box.width;
+    const H = box.height;
+    const X = (u: number) => box.x + unit(u) * W;
+    const Y = (v: number) => box.y + H - unit(v) * H;
+    const color = hexRgb(a.color);
+    const lw = Math.min(30, Math.max(0.5, Number(a.width) || 2));
+    if (a.k === "text") {
+      const text = String(a.text ?? "").slice(0, 2000);
+      const size = Math.min(120, Math.max(5, Number(a.size) || 14));
+      text.split("\n").forEach((line, i) => drawLine(page, a.bold ? fonts.bold : fonts.regular, line, X(a.x as number), Y(a.y as number) - size * 0.95 - i * size * 1.25, size, color));
+    } else if (a.k === "rect" || a.k === "highlight" || a.k === "white" || a.k === "ellipse") {
+      const x = X(a.x as number);
+      const w = Math.abs(unit(a.w) * W);
+      const h = Math.abs(unit(a.h) * H);
+      const y = Y(a.y as number) - h;
+      if (a.k === "ellipse") page.drawEllipse({ x: x + w / 2, y: y + h / 2, xScale: w / 2, yScale: h / 2, borderColor: rgb(...color), borderWidth: lw });
+      else if (a.k === "rect") page.drawRectangle({ x, y, width: w, height: h, borderColor: rgb(...color), borderWidth: lw });
+      else if (a.k === "highlight") page.drawRectangle({ x, y, width: w, height: h, color: rgb(...color), opacity: 0.35 });
+      else page.drawRectangle({ x, y, width: w, height: h, color: rgb(1, 1, 1) });
+    } else if (a.k === "ink" && Array.isArray(a.pts) && a.pts.length > 1) {
+      const pts = a.pts.slice(0, 20000);
+      const d = pts.map(([u, v], i) => `${i ? "L" : "M"}${(unit(u) * W).toFixed(2)} ${(unit(v) * H).toFixed(2)}`).join(" ");
+      page.drawSvgPath(d, { x: box.x, y: box.y + H, borderColor: rgb(...color), borderWidth: lw, borderLineCap: 1 });
+    } else if (a.k === "image" && typeof a.data === "string") {
+      const m = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/=]+)$/.exec(a.data);
+      if (!m) continue;
+      let img = images.get(a.data);
+      if (!img) {
+        const bytes = Buffer.from(m[2], "base64");
+        img = m[1] === "png" ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
+        images.set(a.data, img);
+      }
+      const w = Math.abs(unit(a.w) * W);
+      const h = Math.abs(unit(a.h) * H);
+      page.drawImage(img, { x: X(a.x as number), y: Y(a.y as number) - h, width: w, height: h });
+    } else continue;
+    applied++;
+  }
+  if (!applied) throw new Error("None of the edits could be applied.");
+  return { ...pdfOut(`${stem(inputs[0].name)}-edited.pdf`, await doc.save()), note: `${applied} edit${applied === 1 ? "" : "s"} saved into the PDF.` };
+}
+
+export const PROCESSORS: Record<string, (c: Ctx) => Promise<Output>> = { merge, rotate, split, remove, extract, organize, "images-to-pdf": imagesToPdf, "pdf-to-images": pdfToImages, "page-numbers": pageNumbers, watermark, crop, "add-text": addText, protect, unlock, metadata, "pdf-to-text": pdfToText, "pdf-to-markdown": pdfToMarkdown, "pdf-to-word": pdfToWord, "pdf-to-excel": pdfToExcel, "pdf-to-powerpoint": pdfToPowerpoint, compare, redact, compress, ocr, "news-pdf": newsPdf, "edit-pdf": editPdf };

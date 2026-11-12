@@ -452,6 +452,20 @@ export const PDF_TOOLS: PdfTool[] = [
     options: [],
     icon: "M4 5h12v14H4zM16 8h4v9a2 2 0 0 1-2 2M7 9h6M7 12h6M7 15h3",
   },
+  {
+    id: "edit-pdf",
+    title: "Edit PDF",
+    blurb: "Add text, highlights, shapes, drawings, signatures and pictures right on the pages.",
+    category: "edit",
+    ui: "editor",
+    accept: "application/pdf,.pdf",
+    kind: "pdf",
+    multiple: false,
+    min: 1,
+    action: "Save edits",
+    options: [],
+    icon: "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z",
+  },
 ];
 
 export const toolById = (id: string): PdfTool | undefined => PDF_TOOLS.find((t) => t.id === id);
