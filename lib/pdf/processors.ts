@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import JSZip from "jszip";
 import sharp from "sharp";
+import { drawLine, loadFonts, widthOf, wrapText } from "./fonts";
 import { parseOrder, parsePages } from "./pages";
 
 export type Input = { name: string; bytes: Uint8Array };
@@ -803,4 +804,168 @@ async function ocr({ inputs, options }: Ctx): Promise<Output> {
   return { ...textOut(`${stem(input.name)}.txt`, text.trimEnd() + "\n", "text/plain; charset=utf-8"), note };
 }
 
-export const PROCESSORS: Record<string, (c: Ctx) => Promise<Output>> = { merge, rotate, split, remove, extract, organize, "images-to-pdf": imagesToPdf, "pdf-to-images": pdfToImages, "page-numbers": pageNumbers, watermark, crop, "add-text": addText, protect, unlock, metadata, "pdf-to-text": pdfToText, "pdf-to-markdown": pdfToMarkdown, "pdf-to-word": pdfToWord, "pdf-to-excel": pdfToExcel, "pdf-to-powerpoint": pdfToPowerpoint, compare, redact, compress, ocr };
+type NewsItem = { jpg: Uint8Array; w: number; h: number; caption: string; source: string; n: number; cont: boolean };
+const THEMES: Record<string, [number, number, number]> = { navy: [0.1, 0.2, 0.45], red: [0.75, 0.1, 0.12], green: [0.08, 0.45, 0.3], black: [0.1, 0.1, 0.1] };
+const clip = (v: unknown, n: number) => (typeof v === "string" ? v.replace(/\s+/g, " ").trim().slice(0, n) : "");
+
+/** Screenshots in, tidy daily-update PDF out: header, numbered clippings with source and caption, page numbers. */
+async function newsPdf({ inputs, options }: Ctx): Promise<Output> {
+  const meta = Array.isArray(options.items) ? (options.items as { caption?: unknown; source?: unknown }[]) : [];
+  const title = clip(options.title, 90) || "Daily News Update";
+  const date = clip(options.date, 60);
+  const footer = clip(options.footer, 90);
+  const landscape = str(options.orient) === "landscape";
+  const layout = ["auto", "1", "2across", "2down", "4"].includes(str(options.layout)) ? str(options.layout, "auto") : "auto";
+  const headerMode = ["every", "first", "none"].includes(str(options.header)) ? str(options.header) : "every";
+  const accent = THEMES[str(options.theme, "navy")] ?? THEMES.navy;
+  const numbers = options.numbers !== false;
+  const trim = options.trim !== false;
+  const splitTall = options.splitTall !== false;
+
+  // 1. prepare pictures
+  const items: NewsItem[] = [];
+  for (let i = 0; i < inputs.length; i++) {
+    const caption = clip(meta[i]?.caption, 400);
+    const source = clip(meta[i]?.source, 60);
+    let buf: Buffer;
+    let w: number;
+    let h: number;
+    try {
+      let img = sharp(inputs[i].bytes, { limitInputPixels: 120_000_000 }).rotate().flatten({ background: "#ffffff" });
+      if (trim) img = sharp(await img.png().toBuffer()).trim({ threshold: 14 });
+      const r = await img.resize({ width: 1800, height: 9000, fit: "inside", withoutEnlargement: true }).toBuffer({ resolveWithObject: true });
+      buf = r.data;
+      w = r.info.width;
+      h = r.info.height;
+    } catch {
+      throw new Error(`"${inputs[i].name}" could not be read as an image.`);
+    }
+    const pieces: { buf: Buffer; w: number; h: number }[] = [];
+    const chunk = Math.round(w * 1.35);
+    if (splitTall && h > w * 2.1 && h > chunk * 1.3) {
+      const n = Math.ceil(h / chunk);
+      const each = Math.ceil(h / n);
+      for (let k = 0; k < n; k++) {
+        const top = k * each;
+        const ph = Math.min(each, h - top);
+        pieces.push({ buf: await sharp(buf).extract({ left: 0, top, width: w, height: ph }).toBuffer(), w, h: ph });
+      }
+    } else pieces.push({ buf, w, h });
+    for (let k = 0; k < pieces.length; k++) {
+      const jpg = await sharp(pieces[k].buf).flatten({ background: "#ffffff" }).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
+      items.push({ jpg: new Uint8Array(jpg), w: pieces[k].w, h: pieces[k].h, caption: k === 0 ? caption : "", source: k === 0 ? source : "", n: i + 1, cont: k > 0 });
+    }
+  }
+  if (items.length > 150) throw new Error("That would make too many pieces. Use fewer or shorter screenshots.");
+
+  // 2. plan pages
+  const [PW, PH] = landscape ? [841.89, 595.28] : [595.28, 841.89];
+  const M = 34;
+  type Plan = { kind: "1" | "2across" | "2down" | "4"; items: NewsItem[] };
+  const plan: Plan[] = [];
+  if (layout === "auto") {
+    // Put two on a page only when both stay at least 62% of their single-page size.
+    const g = 14;
+    const aw = PW - M * 2;
+    const ah = PH - M - (headerMode === "none" ? 0 : 39) - (M + 14) - 26;
+    const fit = (it: NewsItem, cw: number, ch: number) => Math.min(cw / it.w, ch / it.h, 1.25);
+    for (let i = 0; i < items.length; ) {
+      const a = items[i];
+      const b = items[i + 1];
+      if (b) {
+        const sa = fit(a, aw, ah);
+        const sb = fit(b, aw, ah);
+        const across = Math.min(fit(a, (aw - g) / 2, ah) / sa, fit(b, (aw - g) / 2, ah) / sb);
+        const down = Math.min(fit(a, aw, (ah - g) / 2) / sa, fit(b, aw, (ah - g) / 2) / sb);
+        if (Math.max(across, down) >= 0.62) {
+          plan.push({ kind: across >= down ? "2across" : "2down", items: [a, b] });
+          i += 2;
+          continue;
+        }
+      }
+      plan.push({ kind: "1", items: [a] });
+      i += 1;
+    }
+  } else {
+    const per = layout === "1" ? 1 : layout === "4" ? 4 : 2;
+    for (let i = 0; i < items.length; i += per) plan.push({ kind: layout as Plan["kind"], items: items.slice(i, i + per) });
+  }
+
+  // 3. draw
+  const doc = await PDFDocument.create();
+  doc.setTitle(title);
+  doc.setCreator("PaperNest");
+  const fonts = await loadFonts(doc);
+  const total = plan.length;
+  const imgQueue: { page: PDFPage; it: NewsItem; x: number; y: number; w: number; h: number }[] = [];
+  const embedCache = new Map<NewsItem, Awaited<ReturnType<PDFDocument["embedJpg"]>>>();
+  for (let pi = 0; pi < plan.length; pi++) {
+    const page = doc.addPage([PW, PH]);
+    const showHead = headerMode === "every" || (headerMode === "first" && pi === 0);
+    let top = PH - M;
+    if (showHead) {
+      const ts = 17;
+      drawLine(page, fonts.bold, title, M, top - ts, ts, accent);
+      if (date) drawLine(page, fonts.regular, date, PW - M, top - 12, 9.5, [0.3, 0.3, 0.3], "right");
+      page.drawRectangle({ x: M, y: top - ts - 9, width: PW - M * 2, height: 1.6, color: rgb(...accent) });
+      top -= ts + 22;
+    }
+    const bottom = M + 14;
+    drawLine(page, fonts.regular, footer, M, M - 6, 8, [0.45, 0.45, 0.45]);
+    drawLine(page, fonts.regular, `Page ${pi + 1} of ${total}`, PW - M, M - 6, 8, [0.45, 0.45, 0.45], "right");
+    const areaX = M;
+    const areaW = PW - M * 2;
+    const areaH = top - bottom;
+    const gap = 14;
+    const k = plan[pi].kind;
+    const cols = k === "2across" || k === "4" ? 2 : 1;
+    const rows = k === "2down" || k === "4" ? 2 : 1;
+    const cw = (areaW - gap * (cols - 1)) / cols;
+    const ch = (areaH - gap * (rows - 1)) / rows;
+    plan[pi].items.forEach((it, idx) => {
+      const c = idx % cols;
+      const r = Math.floor(idx / cols);
+      const cx = areaX + c * (cw + gap);
+      const cyTop = top - r * (ch + gap);
+      const labelBits = `${numbers ? `${it.n}. ` : ""}${it.cont ? "(continued)" : ""}`;
+      const sz = 9;
+      const srcText = it.source;
+      const lines = it.caption ? wrapText(fonts.regular, it.caption, sz, cw - 2, k === "1" ? 5 : 3) : [];
+      const head = [labelBits.trim(), srcText].filter(Boolean).join("  ");
+      const capH = (head ? sz * 1.35 : 0) + lines.length * sz * 1.3 + (head || lines.length ? 6 : 0);
+      const availH = ch - capH;
+      const s = Math.min(cw / it.w, availH / it.h, 1.25);
+      const dw = it.w * s;
+      const dh = it.h * s;
+      const ix = cx + (cw - dw) / 2;
+      const iy = cyTop - dh;
+      page.drawRectangle({ x: ix - 0.5, y: iy - 0.5, width: dw + 1, height: dh + 1, borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 0.75 });
+      imgQueue.push({ page, it, x: ix, y: iy, w: dw, h: dh });
+      let ty = iy - 6 - sz;
+      if (head) {
+        const hasNum = labelBits.trim();
+        let x = ix;
+        if (hasNum) {
+          drawLine(page, fonts.bold, labelBits.trim(), x, ty, sz, accent);
+          x += widthOf(fonts.bold, labelBits.trim() + " ", sz);
+        }
+        if (srcText) drawLine(page, fonts.bold, srcText, x, ty, sz, [0.15, 0.15, 0.15]);
+        ty -= sz * 1.35;
+      }
+      for (const ln of lines) {
+        drawLine(page, fonts.regular, ln, ix, ty, sz, [0.25, 0.25, 0.25]);
+        ty -= sz * 1.3;
+      }
+    });
+  }
+  for (const q of imgQueue) {
+    let img = embedCache.get(q.it);
+    if (!img) embedCache.set(q.it, (img = await doc.embedJpg(q.it.jpg)));
+    q.page.drawImage(img, { x: q.x, y: q.y, width: q.w, height: q.h });
+  }
+  const safe = title.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").slice(0, 40) || "news";
+  const when = date.match(/\d{1,2}\s+\w+\s+\d{4}/)?.[0]?.replace(/\s+/g, "-") ?? "";
+  return { name: `${safe}${when ? `-${when}` : ""}.pdf`, bytes: await doc.save(), type: "application/pdf", note: `${inputs.length} screenshot${inputs.length === 1 ? "" : "s"} on ${total} page${total === 1 ? "" : "s"}.` };
+}
+
+export const PROCESSORS: Record<string, (c: Ctx) => Promise<Output>> = { merge, rotate, split, remove, extract, organize, "images-to-pdf": imagesToPdf, "pdf-to-images": pdfToImages, "page-numbers": pageNumbers, watermark, crop, "add-text": addText, protect, unlock, metadata, "pdf-to-text": pdfToText, "pdf-to-markdown": pdfToMarkdown, "pdf-to-word": pdfToWord, "pdf-to-excel": pdfToExcel, "pdf-to-powerpoint": pdfToPowerpoint, compare, redact, compress, ocr, "news-pdf": newsPdf };

@@ -31,6 +31,8 @@ export type PdfTool = {
   /** What the file picker accepts. */
   accept: string;
   kind: "pdf" | "image" | "both";
+  /** Tools with their own page layout instead of the standard upload form. */
+  ui?: "news" | "editor";
   multiple: boolean;
   /** Fewest files needed. */
   min: number;
@@ -435,6 +437,20 @@ export const PDF_TOOLS: PdfTool[] = [
       { id: "pages", label: "Pages", type: "text", default: "all", placeholder: "all, or 1-10", help: "Reading takes a few seconds per page, so up to 40 pages at a time." },
     ],
     icon: "M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 9h8M8 12h8M8 15h5",
+  },
+  {
+    id: "news-pdf",
+    title: "News PDF maker",
+    blurb: "Drop in a day of news screenshots and get one tidy PDF with captions, sources and page numbers.",
+    category: "edit",
+    ui: "news",
+    accept: "image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp",
+    kind: "image",
+    multiple: true,
+    min: 1,
+    action: "Make PDF",
+    options: [],
+    icon: "M4 5h12v14H4zM16 8h4v9a2 2 0 0 1-2 2M7 9h6M7 12h6M7 15h3",
   },
 ];
 
