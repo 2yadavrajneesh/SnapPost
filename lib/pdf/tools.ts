@@ -386,6 +386,7 @@ export const PDF_TOOLS: PdfTool[] = [
     min: 1,
     action: "Convert to Word",
     options: [
+      { id: "layout", label: "Layout", type: "select", default: "editable", choices: [{ value: "editable", label: "Editable text (headings, lists, paragraphs)" }, { value: "close", label: "Close layout (text kept where it is on the page)" }, { value: "picture", label: "Exact look (each page as a picture, not editable)" }] },
       PAGES,
     ],
     icon: "M6 3h9l4 4v14H6zM9 12l1.5 5L12 13l1.5 4L15 12",

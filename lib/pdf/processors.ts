@@ -433,10 +433,104 @@ async function pdfToMarkdown({ inputs, options }: Ctx): Promise<Output> {
 }
 
 async function pdfToWord({ inputs, options }: Ctx): Promise<Output> {
-  const { Document, HeadingLevel, Packer, Paragraph, TextRun } = await import("docx");
-  const { doc } = await openMu(inputs[0]);
+  const docx = await import("docx");
+  const { Document, HeadingLevel, Packer, Paragraph, TextRun } = docx;
+  const { mupdf, doc } = await openMu(inputs[0]);
+  const mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  const base = stem(inputs[0].name);
   try {
-    const bl = readBlocks(doc, parsePages(str(options.pages, "all"), doc.countPages()));
+    const idx = parsePages(str(options.pages, "all"), doc.countPages());
+    const layout = ["editable", "close", "picture"].includes(str(options.layout)) ? str(options.layout) : "editable";
+    if (layout !== "editable" && idx.length > 60) throw new Error("Layout modes handle 60 pages at a time. Use the Pages box, for example 1-60.");
+    const pxOf = (pt: number) => Math.round((pt * 96) / 72);
+    const twips = (pt: number) => Math.round(pt * 20);
+    // Each page ends with a tiny normal paragraph, because the page-break marker cannot sit on a positioned text frame.
+    const tail = () => new Paragraph({ spacing: { before: 0, after: 0, line: 20, lineRule: docx.LineRuleType.EXACT }, children: [new TextRun({ text: "", size: 2 })] });
+    const floatAt = (xPt: number, yPt: number) => ({ horizontalPosition: { relative: docx.HorizontalPositionRelativeFrom.PAGE, offset: Math.round(xPt * 12700) }, verticalPosition: { relative: docx.VerticalPositionRelativeFrom.PAGE, offset: Math.round(yPt * 12700) }, behindDocument: true, allowOverlap: true, wrap: { type: docx.TextWrappingType.NONE } });
+
+    if (layout === "picture") {
+      const sections = [];
+      for (const i of idx) {
+        const page = doc.loadPage(i);
+        const [x0, y0, x1, y1] = page.getBounds();
+        const pix = page.toPixmap(mupdf.Matrix.scale(2, 2), mupdf.ColorSpace.DeviceRGB, false, true);
+        const png = Buffer.from(pix.asPNG());
+        pix.destroy();
+        page.destroy();
+        sections.push({
+          properties: { page: { size: { width: twips(x1 - x0), height: twips(y1 - y0) }, margin: { top: 0, right: 0, bottom: 0, left: 0, header: 0, footer: 0 } } },
+          children: [new Paragraph({ spacing: { before: 0, after: 0 }, children: [new docx.ImageRun({ type: "png", data: png, transformation: { width: pxOf(x1 - x0), height: pxOf(y1 - y0) }, floating: floatAt(0, 0) })] }), tail()],
+        });
+      }
+      const bytes = await Packer.toBuffer(new Document({ sections }));
+      return { name: `${base}-exact.docx`, bytes: new Uint8Array(bytes), type: mime, note: "Each page is a picture, so it looks exactly like the PDF but the text cannot be edited." };
+    }
+
+    if (layout === "close") {
+      type J = { blocks: { type: string; bbox: { x: number; y: number; w: number; h: number }; lines?: { bbox: { x: number; y: number; w: number; h: number }; font: { family: string; weight: string; style: string; size: number }; text: string }[] }[] };
+      const sections = [];
+      let words = 0;
+      for (const i of idx) {
+        const page = doc.loadPage(i);
+        const [x0, y0, x1, y1] = page.getBounds();
+        const st = page.toStructuredText("preserve-whitespace,preserve-images");
+        const json = JSON.parse(st.asJSON()) as J;
+        const children: InstanceType<typeof Paragraph>[] = [];
+        // pictures first, so text sits on top
+        const pics: { bbox: { x: number; y: number; w: number; h: number }; png: Buffer }[] = [];
+        st.walk({
+          onImageBlock(bbox, _t, image) {
+            try {
+              if (pics.length >= 12) return;
+              const pix = image.toPixmap();
+              pics.push({ bbox: { x: bbox[0] - x0, y: bbox[1] - y0, w: bbox[2] - bbox[0], h: bbox[3] - bbox[1] }, png: Buffer.from(pix.asPNG()) });
+              pix.destroy();
+            } catch {}
+          },
+        });
+        for (const pc of pics) {
+          if (pc.bbox.w < 4 || pc.bbox.h < 4) continue;
+          children.push(
+            new Paragraph({
+              spacing: { before: 0, after: 0 },
+              children: [
+                new docx.ImageRun({
+                  type: "png",
+                  data: pc.png,
+                  transformation: { width: pxOf(pc.bbox.w), height: pxOf(pc.bbox.h) },
+                  floating: floatAt(pc.bbox.x, pc.bbox.y),
+                }),
+              ],
+            }),
+          );
+        }
+        for (const b of json.blocks) {
+          if (b.type !== "text" || !b.lines) continue;
+          for (const l of b.lines) {
+            const text = l.text.replace(/\s+$/g, "");
+            if (!text.trim()) continue;
+            words += text.trim().split(/\s+/).length;
+            const size = Math.max(4, l.font.size);
+            const family = l.font.family === "serif" ? "Times New Roman" : l.font.family === "monospace" ? "Courier New" : "Arial";
+            children.push(
+              new Paragraph({
+                frame: { type: "absolute", position: { x: twips(l.bbox.x), y: twips(l.bbox.y) }, width: twips(l.bbox.w * 1.15 + 8), height: twips(Math.max(l.bbox.h, size * 1.15)), anchor: { horizontal: docx.FrameAnchorType.PAGE, vertical: docx.FrameAnchorType.PAGE }, rule: docx.HeightRule.ATLEAST },
+                spacing: { before: 0, after: 0, line: Math.round(size * 1.15 * 20), lineRule: docx.LineRuleType.EXACT },
+                children: [new TextRun({ text, font: family, size: Math.round(size * 2), bold: l.font.weight === "bold", italics: l.font.style === "italic" })],
+              }),
+            );
+          }
+        }
+        children.push(tail());
+        sections.push({ properties: { page: { size: { width: twips(x1 - x0), height: twips(y1 - y0) }, margin: { top: 0, right: 0, bottom: 0, left: 0, header: 0, footer: 0 } } }, children });
+        page.destroy();
+      }
+      if (!words && !sections.length) throw new Error(NOTEXT);
+      const bytes = await Packer.toBuffer(new Document({ sections }));
+      return { name: `${base}-layout.docx`, bytes: new Uint8Array(bytes), type: mime, note: words ? "Text is placed where it is on the page and can be edited. Open it in Word and check tables, columns and fonts." : "No text was found, so only pictures were placed. For a scanned PDF run OCR first." };
+    }
+
+    const bl = readBlocks(doc, idx);
     if (!hasText(bl)) throw new Error(NOTEXT);
     const H = [HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3];
     const kids = bl.flatMap((b) => {
@@ -446,7 +540,7 @@ async function pdfToWord({ inputs, options }: Ctx): Promise<Output> {
       return [new Paragraph({ spacing: { after: 140 }, children: [new TextRun(b.text)] })];
     });
     const bytes = await Packer.toBuffer(new Document({ sections: [{ children: kids }] }));
-    return { name: `${stem(inputs[0].name)}.docx`, bytes: new Uint8Array(bytes), type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", note: "Text and headings only. Pictures and exact layout are not carried over." };
+    return { name: `${base}.docx`, bytes: new Uint8Array(bytes), type: mime, note: "Text and headings only. Pictures and exact layout are not carried over. Choose Close layout or Exact picture if you need the page to look the same." };
   } finally {
     doc.destroy();
   }
