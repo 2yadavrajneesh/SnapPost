@@ -136,7 +136,7 @@ export default function ToolWorkspace({ tool }: { tool: PdfTool }) {
                   ) : o.type === "checkbox" ? (
                     <span className="flex items-center gap-2"><input type="checkbox" checked={!!opts[o.id]} onChange={(e) => setOpts({ ...opts, [o.id]: e.target.checked })} />{o.label}</span>
                   ) : (
-                    <input className={`${field} mt-1`} type={o.type === "number" ? "number" : "text"} min={o.min} max={o.max} placeholder={o.placeholder} value={String(opts[o.id])} onChange={(e) => setOpts({ ...opts, [o.id]: o.type === "number" ? Number(e.target.value) : e.target.value })} />
+                    <input className={`${field} mt-1`} type={o.type === "number" ? "number" : o.type === "password" ? "password" : "text"} autoComplete={o.type === "password" ? "new-password" : "off"} min={o.min} max={o.max} placeholder={o.placeholder} value={String(opts[o.id])} onChange={(e) => setOpts({ ...opts, [o.id]: o.type === "number" ? Number(e.target.value) : e.target.value })} />
                   )}
                   {o.help && <small className="mt-1 block font-normal text-stone-500">{o.help}</small>}
                 </label>
