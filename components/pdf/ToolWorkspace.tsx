@@ -25,7 +25,7 @@ export default function ToolWorkspace({ tool }: { tool: PdfTool }) {
     getConfig().then(setCfg).catch(() => setError("Could not reach the server."));
   }, []);
 
-  const max = cfg?.maxFileBytes ?? 150 * 1048576;
+  const max = cfg?.maxFileBytes ?? 100 * 1048576;
   const limit = tool.multiple ? (cfg?.maxFiles ?? 20) : 1;
 
   function add(list: FileList | File[]) {
