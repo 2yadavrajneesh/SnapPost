@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -14,9 +14,24 @@ export function Section({ title, children }: { title: string; children: ReactNod
 /** Same look as Section, but the body folds away. Closed unless defaultOpen. */
 export function CollapsibleSection({ title, children, defaultOpen = false }: { title: string; children: ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
+  const me = useRef<HTMLElement>(null);
+  // accordion: opening one section folds the others in the same side panel
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const other = (e as CustomEvent<HTMLElement>).detail;
+      const mine = me.current;
+      if (mine && other !== mine && other.parentElement === mine.parentElement) setOpen(false);
+    };
+    window.addEventListener("snap:section-open", onOpen);
+    return () => window.removeEventListener("snap:section-open", onOpen);
+  }, []);
+  const toggle = () => {
+    if (!open && me.current) window.dispatchEvent(new CustomEvent("snap:section-open", { detail: me.current }));
+    setOpen((o) => !o);
+  };
   return (
-    <section className="border-b border-stone-300">
-      <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between px-5 py-4 text-left">
+    <section ref={me} className="border-b border-stone-300">
+      <button type="button" aria-expanded={open} onClick={toggle} className="flex w-full items-center justify-between px-5 py-4 text-left">
         <h2 className="text-sm font-bold text-stone-900">{title}</h2>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`text-stone-500 transition-transform ${open ? "rotate-180" : ""}`}>
           <path d="M6 9l6 6 6-6" />

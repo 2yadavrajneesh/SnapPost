@@ -118,8 +118,31 @@ export default function NewsWorkspace() {
       c.find((i) => i.id === id && URL.revokeObjectURL(i.url));
       return c.filter((i) => i.id !== id);
     });
-  const sortBy = (how: "name" | "oldest" | "newest") =>
-    setItems((c) => [...c].sort((a, b) => (how === "name" ? a.file.name.localeCompare(b.file.name, undefined, { numeric: true }) : how === "oldest" ? a.file.lastModified - b.file.lastModified : b.file.lastModified - a.file.lastModified)));
+  const [sortKey, setSortKey] = useState<"name" | "time" | "size">("name");
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+  const [big, setBig] = useState(false);
+  const sortBy = (dir: "up" | "down") =>
+    setItems((c) => {
+      const cmp = (a: Item, b: Item) => (sortKey === "name" ? a.file.name.localeCompare(b.file.name, undefined, { numeric: true }) : sortKey === "time" ? a.file.lastModified - b.file.lastModified : a.file.size - b.file.size);
+      return [...c].sort((a, b) => (dir === "up" ? cmp(a, b) : cmp(b, a)));
+    });
+  const reverse = () => setItems((c) => [...c].reverse());
+  const dropOn = (to: number) => {
+    if (dragFrom == null || dragFrom === to) return;
+    setItems((c) => {
+      const a = [...c];
+      const [m] = a.splice(dragFrom, 1);
+      a.splice(to, 0, m);
+      return a;
+    });
+  };
+  useEffect(() => {
+    if (!big) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setBig(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [big]);
   const moveBy = (id: number, dx: number, dy: number) => update(id, { dx, dy });
   const sendTo = (id: number, page: number) => update(id, { page, dx: 0, dy: 0 });
   const clearAll = () => {
@@ -174,21 +197,37 @@ export default function NewsWorkspace() {
           </label>
           {items.length > 0 && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-semibold text-stone-600">Sort:</span>
-              <button type="button" className={btnSm} onClick={() => sortBy("name")} disabled={!!busy}>Name</button>
-              <button type="button" className={btnSm} onClick={() => sortBy("oldest")} disabled={!!busy} title="By the date and time of each file, oldest first">Date/time, oldest first</button>
-              <button type="button" className={btnSm} onClick={() => sortBy("newest")} disabled={!!busy} title="By the date and time of each file, newest first">Date/time, newest first</button>
+              <span className="text-[11px] font-semibold text-stone-600">Sort by</span>
+              <select aria-label="Sort by" className="h-8 border border-stone-300 bg-white px-2 text-[11px] font-semibold text-stone-800" value={sortKey} onChange={(e) => setSortKey(e.target.value as "name" | "time" | "size")}>
+                <option value="name">Name</option>
+                <option value="time">Date / time</option>
+                <option value="size">File size</option>
+              </select>
+              <button type="button" className={btnSm} onClick={() => sortBy("up")} disabled={!!busy} title="Smallest, oldest or A first">↑ Increasing</button>
+              <button type="button" className={btnSm} onClick={() => sortBy("down")} disabled={!!busy} title="Largest, newest or Z first">↓ Decreasing</button>
+              <button type="button" className={btnSm} onClick={reverse} disabled={!!busy}>Reverse</button>
               <button type="button" className={btnSm} onClick={clearAll} disabled={!!busy}>Remove all</button>
             </div>
           )}
+          {items.length > 1 && <p className="mt-3 text-[11px] text-stone-500">Drag a picture onto another to change the order, or use the arrows.</p>}
           {items.length > 0 && (
-            <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+            <ul className="mt-1 grid gap-3 sm:grid-cols-2">
               {items.map((it, i) => (
-                <li key={it.id} className="flex gap-3 border border-stone-200 bg-white p-2.5">
+                <li
+                  key={it.id}
+                  draggable={!busy}
+                  onDragStart={(e) => { setDragFrom(i); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(i)); }}
+                  onDragOver={(e) => { if (dragFrom != null) { e.preventDefault(); setDragOver(i); } }}
+                  onDragLeave={() => setDragOver((v) => (v === i ? null : v))}
+                  onDrop={(e) => { e.preventDefault(); e.stopPropagation(); dropOn(i); setDragFrom(null); setDragOver(null); }}
+                  onDragEnd={() => { setDragFrom(null); setDragOver(null); }}
+                  className={`flex cursor-grab gap-3 border bg-white p-2.5 active:cursor-grabbing ${dragOver === i && dragFrom !== i ? "border-accent ring-2 ring-accent/30" : "border-stone-200"} ${dragFrom === i ? "opacity-50" : ""}`}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={it.url} alt="" className="h-24 w-20 flex-none border border-stone-200 bg-stone-50 object-contain" />
+                  <img src={it.url} alt="" draggable={false} className="h-24 w-20 flex-none border border-stone-200 bg-stone-50 object-contain" />
                   <div className="min-w-0 flex-1 space-y-1.5">
                     <div className="flex items-center gap-1.5">
+                      <span className="select-none text-stone-400" title="Drag to move" aria-hidden="true">⠿</span>
                       <span className="bg-accent px-1.5 text-[11px] font-bold leading-5 text-white">{i + 1}</span>
                       <span className="min-w-0 flex-1 truncate text-[11px] text-stone-500">{it.file.name} · {size(it.file.size)}{it.file.lastModified ? ` · ${new Date(it.file.lastModified).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}</span>
                       <button type="button" className={btnSm} onClick={() => move(i, -1)} disabled={i === 0 || !!busy} aria-label="Move earlier">↑</button>
@@ -269,7 +308,7 @@ export default function NewsWorkspace() {
             </div>
           )}
         </Card>
-        <Card title="Live PDF preview" chip={items.length ? <span className="text-[11px] font-semibold text-stone-600">updates as you type</span> : undefined}>
+        <Card title="Live PDF preview" chip={<button type="button" onClick={() => setBig(true)} disabled={!items.length} aria-label="Enlarge the preview" title="Enlarge to see the whole PDF" className="ml-auto flex h-7 w-7 items-center justify-center border border-stone-300 bg-white text-stone-700 hover:bg-stone-100 disabled:opacity-40"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg></button>}>
           <div className="max-h-[62vh] overflow-y-auto bg-stone-200 p-2.5">
             <NewsPreview items={items} s={s} date={s.showDate ? date : ""} onMove={moveBy} onSend={sendTo} />
           </div>
@@ -277,6 +316,19 @@ export default function NewsWorkspace() {
         </Card>
         <p className="px-1 text-[11px] leading-relaxed text-stone-500">Screenshots are processed on the server and removed right after. Hindi and English text are both supported in titles and captions.</p>
       </aside>
+      {big && (
+        <div role="dialog" aria-modal="true" aria-label="Full PDF preview" className="fixed inset-0 z-50 flex flex-col bg-black/75" onClick={() => setBig(false)}>
+          <div className="flex items-center justify-between px-4 py-2 text-white" onClick={(e) => e.stopPropagation()}>
+            <span className="text-sm font-semibold">PDF preview · drag a picture to place it, or drop it on another page</span>
+            <button type="button" onClick={() => setBig(false)} className="border border-white/50 px-3 py-1 text-xs font-semibold hover:bg-white/10">Close ✕</button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto max-w-[860px]">
+              <NewsPreview items={items} s={s} date={s.showDate ? date : ""} onMove={moveBy} onSend={sendTo} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
