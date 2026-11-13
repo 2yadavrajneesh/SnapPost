@@ -15,6 +15,7 @@ import { Check, CollapsibleSection, Label, Section, Segmented, Slider, TextField
 import { formatDate, formatTime } from "@/lib/format";
 import { copyPngToClipboard, downloadBlob, downloadUrl, renderPdf, renderPdfPages, renderPng, renderVideo, zipFiles } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
+import { PAGE_SIZES, type PageSizeId } from "@/lib/paper";
 import {
   ACCENTS,
   BACKGROUNDS,
@@ -93,6 +94,8 @@ export default function Home() {
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
   const [format, setFormat] = useState<Format>("png");
+  const [pdfSize, setPdfSize] = useState<PageSizeId | "fit">("fit");
+  const [pdfOrient, setPdfOrient] = useState<"auto" | "portrait" | "landscape">("auto");
   const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -317,7 +320,7 @@ export default function Home() {
           const zip = await zipFiles(shots.map((s, i) => ({ name: `${base}-${String(i + 1).padStart(pad, "0")}.png`, dataUrl: s.dataUrl })));
           downloadBlob(zip, `${base}.zip`);
         } else {
-          downloadBlob(await renderPdfPages(shots.map((s) => ({ dataUrl: s.dataUrl, w: s.pageW, h: s.pageH }))), `${base}.pdf`);
+          downloadBlob(await renderPdfPages(shots.map((s) => ({ dataUrl: s.dataUrl, w: s.pageW, h: s.pageH })), { size: pdfSize, orientation: pdfOrient }), `${base}.pdf`);
         }
         return;
       }
@@ -331,7 +334,7 @@ export default function Home() {
         if (format === "png") {
           downloadUrl(png.dataUrl, `${base}.png`);
         } else {
-          const blob = await renderPdf(png.dataUrl, node.offsetWidth, node.offsetHeight);
+          const blob = await renderPdf(png.dataUrl, node.offsetWidth, node.offsetHeight, { size: pdfSize, orientation: pdfOrient });
           downloadBlob(blob, `${base}.pdf`);
         }
       }
@@ -492,6 +495,27 @@ export default function Home() {
     onChange={setFormat}
   />
   );
+  const pdfOptions = format === "pdf" && (
+    <div className="space-y-2 border border-stone-200 bg-white p-2.5">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">PDF page</div>
+      <label className="block text-xs font-medium text-stone-600">
+        Page size
+        <select value={pdfSize} onChange={(e) => setPdfSize(e.target.value as PageSizeId | "fit")} className="mt-1 h-9 w-full border border-stone-300 bg-white px-2 text-xs text-stone-800">
+          <option value="fit">Same shape as the picture</option>
+          {PAGE_SIZES.map((p) => (
+            <option key={p.id} value={p.id}>{p.label}</option>
+          ))}
+        </select>
+      </label>
+      {pdfSize !== "fit" && (
+        <div>
+          <Label>Orientation</Label>
+          <Segmented value={pdfOrient} onChange={setPdfOrient} options={[{ value: "auto", label: "Auto" }, { value: "portrait", label: "Portrait" }, { value: "landscape", label: "Landscape" }]} />
+          <p className="mt-1 text-[11px] text-stone-500">{pdfOrient === "auto" ? "Each page turns to suit its picture." : "The picture is centred and scaled to fit the page."}</p>
+        </div>
+      )}
+    </div>
+  );
   const copyButton = (iconOnly = false) => (
   <button
     type="button"
@@ -604,6 +628,7 @@ export default function Home() {
             {/* desktop: format, copy and download sit right under the link (phones have their own bar at the bottom) */}
             <div className="hidden space-y-2 lg:block">
               {formatPicker}
+              {pdfOptions}
               <div className="flex gap-2 [&>button:last-child]:flex-1">
                 {copyButton()}
                 {downloadButton()}
@@ -742,6 +767,7 @@ export default function Home() {
           {/* Mobile: export controls live under the source, like the reference layout */}
           <div className="space-y-3 border-b border-stone-300 px-5 py-5 lg:hidden">
             {formatPicker}
+            {pdfOptions}
             <div className="flex gap-2.5">
               {downloadButton(true)}
               {copyButton(true)}

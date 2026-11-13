@@ -1,3 +1,4 @@
+import { PAGE_SIZES, type PageSizeId } from "./paper";
 import { toPng } from "html-to-image";
 import { videoSrc } from "./format";
 import { MAX_EXPORT_WIDTH } from "./types";
@@ -56,27 +57,47 @@ export function downloadUrl(href: string, filename: string) {
 }
 
 /** Wraps the PNG in a single-page PDF sized to the card's logical dimensions. */
-export async function renderPdf(dataUrl: string, w: number, h: number): Promise<Blob> {
-  const { jsPDF } = await import("jspdf");
-  const pdf = new jsPDF({
-    orientation: w >= h ? "landscape" : "portrait",
-    unit: "px",
-    format: [w, h],
-    hotfixes: ["px_scaling"],
-    compress: true,
-  });
-  pdf.addImage(dataUrl, "PNG", 0, 0, w, h, undefined, "FAST");
-  return pdf.output("blob");
+export async function renderPdf(dataUrl: string, w: number, h: number, layout?: PdfLayout): Promise<Blob> {
+  return renderPdfPages([{ dataUrl, w, h }], layout);
 }
 
 /** One PDF with a page per image (carousel slides); each page has its own slide's size. */
-export async function renderPdfPages(pages: { dataUrl: string; w: number; h: number }[]): Promise<Blob> {
+export type PdfLayout = { size: PageSizeId | "fit"; orientation: "auto" | "portrait" | "landscape" };
+
+/**
+ * One image per page. With size "fit" each page is as big as its image (the default). With a paper size
+ * (A4, Letter, ...) the picture is centred on that page and scaled to fit inside a small margin, in the
+ * orientation chosen, or in whichever suits each picture when the orientation is "auto".
+ */
+export async function renderPdfPages(pages: { dataUrl: string; w: number; h: number }[], layout?: PdfLayout): Promise<Blob> {
   const { jsPDF } = await import("jspdf");
-  const o = (p: { w: number; h: number }) => (p.w >= p.h ? "landscape" : "portrait") as "landscape" | "portrait";
-  const pdf = new jsPDF({ orientation: o(pages[0]), unit: "px", format: [pages[0].w, pages[0].h], hotfixes: ["px_scaling"], compress: true });
+  if (!layout || layout.size === "fit") {
+    // "fit" pages take the picture's own shape; the orientation choice only matters for paper sizes
+    const own = (p: { w: number; h: number }) => (p.w >= p.h ? "landscape" : "portrait") as "landscape" | "portrait";
+    const pdf = new jsPDF({ orientation: own(pages[0]), unit: "px", format: [pages[0].w, pages[0].h], hotfixes: ["px_scaling"], compress: true });
+    pages.forEach((p, i) => {
+      if (i > 0) pdf.addPage([p.w, p.h], own(p));
+      pdf.addImage(p.dataUrl, "PNG", 0, 0, p.w, p.h, undefined, "FAST");
+    });
+    return pdf.output("blob");
+  }
+  const sz = PAGE_SIZES.find((x) => x.id === layout.size) ?? PAGE_SIZES[0];
+  const dims = (p: { w: number; h: number }) => {
+    const land = layout.orientation === "landscape" || (layout.orientation === "auto" && p.w >= p.h);
+    return { land, W: land ? sz.h : sz.w, H: land ? sz.w : sz.h };
+  };
+  const first = dims(pages[0]);
+  const pdf = new jsPDF({ orientation: first.land ? "landscape" : "portrait", unit: "mm", format: [sz.w, sz.h], compress: true });
+  const M = 10;
   pages.forEach((p, i) => {
-    if (i > 0) pdf.addPage([p.w, p.h], o(p));
-    pdf.addImage(p.dataUrl, "PNG", 0, 0, p.w, p.h, undefined, "FAST");
+    const d = dims(p);
+    if (i > 0) pdf.addPage([sz.w, sz.h], d.land ? "landscape" : "portrait");
+    const k = Math.min((d.W - 2 * M) / p.w, (d.H - 2 * M) / p.h);
+    const w = p.w * k;
+    const h = p.h * k;
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(0, 0, d.W, d.H, "F");
+    pdf.addImage(p.dataUrl, "PNG", (d.W - w) / 2, (d.H - h) / 2, w, h, undefined, "FAST");
   });
   return pdf.output("blob");
 }
