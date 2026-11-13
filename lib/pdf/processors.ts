@@ -2,7 +2,7 @@ import "server-only";
 import { degrees, PDFDocument, PDFFont, PDFPage, rgb, StandardFonts } from "pdf-lib";
 import sharp from "sharp";
 import { drawLine, loadFonts, widthOf, wrapText } from "./fonts";
-import { layoutNews, NEWS, splitPlan } from "./newsLayout";
+import { layoutNews, splitPlan, TITLE_STYLES } from "./newsLayout";
 
 export type Input = { name: string; bytes: Uint8Array };
 export type Output = { name: string; bytes: Uint8Array; type: string; note?: string };
@@ -23,15 +23,17 @@ async function open(i: Input): Promise<PDFDocument> {
 const pdfOut = (name: string, bytes: Uint8Array): Output => ({ name, bytes, type: "application/pdf" });
 const num = (v: unknown, d: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, Number.isFinite(Number(v)) && v !== "" ? Number(v) : d));
 
-type NewsItem = { jpg: Uint8Array; w: number; h: number; caption: string; source: string; n: number; cont: boolean };
+type NewsItem = { jpg: Uint8Array; w: number; h: number; caption: string; source: string; n: number; cont: boolean; dx?: number; dy?: number; pin?: number };
 const THEMES: Record<string, [number, number, number]> = { navy: [0.1, 0.2, 0.45], red: [0.75, 0.1, 0.12], green: [0.08, 0.45, 0.3], black: [0.1, 0.1, 0.1] };
 const clip = (v: unknown, n: number) => (typeof v === "string" ? v.replace(/\s+/g, " ").trim().slice(0, n) : "");
 
 /** Screenshots in, tidy daily-update PDF out: header, numbered clippings with source and caption, page numbers. */
 async function newsPdf({ inputs, options }: Ctx): Promise<Output> {
-  const meta = Array.isArray(options.items) ? (options.items as { caption?: unknown; source?: unknown }[]) : [];
+  const meta = Array.isArray(options.items) ? (options.items as { caption?: unknown; source?: unknown; dx?: unknown; dy?: unknown; page?: unknown }[]) : [];
+  const titleStyle = TITLE_STYLES.some((t) => t.v === str(options.titleStyle)) ? str(options.titleStyle) : "classic";
+  const showDate = options.showDate !== false;
   const title = clip(options.title, 90) || "Daily News Update";
-  const date = clip(options.date, 60);
+  const date = options.showDate === false ? "" : clip(options.date, 60);
   const footer = clip(options.footer, 90);
   const landscape = str(options.orient) === "landscape";
   const layout = ["auto", "1", "2across", "2down", "4"].includes(str(options.layout)) ? str(options.layout, "auto") : "auto";
@@ -46,6 +48,10 @@ async function newsPdf({ inputs, options }: Ctx): Promise<Output> {
   for (let i = 0; i < inputs.length; i++) {
     const caption = clip(meta[i]?.caption, 400);
     const source = clip(meta[i]?.source, 60);
+    const num = (v: unknown, lim: number) => (typeof v === "number" && Number.isFinite(v) ? Math.max(-lim, Math.min(lim, v)) : 0);
+    const dx = num(meta[i]?.dx, 900);
+    const dy = num(meta[i]?.dy, 900);
+    const pin = Math.max(0, Math.min(200, Math.floor(num(meta[i]?.page, 200))));
     let buf: Buffer;
     let w: number;
     let h: number;
@@ -65,7 +71,7 @@ async function newsPdf({ inputs, options }: Ctx): Promise<Output> {
     }
     for (let k = 0; k < pieces.length; k++) {
       const jpg = await sharp(pieces[k].buf).flatten({ background: "#ffffff" }).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
-      items.push({ jpg: new Uint8Array(jpg), w: pieces[k].w, h: pieces[k].h, caption: k === 0 ? caption : "", source: k === 0 ? source : "", n: i + 1, cont: k > 0 });
+      items.push({ jpg: new Uint8Array(jpg), w: pieces[k].w, h: pieces[k].h, caption: k === 0 ? caption : "", source: k === 0 ? source : "", n: i + 1, cont: k > 0, dx, dy, pin: k === 0 ? pin : 0 });
     }
   }
   if (items.length > 150) throw new Error("That would make too many pieces. Use fewer or shorter screenshots.");
@@ -75,7 +81,7 @@ async function newsPdf({ inputs, options }: Ctx): Promise<Output> {
   doc.setTitle(title);
   doc.setCreator("ClipBook");
   const fonts = await loadFonts(doc);
-  const L = layoutNews(items, { layout, landscape, headerMode, numbers }, (t, w, sz, max) => wrapText(fonts.regular, t, sz, w, max));
+  const L = layoutNews(items, { layout, landscape, headerMode, numbers, titleStyle, showDate }, (t, w, sz, max) => wrapText(fonts.regular, t, sz, w, max));
   const { pw: PW, ph: PH, margin: M } = L;
 
   // 3. draw
@@ -85,9 +91,10 @@ async function newsPdf({ inputs, options }: Ctx): Promise<Output> {
   L.pages.forEach((pl, pi) => {
     const page = doc.addPage([PW, PH]);
     if (L.showHeadOn(pi)) {
-      drawLine(page, fonts.bold, title, M, PH - L.headBase, NEWS.headSize, accent);
-      if (date) drawLine(page, fonts.regular, date, PW - M, PH - L.dateBase, 9.5, [0.3, 0.3, 0.3], "right");
-      page.drawRectangle({ x: M, y: PH - L.headRuleY, width: PW - M * 2, height: 1.6, color: rgb(...accent) });
+      const hg = L.head;
+      for (const r of hg.rects) page.drawRectangle({ x: r.x, y: PH - r.y - r.h, width: r.w, height: r.h, color: rgb(...((r.color === "accent" ? accent : [0.7, 0.7, 0.7]) as [number, number, number])) });
+      drawLine(page, fonts.bold, title, hg.title.x, PH - hg.title.base, hg.title.size, hg.title.color === "white" ? [1, 1, 1] : accent, hg.title.align);
+      if (date && hg.date) drawLine(page, fonts.regular, date, hg.date.x, PH - hg.date.base, hg.date.size, hg.date.color === "white" ? [1, 1, 1] : [0.3, 0.3, 0.3], hg.date.align);
     }
     drawLine(page, fonts.regular, footer, M, PH - L.footBase, 8, [0.45, 0.45, 0.45]);
     drawLine(page, fonts.regular, `Page ${pi + 1} of ${total}`, PW - M, PH - L.footBase, 8, [0.45, 0.45, 0.45], "right");

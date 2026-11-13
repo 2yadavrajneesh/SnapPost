@@ -4,8 +4,73 @@
  * All positions are in PDF points measured from the top-left corner of the page.
  */
 
-export type NewsPiece = { w: number; h: number; caption: string; source: string; n: number; cont: boolean };
-export type NewsLayoutOpts = { layout: string; landscape: boolean; headerMode: string; numbers: boolean };
+export type NewsPiece = {
+  w: number; h: number; caption: string; source: string; n: number; cont: boolean;
+  /** Hand-set move from the automatic spot, in points. */
+  dx?: number; dy?: number;
+  /** Page number the picture was sent to (a tall one continues on the pages after it). */
+  pin?: number;
+};
+export type NewsLayoutOpts = { layout: string; landscape: boolean; headerMode: string; numbers: boolean; titleStyle?: string; showDate?: boolean };
+
+export const TITLE_STYLES = [
+  { v: "classic", l: "Classic: left title, line below" },
+  { v: "centered", l: "Centred: double line" },
+  { v: "masthead", l: "Masthead: big title, date strip" },
+  { v: "banner", l: "Banner: colour bar" },
+  { v: "minimal", l: "Minimal: small title" },
+] as const;
+
+export type HeadGeom = {
+  h: number;
+  title: { x: number; base: number; size: number; align: "left" | "center"; color: "accent" | "white" };
+  date: { x: number; base: number; size: number; align: "left" | "center" | "right"; color: "gray" | "white" } | null;
+  /** Filled bars, measured from the top of the page. */
+  rects: { x: number; y: number; w: number; h: number; color: "accent" | "gray" }[];
+};
+
+/** Where the title, date and rules go for each title style. */
+export function headGeom(style: string, pw: number, M: number, hasDate: boolean): HeadGeom {
+  const W = pw - M * 2;
+  const mid = pw / 2;
+  if (style === "centered")
+    return {
+      h: hasDate ? 62 : 46,
+      title: { x: mid, base: M + 20, size: 20, align: "center", color: "accent" },
+      date: hasDate ? { x: mid, base: M + 46, size: 9.5, align: "center", color: "gray" } : null,
+      rects: [{ x: M, y: M + 29, w: W, h: 1.6, color: "accent" }, { x: M, y: M + 33, w: W, h: 0.6, color: "accent" }],
+    };
+  if (style === "masthead")
+    return {
+      h: hasDate ? 74 : 52,
+      title: { x: mid, base: M + 28, size: 28, align: "center", color: "accent" },
+      date: hasDate ? { x: mid, base: M + 54, size: 9.5, align: "center", color: "gray" } : null,
+      rects: [
+        { x: M, y: M + 36, w: W, h: 2.6, color: "accent" },
+        ...(hasDate ? [{ x: M, y: M + 60, w: W, h: 0.6, color: "gray" as const }] : []),
+      ],
+    };
+  if (style === "banner")
+    return {
+      h: 46,
+      title: { x: M + 10, base: M + 20, size: 16, align: "left", color: "white" },
+      date: hasDate ? { x: pw - M - 10, base: M + 19, size: 9.5, align: "right", color: "white" } : null,
+      rects: [{ x: M, y: M, w: W, h: 28, color: "accent" }],
+    };
+  if (style === "minimal")
+    return {
+      h: 30,
+      title: { x: M, base: M + 12, size: 12, align: "left", color: "accent" },
+      date: hasDate ? { x: pw - M, base: M + 11, size: 9, align: "right", color: "gray" } : null,
+      rects: [{ x: M, y: M + 19, w: W, h: 0.6, color: "gray" }],
+    };
+  return {
+    h: 39,
+    title: { x: M, base: M + 17, size: 17, align: "left", color: "accent" },
+    date: hasDate ? { x: pw - M, base: M + 12, size: 9.5, align: "right", color: "gray" } : null,
+    rects: [{ x: M, y: M + 26, w: W, h: 1.6, color: "accent" }],
+  };
+}
 export type Wrap = (text: string, width: number, size: number, maxLines: number) => string[];
 
 export type NewsCell<T> = {
@@ -24,7 +89,7 @@ export type NewsCell<T> = {
   base: number;
 };
 export type NewsPage<T> = { kind: "1" | "2across" | "2down" | "4"; cells: NewsCell<T>[] };
-export type NewsLayout<T> = { pw: number; ph: number; margin: number; headTop: number; headRuleY: number; headBase: number; dateBase: number; footBase: number; showHeadOn: (page: number) => boolean; pages: NewsPage<T>[] };
+export type NewsLayout<T> = { pw: number; ph: number; margin: number; head: HeadGeom; footBase: number; showHeadOn: (page: number) => boolean; pages: NewsPage<T>[] };
 
 export const NEWS = { margin: 34, gap: 14, headSize: 17, textSize: 9, maxEdge: [1800, 9000] as const };
 
@@ -44,16 +109,31 @@ export function layoutNews<T extends NewsPiece>(items: T[], o: NewsLayoutOpts, w
   const M = NEWS.margin;
   const headerOn = (pi: number) => o.headerMode === "every" || (o.headerMode === "first" && pi === 0);
   type Plan = { kind: NewsPage<T>["kind"]; items: T[] };
+  const head = headGeom(o.titleStyle ?? "classic", PW, M, o.showDate !== false);
+  const headH = head.h;
+  const free = items.filter((it) => !it.pin);
+  // a tall picture sent to page P keeps its later pieces on P+1, P+2 …
+  const pinned: { it: T; page: number }[] = [];
+  let lastPin = 0;
+  items.forEach((it) => {
+    if (it.pin) {
+      lastPin = Math.max(1, Math.floor(it.pin));
+      pinned.push({ it, page: lastPin });
+    } else if (it.cont && lastPin) {
+      lastPin += 1;
+      pinned.push({ it, page: lastPin });
+    } else lastPin = 0;
+  });
   const plan: Plan[] = [];
   if (o.layout === "auto") {
     // two on a page only when both stay at least 62% of their single-page size
     const g = NEWS.gap;
     const aw = PW - M * 2;
-    const ah = PH - M - (o.headerMode === "none" ? 0 : 39) - (M + 14) - 26;
+    const ah = PH - M - (o.headerMode === "none" ? 0 : headH) - (M + 14) - 26;
     const fit = (it: T, cw: number, ch: number) => Math.min(cw / it.w, ch / it.h, 1.25);
-    for (let i = 0; i < items.length; ) {
-      const a = items[i];
-      const b = items[i + 1];
+    for (let i = 0; i < free.length; ) {
+      const a = free[i];
+      const b = free[i + 1];
       if (b) {
         const sa = fit(a, aw, ah);
         const sb = fit(b, aw, ah);
@@ -68,13 +148,26 @@ export function layoutNews<T extends NewsPiece>(items: T[], o: NewsLayoutOpts, w
       plan.push({ kind: "1", items: [a] });
       i += 1;
     }
+    // in Auto a pinned picture gets a page of its own at that number
+    pinned.sort((x, y) => x.page - y.page).forEach(({ it, page }) => plan.splice(Math.min(page - 1, plan.length), 0, { kind: "1", items: [it] }));
   } else {
     const per = o.layout === "1" ? 1 : o.layout === "4" ? 4 : 2;
-    for (let i = 0; i < items.length; i += per) plan.push({ kind: o.layout as Plan["kind"], items: items.slice(i, i + per) });
+    const maxPage = Math.max(1, Math.ceil(items.length / per));
+    const queue = [...free];
+    const waiting = pinned.map((x) => ({ ...x, page: Math.min(x.page, maxPage) }));
+    for (let pg = 1; queue.length || waiting.length; pg++) {
+      const here: T[] = [];
+      for (let k = 0; k < waiting.length && here.length < per; ) {
+        if (waiting[k].page <= pg) here.push(waiting.splice(k, 1)[0].it);
+        else k++;
+      }
+      while (here.length < per && queue.length) here.push(queue.shift()!);
+      if (here.length) plan.push({ kind: o.layout as Plan["kind"], items: here.sort((x, y) => x.n - y.n || Number(x.cont) - Number(y.cont)) });
+    }
   }
 
   const pages: NewsPage<T>[] = plan.map((p, pi) => {
-    const top = M + (headerOn(pi) ? NEWS.headSize + 22 : 0);
+    const top = M + (headerOn(pi) ? headH : 0);
     const bottom = PH - (M + 14);
     const areaW = PW - M * 2;
     const areaH = bottom - top;
@@ -96,10 +189,11 @@ export function layoutNews<T extends NewsPiece>(items: T[], o: NewsLayoutOpts, w
       const s = Math.min(cw / it.w, (ch - capH) / it.h, 1.25);
       const dw = it.w * s;
       const dh = it.h * s;
-      return { it, x: cx + (cw - dw) / 2, y: cy, w: dw, h: dh, label, source: it.source, lines, size: sz, base: cy + dh + 6 + sz };
+      const mx = Math.max(-(cx + (cw - dw) / 2), Math.min(PW - dw - (cx + (cw - dw) / 2), it.dx ?? 0));
+      const my = Math.max(-cy, Math.min(PH - dh - cy, it.dy ?? 0));
+      return { it, x: cx + (cw - dw) / 2 + mx, y: cy + my, w: dw, h: dh, label, source: it.source, lines, size: sz, base: cy + my + dh + 6 + sz };
     });
     return { kind: p.kind, cells };
   });
-  const hs = NEWS.headSize;
-  return { pw: PW, ph: PH, margin: M, headTop: M, headBase: M + hs, headRuleY: M + hs + 9, dateBase: M + 12, footBase: PH - (M - 6), showHeadOn: headerOn, pages };
+  return { pw: PW, ph: PH, margin: M, head, footBase: PH - (M - 6), showHeadOn: headerOn, pages };
 }

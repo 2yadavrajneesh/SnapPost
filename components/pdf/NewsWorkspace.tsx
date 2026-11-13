@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, btnPlain, btnPrimary, btnSm, field, useCopy } from "@/components/linkdesk/ui";
 import NewsPreview from "./NewsPreview";
+import { TITLE_STYLES } from "@/lib/pdf/newsLayout";
 import { deleteResult, downloadHref, getConfig, runTool, uploadFile, type PdfConfig, type RunResult } from "@/lib/pdf/client";
 
-type Item = { id: number; file: File; url: string; caption: string; source: string; nw: number; nh: number };
-type Settings = { title: string; footer: string; layout: string; orient: string; header: string; theme: string; numbers: boolean; trim: boolean; splitTall: boolean };
+type Item = { id: number; file: File; url: string; caption: string; source: string; nw: number; nh: number; dx: number; dy: number; page: number };
+type Settings = { title: string; footer: string; layout: string; orient: string; header: string; theme: string; numbers: boolean; trim: boolean; splitTall: boolean; titleStyle: string; showDate: boolean };
 const KEY = "clipbook:news:v1";
-const DEFAULTS: Settings = { title: "Daily News Update", footer: "", layout: "auto", orient: "portrait", header: "every", theme: "navy", numbers: true, trim: true, splitTall: true };
+const DEFAULTS: Settings = { title: "Daily News Update", footer: "", layout: "auto", orient: "portrait", header: "every", theme: "navy", numbers: true, trim: true, splitTall: true, titleStyle: "classic", showDate: true };
 const today = () => new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 const size = (n: number) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 let seq = 0;
@@ -71,7 +72,7 @@ export default function NewsWorkspace() {
           msgs.push(`${f.name} is larger than ${size(maxImg)}.`);
           continue;
         }
-        const item: Item = { id: ++seq, file: f, url: URL.createObjectURL(f), caption: "", source: "", nw: 0, nh: 0 };
+        const item: Item = { id: ++seq, file: f, url: URL.createObjectURL(f), caption: "", source: "", nw: 0, nh: 0, dx: 0, dy: 0, page: 0 };
         const im = new Image();
         im.onload = () => setItems((c) => c.map((x) => (x.id === item.id ? { ...x, nw: im.naturalWidth, nh: im.naturalHeight } : x)));
         im.src = item.url;
@@ -117,7 +118,10 @@ export default function NewsWorkspace() {
       c.find((i) => i.id === id && URL.revokeObjectURL(i.url));
       return c.filter((i) => i.id !== id);
     });
-  const sortBy = (how: "name" | "time") => setItems((c) => [...c].sort((a, b) => (how === "name" ? a.file.name.localeCompare(b.file.name, undefined, { numeric: true }) : a.file.lastModified - b.file.lastModified)));
+  const sortBy = (how: "name" | "oldest" | "newest") =>
+    setItems((c) => [...c].sort((a, b) => (how === "name" ? a.file.name.localeCompare(b.file.name, undefined, { numeric: true }) : how === "oldest" ? a.file.lastModified - b.file.lastModified : b.file.lastModified - a.file.lastModified)));
+  const moveBy = (id: number, dx: number, dy: number) => update(id, { dx, dy });
+  const sendTo = (id: number, page: number) => update(id, { page, dx: 0, dy: 0 });
   const clearAll = () => {
     items.forEach((i) => URL.revokeObjectURL(i.url));
     if (result) deleteResult(result.url);
@@ -135,7 +139,7 @@ export default function NewsWorkspace() {
       const done = [];
       for (let i = 0; i < items.length; i++) done.push(await uploadFile(items[i].file, cfg?.mode ?? "off", (p) => setPct(Math.round(((i + p / 100) / items.length) * 100))));
       setBusy("process");
-      setResult(await runTool("news-pdf", done, { ...s, date, items: items.map((i) => ({ caption: i.caption, source: i.source })) }));
+      setResult(await runTool("news-pdf", done, { ...s, date, items: items.map((i) => ({ caption: i.caption, source: i.source, dx: i.dx, dy: i.dy, page: i.page })) }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -170,8 +174,10 @@ export default function NewsWorkspace() {
           </label>
           {items.length > 0 && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <button type="button" className={btnSm} onClick={() => sortBy("name")} disabled={!!busy}>Sort by name</button>
-              <button type="button" className={btnSm} onClick={() => sortBy("time")} disabled={!!busy}>Oldest first</button>
+              <span className="text-[11px] font-semibold text-stone-600">Sort:</span>
+              <button type="button" className={btnSm} onClick={() => sortBy("name")} disabled={!!busy}>Name</button>
+              <button type="button" className={btnSm} onClick={() => sortBy("oldest")} disabled={!!busy} title="By the date and time of each file, oldest first">Date/time, oldest first</button>
+              <button type="button" className={btnSm} onClick={() => sortBy("newest")} disabled={!!busy} title="By the date and time of each file, newest first">Date/time, newest first</button>
               <button type="button" className={btnSm} onClick={clearAll} disabled={!!busy}>Remove all</button>
             </div>
           )}
@@ -184,13 +190,19 @@ export default function NewsWorkspace() {
                   <div className="min-w-0 flex-1 space-y-1.5">
                     <div className="flex items-center gap-1.5">
                       <span className="bg-accent px-1.5 text-[11px] font-bold leading-5 text-white">{i + 1}</span>
-                      <span className="min-w-0 flex-1 truncate text-[11px] text-stone-500">{it.file.name} · {size(it.file.size)}</span>
+                      <span className="min-w-0 flex-1 truncate text-[11px] text-stone-500">{it.file.name} · {size(it.file.size)}{it.file.lastModified ? ` · ${new Date(it.file.lastModified).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}</span>
                       <button type="button" className={btnSm} onClick={() => move(i, -1)} disabled={i === 0 || !!busy} aria-label="Move earlier">↑</button>
                       <button type="button" className={btnSm} onClick={() => move(i, 1)} disabled={i === items.length - 1 || !!busy} aria-label="Move later">↓</button>
                       <button type="button" className={btnSm} onClick={() => remove(it.id)} disabled={!!busy} aria-label={`Remove picture ${i + 1}`}>✕</button>
                     </div>
                     <input className={sel} placeholder="Source, e.g. The Hindu" maxLength={60} value={it.source} onChange={(e) => update(it.id, { source: e.target.value })} />
                     <input className={sel} placeholder="Caption or headline (optional)" maxLength={400} value={it.caption} onChange={(e) => update(it.id, { caption: e.target.value })} />
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-stone-600">
+                      <label className="flex items-center gap-1.5">Go to page
+                        <input type="number" min={1} max={200} inputMode="numeric" placeholder="auto" aria-label={`Page number for picture ${i + 1}`} className="w-16 border border-stone-200 bg-white px-1.5 py-1 text-xs" value={it.page || ""} onChange={(e) => update(it.id, { page: Math.max(0, Math.min(200, Math.floor(Number(e.target.value)) || 0)), dx: 0, dy: 0 })} />
+                      </label>
+                      {(it.dx !== 0 || it.dy !== 0 || it.page > 0) && <button type="button" className={btnSm} onClick={() => update(it.id, { dx: 0, dy: 0, page: 0 })}>Reset position</button>}
+                    </div>
                   </div>
                 </li>
               ))}
@@ -215,6 +227,9 @@ export default function NewsWorkspace() {
             <label className="block text-xs font-semibold text-stone-700">Title on
               <select className={`${sel} mt-1`} value={s.header} onChange={(e) => set("header", e.target.value)}><option value="every">Every page</option><option value="first">First page only</option><option value="none">No title</option></select>
             </label>
+            <label className="block text-xs font-semibold text-stone-700">Title style
+              <select className={`${sel} mt-1`} value={s.titleStyle} onChange={(e) => set("titleStyle", e.target.value)}>{TITLE_STYLES.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}</select>
+            </label>
             <label className="block text-xs font-semibold text-stone-700">Accent colour
               <select className={`${sel} mt-1`} value={s.theme} onChange={(e) => set("theme", e.target.value)}><option value="navy">Navy</option><option value="red">Red</option><option value="green">Green</option><option value="black">Black</option></select>
             </label>
@@ -223,6 +238,7 @@ export default function NewsWorkspace() {
             </label>
           </div>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-stone-700">
+            <label className="flex items-center gap-2"><input type="checkbox" checked={s.showDate} onChange={(e) => set("showDate", e.target.checked)} />Show the date</label>
             <label className="flex items-center gap-2"><input type="checkbox" checked={s.numbers} onChange={(e) => set("numbers", e.target.checked)} />Number the clippings</label>
             <label className="flex items-center gap-2"><input type="checkbox" checked={s.trim} onChange={(e) => set("trim", e.target.checked)} />Trim blank borders</label>
             <label className="flex items-center gap-2"><input type="checkbox" checked={s.splitTall} onChange={(e) => set("splitTall", e.target.checked)} />Split very long screenshots</label>
@@ -254,10 +270,10 @@ export default function NewsWorkspace() {
           )}
         </Card>
         <Card title="Live PDF preview" chip={items.length ? <span className="text-[11px] font-semibold text-stone-600">updates as you type</span> : undefined}>
-          <div className="max-h-[46vh] overflow-y-auto bg-stone-200 p-2.5">
-            <NewsPreview items={items} s={s} date={date} />
+          <div className="max-h-[62vh] overflow-y-auto bg-stone-200 p-2.5">
+            <NewsPreview items={items} s={s} date={s.showDate ? date : ""} onMove={moveBy} onSend={sendTo} />
           </div>
-          <p className="mt-2 text-[11px] leading-snug text-stone-500">Same page layout as the final file. The PDF also trims blank borders if that option is on, so spacing can differ slightly.</p>
+          <p className="mt-2 text-[11px] leading-snug text-stone-500">Drag a picture to place it anywhere, or drop it on another page to send it there. Same page layout as the final file. The PDF also trims blank borders if that option is on, so spacing can differ slightly.</p>
         </Card>
         <p className="px-1 text-[11px] leading-relaxed text-stone-500">Screenshots are processed on the server and removed right after. Hindi and English text are both supported in titles and captions.</p>
       </aside>
