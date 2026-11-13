@@ -107,8 +107,13 @@ export async function renderPagesPdf(
   const pdf = new jsPDF({ orientation: orient, unit: "mm", format: [sz.w, sz.h], compress: true });
   for (let i = 0; i < pageNodes.length; i++) {
     const img = await renderPng(pageNodes[i], { maxWidth: 1600 });
-    if (i > 0) pdf.addPage([sz.w, sz.h], orient);
-    pdf.addImage(img.dataUrl, "PNG", 0, 0, W, H, undefined, "FAST");
+    // every page keeps its own shape, so a tall poster page is as long as its content
+    const ph = Math.round((W * pageNodes[i].offsetHeight) / Math.max(1, pageNodes[i].offsetWidth) * 100) / 100;
+    const tall = Math.abs(ph - H) > 0.5;
+    const pw = W;
+    if (i === 0 && tall) pdf.deletePage(1), pdf.addPage([pw, ph], pw > ph ? "landscape" : "portrait");
+    else if (i > 0) pdf.addPage([tall ? pw : sz.w, tall ? ph : sz.h], tall ? (pw > ph ? "landscape" : "portrait") : orient);
+    pdf.addImage(img.dataUrl, "PNG", 0, 0, pw, tall ? ph : H, undefined, "FAST");
   }
   return { blob: pdf.output("blob"), pages: pageNodes.length };
 }

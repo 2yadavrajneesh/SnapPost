@@ -17,7 +17,7 @@ import { copyPngToClipboard, downloadBlob, downloadUrl, renderPdf, renderPdfPage
 import { parseTweetUrl } from "@/lib/parse";
 import { PAGE_SIZES, type PageSizeId } from "@/lib/paper";
 import {
-  ACCENTS,
+  BADGE_CHOICES,
   BACKGROUNDS,
   DEFAULT_SETTINGS,
   DEFAULT_TWEET,
@@ -723,15 +723,16 @@ export default function Home() {
                 </div>
                 <Toggle label="Verified badge" checked={tweet.verified} onChange={(v) => setT("verified", v)} />
                 {tweet.verified && (
-                  <Segmented
-                    value={tweet.verifiedType ?? "blue"}
-                    onChange={(v) => setT("verifiedType", v)}
-                    options={[
-                      { value: "blue", label: "Blue" },
-                      { value: "gold", label: "Gold" },
-                      { value: "gray", label: "Grey" },
-                    ]}
-                  />
+                  <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Badge colour">
+                    {BADGE_CHOICES.map((c) => {
+                      const on = (tweet.verifiedType ?? "blue") === c.value;
+                      return (
+                        <button key={c.value} type="button" role="radio" aria-checked={on} aria-label={`Badge colour ${c.color}`} onClick={() => setT("verifiedType", c.value)} className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition ${on ? "border-[#1b2420] ring-2 ring-white" : "border-transparent"}`} style={{ background: c.color }}>
+                          {on && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
                 <div className="space-y-2">
                   <Label>Post details</Label>
@@ -848,14 +849,7 @@ export default function Home() {
 
           <CollapsibleSection title="Appearance">
             <AppearanceTiles settings={settings} onChange={set} />
-          </CollapsibleSection>
 
-          <CollapsibleSection title="Layout">
-            <Slider label="Text size" value={settings.textSize} min={24} max={64} step={4} suffix="px" lowLabel="Smaller" highLabel="Larger" ticks emphasizeHigh onChange={(v) => set("textSize", v)} />
-            <Slider label="Padding" value={settings.padding} min={50} max={150} step={5} suffix="%" lowLabel="Tighter" highLabel="Looser" onChange={(v) => set("padding", v)} />
-          </CollapsibleSection>
-
-          <CollapsibleSection title="More styles">
             <div>
               <Label>Background</Label>
               <div className="grid grid-cols-7 gap-1.5" role="radiogroup" aria-label="Background">
@@ -884,18 +878,13 @@ export default function Home() {
                 ))}
               </div>
             </div>
-            <div>
-              <Label>Accent</Label>
-              <div className="flex gap-2" role="radiogroup" aria-label="Accent colour">
-                {ACCENTS.map((a) => (
-                  <button key={a.value} type="button" role="radio" aria-checked={settings.accent === a.value} aria-label={a.label} title={a.label} onClick={() => set("accent", a.value)} className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition ${settings.accent === a.value ? "border-[#1b2420] ring-2 ring-white" : "border-transparent"}`} style={{ background: a.value }}>
-                    {settings.accent === a.value && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-1 text-[11px] text-stone-500">Colours the bird logo, the blue verified badge and the &quot;Replying to&quot; name.</p>
-            </div>
           </CollapsibleSection>
+
+          <CollapsibleSection title="Layout">
+            <Slider label="Text size" value={settings.textSize} min={24} max={64} step={4} suffix="px" lowLabel="Smaller" highLabel="Larger" ticks emphasizeHigh onChange={(v) => set("textSize", v)} />
+            <Slider label="Padding" value={settings.padding} min={50} max={150} step={5} suffix="%" lowLabel="Tighter" highLabel="Looser" onChange={(v) => set("padding", v)} />
+          </CollapsibleSection>
+
         </aside>
 
         {/* Viewer */}

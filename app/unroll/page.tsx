@@ -7,6 +7,7 @@ import { downloadBlob } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
 import { DEFAULT_LABEL_STRENGTH, LABEL_COLORS, LABEL_PRESETS, NUM_FORMATS, PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type NumFormat, type NumPos, type Orientation, type PageLabel, type PageSizeId } from "@/lib/paper";
 import NumPosPicker from "@/components/NumPosPicker";
+import PageModePicker, { type PageMode } from "@/components/PageModePicker";
 import ScrollTop from "@/components/ScrollTop";
 import HighlightEditor from "@/components/HighlightEditor";
 import { addHighlight, HIGHLIGHT_COLORS, offsetIn, REDACT_STYLES, removeHighlight, type HighlightStyle } from "@/lib/highlight";
@@ -127,8 +128,12 @@ export default function Unroller() {
   const [manyText, setManyText] = useState("");
   const [expand, setExpand] = useState(true);
   const [skipped, setSkipped] = useState<string[]>([]);
-  const [content, setContent] = useState<"full" | "media">("full");
-  const [mediaLayout, setMediaLayout] = useState<"one" | "auto">("auto");
+  const [fileName, setFileName] = useState("");
+  const [fileLinks, setFileLinks] = useState<string[]>([]);
+  const nonThread = useRef(new Set<string>());
+  const [pageMode, setPageMode] = useState<PageMode>("single");
+  const content: "full" | "media" = pageMode === "one" || pageMode === "two" || pageMode === "auto" ? "media" : "full";
+  const mediaLayout = (content === "media" ? pageMode : "auto") as "one" | "two" | "auto";
   const [sizes, setSizes] = useState<Record<string, { w: number; h: number }>>({});
   // Marking straight on the pages: the selected words, the style, and the earlier states for Undo.
   const [pageSel, setPageSel] = useState<{ post: number; start: number; end: number } | null>(null);
@@ -175,8 +180,15 @@ export default function Unroller() {
       const pj = await pr.json();
       if (!pr.ok) throw new Error(pj.error || "Couldn't fetch that post.");
       if (id !== reqId.current) return;
-      setThread(null);
-      setPending({ posts: [pj as PostData], isThread: false, link: url });
+      // not a thread: it belongs under Many links
+      nonThread.current.add(url);
+      setMode("many");
+      setManyText(url);
+      setFileName("");
+      setFileLinks([]);
+      setLink("");
+      setThread({ posts: [pj as PostData], isThread: false, link: url });
+      flash("Not a thread, so it opened under Many links");
     } catch (e) {
       if (id === reqId.current) setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -184,7 +196,8 @@ export default function Unroller() {
     }
   }
 
-  const manyLinks = Array.from(new Set((manyText.match(/https?:\/\/(?:www\.|mobile\.)?(?:x|twitter)\.com\/[^\s"'<>)]+/gi) ?? []).filter((u) => parseTweetUrl(u))));
+  const typedLinks = Array.from(new Set((manyText.match(/https?:\/\/(?:www\.|mobile\.)?(?:x|twitter)\.com\/[^\s"'<>)]+/gi) ?? []).filter((u) => parseTweetUrl(u))));
+  const manyLinks = fileName ? fileLinks : typedLinks;
 
   async function loadMany() {
     if (!manyLinks.length) return;
@@ -213,15 +226,41 @@ export default function Unroller() {
     if (!f) return;
     try {
       const found = await tweetLinksInFile(f);
-      if (!found.length) setError("No tweet links found in that file.");
-      else {
-        setError(null);
-        setManyText((t) => (t.trim() ? t.trim() + "\n" : "") + found.join("\n"));
-      }
+      if (!found.length) return setError("No tweet links found in that file.");
+      setError(null);
+      setFileName(f.name);
+      setFileLinks(found);
     } catch {
       setError("Couldn't read that file.");
     }
   }
+
+  // One pasted link in Many links: if it turns out to be a thread, switch to One thread.
+  useEffect(() => {
+    if (mode !== "many" || fileName || typedLinks.length !== 1) return;
+    const url = typedLinks[0];
+    if (nonThread.current.has(url)) return;
+    const timer = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/thread?url=${encodeURIComponent(url)}`);
+        const j = await r.json();
+        if (r.ok && Array.isArray(j.posts) && j.posts.length >= 2) {
+          lastFetched.current = url;
+          setHl({});
+          setEditIdx(0);
+          setMode("one");
+          setLink(url);
+          setManyText("");
+          setThread({ posts: j.posts, isThread: true, link: url });
+          flash("That post is a thread, so it opened under One thread");
+        } else nonThread.current.add(url);
+      } catch {
+        /* leave it: the person can still press Load */
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manyText, mode, fileName]);
 
   // Picture sizes, so media-only pages can fit each picture to the page.
   useEffect(() => {
@@ -369,7 +408,7 @@ export default function Unroller() {
       setPrinting(false);
     }
   }
-  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, numFormat, label, hl, redact, pick: !printing, fontSize, leftMarks, margins, multi: thread?.sources ? { sources: thread.sources } : undefined, mediaOnly: content === "media" ? mediaLayout : undefined, sizes });
+  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, numFormat, label, hl, redact, pick: !printing, fontSize, leftMarks, margins, multi: thread?.sources ? { sources: thread.sources } : undefined, mediaOnly: content === "media" ? mediaLayout : undefined, facing: pageMode === "facing", poster: pageMode === "poster", sizes });
   const a = thread?.posts[0];
   const base = thread?.sources ? `compiled-${thread.sources}-links` : a && !redact.name ? `thread-${a.username}-${a.id}` : "thread-redacted";
 
@@ -385,13 +424,21 @@ export default function Unroller() {
               <div className="mt-3 space-y-2">
                 <Label>Paste links (one per line) or upload a file that has them</Label>
                 <textarea
-                  value={manyText}
+                  value={fileName ? "" : manyText}
                   onChange={(e) => setManyText(e.target.value)}
-                  rows={6}
-                  placeholder={"https://x.com/user/status/123\nhttps://x.com/user/status/456"}
+                  rows={3}
+                  disabled={!!fileName}
+                  placeholder={fileName ? "Links come from the uploaded file" : "https://x.com/user/status/123\nhttps://x.com/user/status/456"}
                   aria-label="Tweet links"
-                  className="w-full border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-[color:var(--accent)] focus:ring-1 focus:ring-[color:var(--accent)]"
+                  className="w-full resize-y border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-[color:var(--accent)] focus:ring-1 focus:ring-[color:var(--accent)] disabled:bg-stone-100 disabled:text-stone-500"
                 />
+                {fileName && (
+                  <div className="flex items-center gap-2 bg-stone-100 px-2.5 py-1.5 text-xs text-stone-700">
+                    <span className="min-w-0 flex-1 truncate font-semibold">{fileName}</span>
+                    <span className="flex-none text-stone-500">{fileLinks.length} link{fileLinks.length === 1 ? "" : "s"}</span>
+                    <button type="button" aria-label="Remove the file" title="Remove the file" onClick={() => { setFileName(""); setFileLinks([]); }} className="flex-none px-1 font-bold text-stone-600 hover:text-stone-900">✕</button>
+                  </div>
+                )}
                 <label className="flex items-center gap-2 text-xs text-stone-700">
                   <input type="checkbox" checked={expand} onChange={(e) => setExpand(e.target.checked)} /> Include the whole thread for each link
                 </label>
@@ -399,11 +446,16 @@ export default function Unroller() {
                   <button type="button" disabled={busy || !manyLinks.length} onClick={() => void loadMany()} className="bg-accent px-3 py-2 text-xs font-semibold text-white transition hover:brightness-110 disabled:opacity-50">
                     {busy ? "Loading…" : `Load ${manyLinks.length} link${manyLinks.length === 1 ? "" : "s"}`}
                   </button>
-                  <label className={`${btn} cursor-pointer`}>
-                    Upload file
-                    <input type="file" accept=".txt,.csv,.docx,.xlsx,.pdf,.md" className="hidden" onChange={(e) => { void addLinkFile(e.target.files?.[0]); e.target.value = ""; }} />
+                  <label
+                    title={manyText.trim() ? "Clear the typed links to upload a file instead" : "Upload a file with links (txt, csv, Word, Excel, PDF)"}
+                    aria-label="Upload a file with links"
+                    aria-disabled={!!manyText.trim()}
+                    className={`inline-flex h-9 w-9 items-center justify-center border border-stone-300 bg-white text-stone-800 transition ${manyText.trim() ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:bg-stone-100"}`}
+                  >
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14" /></svg>
+                    <input type="file" disabled={!!manyText.trim()} accept=".txt,.csv,.docx,.xlsx,.pdf,.md" className="hidden" onChange={(e) => { void addLinkFile(e.target.files?.[0]); e.target.value = ""; }} />
                   </label>
-                  <button type="button" className={btn} onClick={() => { setManyText(""); setThread(null); setSkipped([]); }}>Clear</button>
+                  <button type="button" className={btn} onClick={() => { setManyText(""); setFileName(""); setFileLinks([]); setThread(null); setSkipped([]); setError(null); }}>Clear</button>
                 </div>
                 {error && <p role="alert" className="bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
                 {skipped.length > 0 && <p className="bg-amber-50 px-3 py-2 text-xs text-amber-900">{skipped.length} link{skipped.length === 1 ? "" : "s"} couldn&apos;t be loaded and were left out.</p>}
@@ -461,10 +513,10 @@ export default function Unroller() {
             </div>}
             <div className="mt-3">
               <Label>PDF contents</Label>
-              <Segmented value={content} onChange={setContent} options={[{ value: "full", label: "Full posts" }, { value: "media", label: "Media only" }]} />
+              <Segmented value={content} onChange={(c) => setPageMode(c === "media" ? "auto" : "single")} options={[{ value: "full", label: "Full posts" }, { value: "media", label: "Media only" }]} />
               {content === "media" && (
                 <div className="mt-2">
-                  <Segmented value={mediaLayout} onChange={setMediaLayout} options={[{ value: "one", label: "One per page" }, { value: "auto", label: "Auto-fit pages" }]} />
+                  <Segmented value={mediaLayout} onChange={(m) => setPageMode(m)} options={[{ value: "one", label: "One per page" }, { value: "two", label: "Two per page" }, { value: "auto", label: "Auto-fit pages" }]} />
                 </div>
               )}
             </div>
@@ -517,8 +569,8 @@ export default function Unroller() {
               <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="Page margins">
                 {MARGIN_MODES.map((m) => (
                   <button key={m.id} type="button" role="radio" aria-checked={margins === m.id} title={m.note} onClick={() => setMargins(m.id)} className={`flex items-center gap-2 border px-2 py-1.5 text-left text-xs font-semibold transition ${margins === m.id ? "border-[#1b2420] bg-[#1b2420] text-white" : "border-stone-200 bg-white text-stone-700 hover:bg-stone-100"}`}>
-                    <span aria-hidden="true" className="relative inline-block h-7 w-5 flex-none border border-current bg-white/10">
-                      <span className="absolute border border-dashed border-current opacity-70" style={{ inset: m.id === "narrow" ? "2px" : m.id === "normal" ? "4px" : m.id === "moderate" ? "4px 3px" : m.id === "wide" ? "4px 6px" : "2px" }} />
+                    <span aria-hidden="true" className={`relative inline-block flex-none border border-current bg-white/10 ${orientation === "landscape" ? "h-5 w-7" : "h-7 w-5"}`}>
+                      <span className="absolute border border-dashed border-current opacity-70" style={{ inset: m.id === "narrow" ? "2px" : m.id === "normal" ? "4px" : m.id === "moderate" ? (orientation === "landscape" ? "3px 4px" : "4px 3px") : m.id === "wide" ? (orientation === "landscape" ? "6px 4px" : "4px 6px") : "2px" }} />
                     </span>
                     {m.label}
                   </button>
@@ -545,6 +597,10 @@ export default function Unroller() {
                   </button>
                 ))}
               </div>
+            </div>
+            <div>
+              <Label>Page mode</Label>
+              <PageModePicker value={pageMode} onChange={setPageMode} />
             </div>
             <div>
               <Label>Page number position</Label>

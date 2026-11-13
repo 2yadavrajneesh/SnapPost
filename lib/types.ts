@@ -34,7 +34,21 @@ export type PostData = {
 export type QuoteData = PostData;
 
 /** The main tweet being edited on screen (time and date are display strings you can change). */
-export type VerifiedType = "blue" | "gold" | "gray";
+export type VerifiedType = "blue" | "gold" | "gray" | `#${string}`;
+
+/** Badge colours offered in Edit details: X's three kinds first, then extra colours. */
+export const BADGE_CHOICES: { value: VerifiedType; color: string }[] = [
+  { value: "blue", color: "#1d9bf0" },
+  { value: "gold", color: "#e2b719" },
+  { value: "gray", color: "#829aab" },
+  { value: "#7856ff", color: "#7856ff" },
+  { value: "#f91880", color: "#f91880" },
+  { value: "#ff7a00", color: "#ff7a00" },
+  { value: "#00ba7c", color: "#00ba7c" },
+  { value: "#e11d48", color: "#e11d48" },
+  { value: "#0f766e", color: "#0f766e" },
+  { value: "#111827", color: "#111827" },
+];
 
 export type TweetData = {
   name: string;

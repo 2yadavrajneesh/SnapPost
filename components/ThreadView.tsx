@@ -6,7 +6,7 @@ import { renderHighlighted, type Highlight } from "@/lib/highlight";
 import { PAGE_SIZES, formatPageNumber, rgba, type NumFormat, type NumPos, type Orientation, type PageLabel, type PageSizeId, type PaperTheme } from "@/lib/paper";
 import type { PostData } from "@/lib/types";
 
-export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; numFormat: NumFormat; label: PageLabel | null; hl: Record<number, Highlight[]>; redact: Redact; pick?: boolean; fontSize?: number; leftMarks?: boolean; margins?: MarginMode; multi?: { sources: number }; mediaOnly?: "one" | "auto"; sizes?: Record<string, { w: number; h: number }> };
+export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; numFormat: NumFormat; label: PageLabel | null; hl: Record<number, Highlight[]>; redact: Redact; pick?: boolean; fontSize?: number; leftMarks?: boolean; margins?: MarginMode; multi?: { sources: number }; mediaOnly?: "one" | "two" | "auto"; facing?: boolean; poster?: boolean; sizes?: Record<string, { w: number; h: number }> };
 
 export type Redact = { name: boolean; avatar: boolean; media: boolean };
 export const NO_REDACT: Redact = { name: false, avatar: false, media: false };
@@ -32,8 +32,10 @@ export function pagePx(size: PageSizeId, orientation: Orientation, margins: Marg
   const [w, h] = orientation === "landscape" ? [s.h, s.w] : [s.w, s.h];
   const [mxMm, myMm] =
     margins === "narrow" ? [12.7, 12.7] : margins === "normal" ? [25.4, 25.4] : margins === "moderate" ? [19.1, 25.4] : margins === "wide" ? [50.8, 25.4] : [Math.max(8, Math.min(14, w * 0.06)), Math.max(8, Math.min(14, w * 0.06))];
-  const mx = Math.round(mxMm * MM);
-  const my = Math.round(myMm * MM);
+  // turning the page turns its margins too, as in Word: side and top/bottom margins swap in landscape
+  const [fx, fy] = orientation === "landscape" && margins !== "default" ? [myMm, mxMm] : [mxMm, myMm];
+  const mx = Math.round(fx * MM);
+  const my = Math.round(fy * MM);
   return { w: Math.round(w * MM), h: Math.round(h * MM), margin: mx, mx, my, footer: 30 };
 }
 
@@ -175,6 +177,11 @@ function LabelOverlay({ label, w }: { label: PageLabel | null; w: number }) {
 }
 
 /** The page number, placed on the chosen side of the page. "Centre" is a large, faint number behind the text. */
+/** Facing pages: on a left-hand page the number moves to the opposite side, so it always sits on the outer edge. */
+function mirrorPos(p: NumPos): NumPos {
+  return p === "top-left" ? "top-right" : p === "top-right" ? "top-left" : p === "bottom-left" ? "bottom-right" : p === "bottom-right" ? "bottom-left" : p === "left" ? "right" : p === "right" ? "left" : p;
+}
+
 function PageNumber({ text, pos, w, h, margin, theme }: { text: string; pos: NumPos; w: number; h: number; margin: number; theme: PaperTheme }) {
   if (pos === "none") return null;
   const base = { position: "absolute", color: theme.muted, fontSize: 11, lineHeight: 1, whiteSpace: "nowrap" } as const;
@@ -201,7 +208,9 @@ function PageNumber({ text, pos, w, h, margin, theme }: { text: string; pos: Num
   return <div style={style}>{pos === "center" ? text.replace(/\D*(\w+).*/, "$1") : text}</div>;
 }
 
-type Group = { items: number[]; header: boolean; media: boolean };
+type Group = { items: number[]; header: boolean; media: boolean; used?: number };
+/** The longest poster page, in px: keeps the picture within what browsers and PDF viewers can draw. */
+const POSTER_MAX = 7000;
 
 /** A post with a numbered marker and a dotted line running down to the next post. */
 function PostRow({ p, i, n, theme, o }: { p: PostData; i: number; n: number; theme: PaperTheme; o: ViewOpts }) {
@@ -238,7 +247,7 @@ function PostRow({ p, i, n, theme, o }: { p: PostData; i: number; n: number; the
 function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation, theme: PaperTheme, o: ViewOpts) {
   const { w, h, mx, my, footer } = pagePx(size, orientation, o.margins);
   const boxW = w - mx * 2;
-  const boxH = h - my * 2 - footer;
+  const boxH = o.poster ? POSTER_MAX - my * 2 - footer : h - my * 2 - footer;
   const ref = useRef<HTMLDivElement>(null);
   const [hs, setHs] = useState<Record<string, number>>({});
 
@@ -261,7 +270,7 @@ function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation,
   let headerPending = true;
   const hH = hs.h ?? 90;
   const flush = () => {
-    if (cur) groups.push({ items: cur.items, header: cur.header, media: false });
+    if (cur) groups.push({ items: cur.items, header: cur.header, media: false, used: cur.used });
     cur = null;
   };
   posts.forEach((p, i) => {
@@ -286,8 +295,14 @@ function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation,
 }
 
 /** One page: its posts keep the same text size on every page; only a post taller than the page shrinks to fit. */
+function pageHeight(group: Group, size: PageSizeId, orientation: Orientation, o: ViewOpts) {
+  const { h, my, footer } = pagePx(size, orientation, o.margins);
+  return o.poster ? Math.min(POSTER_MAX, Math.max(Math.round((h * 0.4)), Math.ceil((group.used ?? 0) + my * 2 + footer + 6))) : h;
+}
+
 function Page({ posts, group, idx, total, size, orientation, theme, o }: { posts: PostData[]; group: Group; idx: number; total: number; size: PageSizeId; orientation: Orientation; theme: PaperTheme; o: ViewOpts }) {
-  const { w, h, mx, my, footer } = pagePx(size, orientation, o.margins);
+  const { w, mx, my, footer } = pagePx(size, orientation, o.margins);
+  const h = pageHeight(group, size, orientation, o);
   const boxW = w - mx * 2;
   const boxH = h - my * 2 - footer;
   const inner = useRef<HTMLDivElement>(null);
@@ -321,7 +336,7 @@ function Page({ posts, group, idx, total, size, orientation, theme, o }: { posts
           ))}
         </div>
       </div>
-      <PageNumber text={formatPageNumber(idx, total, o.numFormat)} pos={o.numPos} w={w} h={h} margin={Math.min(mx, my)} theme={theme} />
+      <PageNumber text={formatPageNumber(idx, total, o.numFormat)} pos={o.facing && idx % 2 === 1 ? mirrorPos(o.numPos) : o.numPos} w={w} h={h} margin={Math.min(mx, my)} theme={theme} />
     </div>
   );
 }
@@ -344,12 +359,21 @@ export function collectMedia(posts: PostData[], sizes: Record<string, { w: numbe
  * the page at full width; one that does not fit the space left is shrunk to fit if that keeps it at least 70% of
  * its size, otherwise it starts the next page.
  */
-export function layoutMedia(items: MediaItem[], boxW: number, boxH: number, mode: "one" | "auto"): MediaGroup[] {
+export function layoutMedia(items: MediaItem[], boxW: number, boxH: number, mode: "one" | "two" | "auto"): MediaGroup[] {
   const GAP = 14;
   const fitOne = (it: MediaItem, maxW: number, maxH: number) => {
     const k = Math.min(maxW / it.w, maxH / it.h, 2.5);
     return { w: it.w * k, h: it.h * k };
   };
+  if (mode === "two") {
+    // two pictures share a page: stacked on a tall page, side by side on a wide one
+    const row = boxW > boxH;
+    const cw = row ? (boxW - GAP) / 2 : boxW;
+    const ch = row ? boxH : (boxH - GAP) / 2;
+    const out: MediaGroup[] = [];
+    for (let i = 0; i < items.length; i += 2) out.push({ items: items.slice(i, i + 2).map((it) => ({ it, ...fitOne(it, cw, ch) })) });
+    return out;
+  }
   if (mode === "one") return items.map((it) => ({ items: [{ it, ...fitOne(it, boxW, boxH) }] }));
   const groups: MediaGroup[] = [];
   let cur: MediaGroup = { items: [] };
@@ -382,13 +406,13 @@ function MediaPage({ group, idx, total, size, orientation, theme, o }: { group: 
   return (
     <div data-page style={{ width: w, height: h, background: theme.bg, color: theme.fg, position: "relative", overflow: "hidden", flex: "none" }}>
       <LabelOverlay label={o.label} w={w} />
-      <div style={{ position: "absolute", left: mx, top: my, width: boxW, height: boxH, zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: o.mediaOnly === "one" ? "center" : "flex-start", gap: 14 }}>
+      <div style={{ position: "absolute", left: mx, top: my, width: boxW, height: boxH, zIndex: 1, display: "flex", flexDirection: boxW > boxH && o.mediaOnly === "two" ? "row" : "column", alignItems: "center", justifyContent: o.mediaOnly === "auto" ? "flex-start" : "center", gap: 14 }}>
         {group.items.map(({ it, w: iw, h: ih }) => (
           // eslint-disable-next-line @next/next/no-img-element
           <img key={it.key} src={it.src} alt="" loading="eager" style={{ width: iw, height: ih, objectFit: "contain", border: `1px solid ${theme.line}`, flex: "none", display: "block" }} />
         ))}
       </div>
-      <PageNumber text={formatPageNumber(idx, total, o.numFormat)} pos={o.numPos} w={w} h={h} margin={Math.min(mx, my)} theme={theme} />
+      <PageNumber text={formatPageNumber(idx, total, o.numFormat)} pos={o.facing && idx % 2 === 1 ? mirrorPos(o.numPos) : o.numPos} w={w} h={h} margin={Math.min(mx, my)} theme={theme} />
     </div>
   );
 }
@@ -419,16 +443,48 @@ export function Pages({ posts, size, orientation, theme, o, containerWidth, zoom
       </div>
     );
   }
+  const sheet = (g: Group, i: number) => {
+    const ph = pageHeight(g, size, orientation, o);
+    return (
+      <div key={g.items[0]} style={{ width: w * k, height: ph * k, boxShadow: "0 2px 14px rgba(0,0,0,.18)", flex: "none" }}>
+        <div style={{ width: w, height: ph, transform: `scale(${k})`, transformOrigin: "top left" }}>
+          <Page posts={posts} group={g} idx={i} total={groups.length} size={size} orientation={orientation} theme={theme} o={o} />
+        </div>
+      </div>
+    );
+  };
+  if (o.facing && !o.poster) {
+    // a book: the first page stands alone on the right, then pages sit side by side in pairs
+    const k2 = k / 2;
+    const half = (g: Group, i: number) => (
+      <div key={g.items[0]} style={{ width: w * k2, height: h * k2, flex: "none" }}>
+        <div style={{ width: w, height: h, transform: `scale(${k2})`, transformOrigin: "top left" }}>
+          <Page posts={posts} group={g} idx={i} total={groups.length} size={size} orientation={orientation} theme={theme} o={o} />
+        </div>
+      </div>
+    );
+    const rows: React.ReactNode[] = [];
+    for (let i = 0; i < groups.length; ) {
+      const pair = i === 0 ? [null, 0] : [i, i + 1 < groups.length ? i + 1 : null];
+      rows.push(
+        <div key={`row${i}`} className="flex" style={{ boxShadow: "0 2px 14px rgba(0,0,0,.18)", background: "#0001" }}>
+          {pair[0] === null ? <div style={{ width: w * k2, height: h * k2 }} /> : half(groups[pair[0]], pair[0])}
+          {pair[1] === null ? <div style={{ width: w * k2, height: h * k2 }} /> : half(groups[pair[1]], pair[1])}
+        </div>,
+      );
+      i = i === 0 ? 1 : i + 2;
+    }
+    return (
+      <div className="flex flex-col items-center gap-5">
+        {measurer}
+        {rows}
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col items-center gap-5">
       {measurer}
-      {groups.map((g, i) => (
-        <div key={g.items[0]} style={{ width: w * k, height: h * k, boxShadow: "0 2px 14px rgba(0,0,0,.18)", flex: "none" }}>
-          <div style={{ width: w, height: h, transform: `scale(${k})`, transformOrigin: "top left" }}>
-            <Page posts={posts} group={g} idx={i} total={groups.length} size={size} orientation={orientation} theme={theme} o={o} />
-          </div>
-        </div>
-      ))}
+      {groups.map(sheet)}
     </div>
   );
 }
