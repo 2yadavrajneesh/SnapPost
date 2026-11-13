@@ -40,33 +40,34 @@ const THEMES = {
 const RADIUS = { sharp: 0, soft: 18, round: 34 } as const;
 const FONT = `"TwitterChirp", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`;
 
+/** Pictures are shown whole: a single one at its own shape, several in square cells with nothing cut off. */
 function Media({ post, radius, t }: { post: PostData; radius: number; t: (typeof THEMES)["light"] }) {
   const r = Math.max(0, radius - 6);
+  const frame = { marginTop: 16, borderRadius: r, overflow: "hidden", border: `1px solid ${t.border}`, background: t.soft } as const;
   if (post.photos.length) {
     const photos = post.photos.slice(0, 4);
-    const single = photos.length === 1;
-    if (single) {
+    if (photos.length === 1) {
       return (
-        <div style={{ position: "relative", flex: "1 1 auto", minHeight: 290, maxHeight: 460, marginTop: 16, borderRadius: r, overflow: "hidden", border: `1px solid ${t.border}` }}>
+        <div style={frame}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={proxied(photoSize(photos[0], "large"))} alt="" crossOrigin="anonymous" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          <img src={proxied(photoSize(photos[0], "large"))} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "auto", display: "block" }} />
         </div>
       );
     }
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginTop: 16, borderRadius: r, overflow: "hidden", border: `1px solid ${t.border}` }}>
+      <div style={{ ...frame, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
         {photos.map((src, i) => (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={i} src={proxied(photoSize(src, "large"))} alt="" crossOrigin="anonymous" style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block", gridColumn: photos.length === 3 && i === 0 ? "1 / -1" : undefined }} />
+          <img key={i} src={proxied(photoSize(src, "large"))} alt="" crossOrigin="anonymous" style={{ width: "100%", aspectRatio: photos.length === 3 && i === 0 ? "16 / 9" : "1 / 1", objectFit: "contain", background: t.soft, display: "block", gridColumn: photos.length === 3 && i === 0 ? "1 / -1" : undefined }} />
         ))}
       </div>
     );
   }
   if (post.video?.poster) {
     return (
-      <div style={{ position: "relative", flex: "1 1 auto", minHeight: 290, maxHeight: 460, marginTop: 16, borderRadius: r, overflow: "hidden", border: `1px solid ${t.border}` }}>
+      <div style={{ ...frame, position: "relative" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={proxied(post.video.poster)} alt="" crossOrigin="anonymous" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <img src={proxied(post.video.poster)} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "auto", display: "block" }} />
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ width: 64, height: 64, borderRadius: 32, background: "rgba(0,0,0,.62)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
@@ -123,7 +124,7 @@ function Body({ post, style, fill, width = CARD_W }: { post: PostData; style: Ca
           {q.text && <div style={{ marginTop: 6, fontSize: Math.round(fs * 0.82), lineHeight: 1.35, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{q.text.length > 260 ? q.text.slice(0, 257) + "…" : q.text}</div>}
           {style.media && q.photos[0] && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={proxied(photoSize(q.photos[0], "medium"))} alt="" crossOrigin="anonymous" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block", marginTop: 10, borderRadius: Math.max(0, RADIUS[style.corners] - 10) }} />
+            <img src={proxied(photoSize(q.photos[0], "medium"))} alt="" crossOrigin="anonymous" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "contain", background: t.soft, display: "block", marginTop: 10, borderRadius: Math.max(0, RADIUS[style.corners] - 10) }} />
           )}
         </div>
       )}

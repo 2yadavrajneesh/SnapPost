@@ -73,6 +73,8 @@ export default function CollageMaker() {
   const [headText, setHeadText] = useState("");
   const [headSize, setHeadSize] = useState(44);
   const [headDark, setHeadDark] = useState(true);
+  const [classic, setClassic] = useState(false);
+  const before = useRef<null | { mode: LayoutMode; cols: number; canvas: CanvasKey; lastRow: LastRow; gap: number; pad: number; bgId: string; customBg: string; card: CardStyle; shadow: boolean; crop: boolean; headDark: boolean; headSize: number }>(null);
   // export
   const [format, setFormat] = useState<"png" | "pdf">("png");
   const [quality, setQuality] = useState<1 | 2>(1);
@@ -230,6 +232,28 @@ export default function CollageMaker() {
 
   /** One click for the look of the sample collage: tidy grey page, white cells, a title on top, tweets filling each cell. */
   function classicLook() {
+    if (classic) {
+      // switching it off puts every setting back as it was before
+      const b = before.current;
+      setMode(b?.mode ?? "grid");
+      setCols(b?.cols ?? 0);
+      setCanvas(b?.canvas ?? "auto");
+      setLastRow(b?.lastRow ?? "center");
+      setGap(b?.gap ?? 28);
+      setPad(b?.pad ?? 56);
+      setBgId(b?.bgId ?? "cream");
+      setCustomBg(b?.customBg ?? "#f4d8e6");
+      setCard(b?.card ?? { theme: "light", corners: "soft", logo: "x", textSize: 24, stats: true, media: true, dateTime: true, border: "thin", borderColor: "auto" });
+      setShadow(b?.shadow ?? false);
+      setCrop(b?.crop ?? false);
+      setHeadDark(b?.headDark ?? true);
+      setHeadSize(b?.headSize ?? 44);
+      setClassic(false);
+      flash("Classic grid look is off. Your earlier layout is back.");
+      return;
+    }
+    before.current = { mode, cols, canvas, lastRow, gap, pad, bgId, customBg, card, shadow, crop, headDark, headSize };
+    setClassic(true);
     setMode("grid");
     setCols(3);
     setCanvas("portrait");
@@ -240,7 +264,7 @@ export default function CollageMaker() {
     setCustomBg("#ececec");
     setCard({ theme: "light", corners: "sharp", logo: "x", textSize: 24, stats: false, media: true, dateTime: false, border: "none", borderColor: "auto" });
     setShadow(false);
-    setCrop(true);
+    setCrop(false); // whole tweet: text and media shrink to fit, nothing is cut off
     setHeadDark(true);
     setHeadSize(44);
     setHeadText((t) => t || "My collage title");
@@ -426,9 +450,9 @@ export default function CollageMaker() {
                 </div>
               </>
             )}
-            <button type="button" className={`${btnPlain} w-full`} onClick={classicLook}>
+            <button type="button" role="switch" aria-checked={classic} className={`${btnPlain} w-full ${classic ? "!border-[#1b2420] !bg-[#1b2420] !text-white" : ""}`} onClick={classicLook}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
-              Use the classic grid look (title + 3 columns)
+              {classic ? "Classic grid look (title + 3 columns): ON. Click to deselect" : "Use the classic grid look (title + 3 columns)"}
             </button>
           </Section>
 
