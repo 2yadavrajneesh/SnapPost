@@ -6,7 +6,7 @@ import { renderHighlighted, type Highlight } from "@/lib/highlight";
 import { PAGE_SIZES, formatPageNumber, rgba, type NumFormat, type NumPos, type Orientation, type PageLabel, type PageSizeId, type PaperTheme } from "@/lib/paper";
 import type { PostData } from "@/lib/types";
 
-export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; numFormat: NumFormat; label: PageLabel | null; hl: Record<number, Highlight[]>; redact: Redact; pick?: boolean; fontSize?: number };
+export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; numFormat: NumFormat; label: PageLabel | null; hl: Record<number, Highlight[]>; redact: Redact; pick?: boolean; fontSize?: number; leftMarks?: boolean; margins?: MarginMode };
 
 export type Redact = { name: boolean; avatar: boolean; media: boolean };
 export const NO_REDACT: Redact = { name: false, avatar: false, media: false };
@@ -16,11 +16,25 @@ const GRAY = "#8b98a5";
 const bar = (w: number, h = 12) => <span style={{ display: "inline-block", width: w, height: h, background: GRAY, borderRadius: 2, verticalAlign: "middle" }} />;
 const MM = 96 / 25.4;
 
+/** Page margins, named like the ones in Word. "default" is the compact margin this tool always used. */
+export type MarginMode = "default" | "narrow" | "normal" | "moderate" | "wide";
+export const MARGIN_MODES: { id: MarginMode; label: string; note: string }[] = [
+  { id: "default", label: "Default", note: "about 1.2 cm" },
+  { id: "narrow", label: "Narrow", note: "1.27 cm all round" },
+  { id: "normal", label: "Normal", note: "2.54 cm all round" },
+  { id: "moderate", label: "Moderate", note: "2.54 cm top and bottom, 1.91 cm sides" },
+  { id: "wide", label: "Wide", note: "2.54 cm top and bottom, 5.08 cm sides" },
+];
+
 /** Logical pixel size of a page (96 dpi), so the preview and the PDF share one layout. */
-export function pagePx(size: PageSizeId, orientation: Orientation) {
+export function pagePx(size: PageSizeId, orientation: Orientation, margins: MarginMode = "default") {
   const s = PAGE_SIZES.find((x) => x.id === size) ?? PAGE_SIZES[0];
   const [w, h] = orientation === "landscape" ? [s.h, s.w] : [s.w, s.h];
-  return { w: Math.round(w * MM), h: Math.round(h * MM), margin: Math.round(Math.max(8, Math.min(14, w * 0.06)) * MM), footer: 30 };
+  const [mxMm, myMm] =
+    margins === "narrow" ? [12.7, 12.7] : margins === "normal" ? [25.4, 25.4] : margins === "moderate" ? [19.1, 25.4] : margins === "wide" ? [50.8, 25.4] : [Math.max(8, Math.min(14, w * 0.06)), Math.max(8, Math.min(14, w * 0.06))];
+  const mx = Math.round(mxMm * MM);
+  const my = Math.round(myMm * MM);
+  return { w: Math.round(w * MM), h: Math.round(h * MM), margin: mx, mx, my, footer: 30 };
 }
 
 export function AuthorHeader({ posts, theme, redact, showCount = true }: { posts: PostData[]; theme: PaperTheme; redact: Redact; showCount?: boolean }) {
@@ -173,6 +187,14 @@ type Group = { items: number[]; header: boolean; media: boolean };
 /** A post with a numbered marker and a dotted line running down to the next post. */
 function PostRow({ p, i, n, theme, o }: { p: PostData; i: number; n: number; theme: PaperTheme; o: ViewOpts }) {
   const last = i === n - 1;
+  // without the left column the posts run the full width, and the 1/n label (if on) sits above each post
+  if (o.leftMarks === false) {
+    return (
+      <div style={{ paddingBottom: last ? 0 : 18 }}>
+        <PostBody p={p} i={i} n={n} theme={theme} o={o} />
+      </div>
+    );
+  }
   return (
     <div style={{ display: "flex", gap: 12 }}>
       <div style={{ width: 26, flex: "none", display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -195,9 +217,9 @@ function PostRow({ p, i, n, theme, o }: { p: PostData; i: number; n: number; the
  * they fit at their natural size; nothing is shrunk to squeeze in. A post too big to share gets its own page.
  */
 function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation, theme: PaperTheme, o: ViewOpts) {
-  const { w, h, margin, footer } = pagePx(size, orientation);
-  const boxW = w - margin * 2;
-  const boxH = h - margin * 2 - footer;
+  const { w, h, mx, my, footer } = pagePx(size, orientation, o.margins);
+  const boxW = w - mx * 2;
+  const boxH = h - my * 2 - footer;
   const ref = useRef<HTMLDivElement>(null);
   const [hs, setHs] = useState<Record<string, number>>({});
 
@@ -213,7 +235,7 @@ function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation,
     const ro = new ResizeObserver(measure);
     el.querySelectorAll("[data-m]").forEach((n) => ro.observe(n));
     return () => ro.disconnect();
-  }, [posts, boxW, o.stats, o.media, o.numbers, o.hl, o.redact.name, o.redact.avatar]);
+  }, [posts, boxW, o.stats, o.media, o.numbers, o.leftMarks, o.hl, o.redact.name, o.redact.avatar]);
 
   const groups: Group[] = [];
   let cur: (Group & { used: number }) | null = null;
@@ -246,9 +268,9 @@ function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation,
 
 /** One page: its posts keep the same text size on every page; only a post taller than the page shrinks to fit. */
 function Page({ posts, group, idx, total, size, orientation, theme, o }: { posts: PostData[]; group: Group; idx: number; total: number; size: PageSizeId; orientation: Orientation; theme: PaperTheme; o: ViewOpts }) {
-  const { w, h, margin, footer } = pagePx(size, orientation);
-  const boxW = w - margin * 2;
-  const boxH = h - margin * 2 - footer;
+  const { w, h, mx, my, footer } = pagePx(size, orientation, o.margins);
+  const boxW = w - mx * 2;
+  const boxH = h - my * 2 - footer;
   const inner = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -272,7 +294,7 @@ function Page({ posts, group, idx, total, size, orientation, theme, o }: { posts
   return (
     <div data-page style={{ width: w, height: h, background: theme.bg, color: theme.fg, position: "relative", overflow: "hidden", flex: "none" }}>
       <LabelOverlay label={o.label} w={w} />
-      <div style={{ position: "absolute", left: margin, top: margin, width: boxW, height: boxH, overflow: "hidden", zIndex: 1 }}>
+      <div style={{ position: "absolute", left: mx, top: my, width: boxW, height: boxH, overflow: "hidden", zIndex: 1 }}>
         <div ref={inner}>
           {group.header && <AuthorHeader posts={posts} theme={theme} redact={o.redact} showCount={false} />}
           {group.items.map((i) => (
@@ -280,15 +302,16 @@ function Page({ posts, group, idx, total, size, orientation, theme, o }: { posts
           ))}
         </div>
       </div>
-      <PageNumber text={formatPageNumber(idx, total, o.numFormat)} pos={o.numPos} w={w} h={h} margin={margin} theme={theme} />
+      <PageNumber text={formatPageNumber(idx, total, o.numFormat)} pos={o.numPos} w={w} h={h} margin={Math.min(mx, my)} theme={theme} />
     </div>
   );
 }
 
 /** Print preview: every page at its real proportions, scaled down to fit the available width. */
-export function Pages({ posts, size, orientation, theme, o, containerWidth }: { posts: PostData[]; size: PageSizeId; orientation: Orientation; theme: PaperTheme; o: ViewOpts; containerWidth: number }) {
-  const { w, h } = pagePx(size, orientation);
-  const k = Math.min(1, Math.max(0.2, containerWidth / w));
+export function Pages({ posts, size, orientation, theme, o, containerWidth, zoom = 1 }: { posts: PostData[]; size: PageSizeId; orientation: Orientation; theme: PaperTheme; o: ViewOpts; containerWidth: number; zoom?: number }) {
+  const { w, h } = pagePx(size, orientation, o.margins);
+  // zoom 1 = the whole page width fits the window (never bigger than real size); above 1 it grows past that
+  const k = Math.max(0.1, Math.min(1, containerWidth / w) * zoom);
   const { groups, measurer } = usePages(posts, size, orientation, theme, o);
   return (
     <div className="flex flex-col items-center gap-5">

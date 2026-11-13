@@ -10,7 +10,7 @@ import NumPosPicker from "@/components/NumPosPicker";
 import ScrollTop from "@/components/ScrollTop";
 import HighlightEditor from "@/components/HighlightEditor";
 import { addHighlight, HIGHLIGHT_COLORS, offsetIn, REDACT_STYLES, removeHighlight, type HighlightStyle } from "@/lib/highlight";
-import { NO_REDACT, Pages, PrintPages, Reading, type Redact } from "@/components/ThreadView";
+import { MARGIN_MODES, NO_REDACT, Pages, PrintPages, Reading, type MarginMode, type Redact } from "@/components/ThreadView";
 import { type Highlight } from "@/lib/highlight";
 import { compact, formatDate, formatTime, proxied } from "@/lib/format";
 import type { PostData } from "@/lib/types";
@@ -106,6 +106,9 @@ export default function Unroller() {
   const [error, setError] = useState<string | null>(null);
   const [thread, setThread] = useState<Thread | null>(null);
   const [numbers, setNumbers] = useState(true);
+  const [leftMarks, setLeftMarks] = useState(true);
+  const [margins, setMargins] = useState<MarginMode>("default");
+  const [zoom, setZoom] = useState(1);
   const [media, setMedia] = useState(true);
   const [stats, setStats] = useState(false);
   const [notice, setNotice] = useState("");
@@ -303,7 +306,7 @@ export default function Unroller() {
       setPrinting(false);
     }
   }
-  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, numFormat, label, hl, redact, pick: !printing, fontSize });
+  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, numFormat, label, hl, redact, pick: !printing, fontSize, leftMarks, margins });
   const a = thread?.posts[0];
   const base = a && !redact.name ? `thread-${a.username}-${a.id}` : "thread-redacted";
 
@@ -369,6 +372,7 @@ export default function Unroller() {
           <CollapsibleSection title="Display">
             {[
               ["Number the posts (1/n)", numbers, setNumbers],
+              ["Show the post count and line on the left", leftMarks, setLeftMarks],
               ["Show photos and videos", media, setMedia],
               ["Show likes, reposts and views", stats, setStats],
             ].map(([label, val, setter]) => (
@@ -406,6 +410,20 @@ export default function Unroller() {
                   { value: "landscape", label: "Landscape" },
                 ]}
               />
+            </div>
+            <div>
+              <Label>Margins</Label>
+              <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="Page margins">
+                {MARGIN_MODES.map((m) => (
+                  <button key={m.id} type="button" role="radio" aria-checked={margins === m.id} title={m.note} onClick={() => setMargins(m.id)} className={`flex items-center gap-2 border px-2 py-1.5 text-left text-xs font-semibold transition ${margins === m.id ? "border-[#1b2420] bg-[#1b2420] text-white" : "border-stone-200 bg-white text-stone-700 hover:bg-stone-100"}`}>
+                    <span aria-hidden="true" className="relative inline-block h-7 w-5 flex-none border border-current bg-white/10">
+                      <span className="absolute border border-dashed border-current opacity-70" style={{ inset: m.id === "narrow" ? "2px" : m.id === "normal" ? "4px" : m.id === "moderate" ? "4px 3px" : m.id === "wide" ? "4px 6px" : "2px" }} />
+                    </span>
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1 text-[11px] text-stone-500">{MARGIN_MODES.find((m) => m.id === margins)?.note}</p>
             </div>
             <div>
               <Label>Page theme</Label>
@@ -612,9 +630,9 @@ export default function Unroller() {
                     Paste a link to any post in a thread and it loads on its own. You get every post in order, ready to read, copy or download as a PDF.
                   </div>
                 ) : view === "pages" ? (
-                  <Pages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={vo(false)} containerWidth={stageW} />
+                  <Pages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={vo(false)} containerWidth={stageW} zoom={zoom} />
                 ) : (
-                  <Reading posts={thread.posts} theme={theme} o={vo(false)} width={orientation === "landscape" ? 900 : 640} />
+                  <div style={{ zoom }}><Reading posts={thread.posts} theme={theme} o={vo(false)} width={orientation === "landscape" ? 900 : 640} /></div>
                 )}
               </div>
             </div>
@@ -650,6 +668,15 @@ export default function Unroller() {
                       Undo
                     </button>
                   )}
+                </div>
+              </div>
+            )}
+            {thread && (
+              <div className="pointer-events-none absolute bottom-3 left-3 z-10">
+                <div className="pointer-events-auto flex items-center gap-1 border border-stone-300 bg-white/95 px-1 py-0.5 text-xs shadow-sm">
+                  <button type="button" onClick={() => setZoom((z) => Math.max(0.3, Math.round((z / 1.15) * 100) / 100))} disabled={zoom <= 0.31} aria-label="Zoom out" className="flex h-8 w-8 items-center justify-center text-base font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-40">−</button>
+                  <button type="button" onClick={() => setZoom(1)} title="Reset to fit" aria-live="polite" className="w-12 py-1.5 text-center font-semibold tabular-nums text-stone-700 hover:bg-stone-100">{Math.round(zoom * 100)}%</button>
+                  <button type="button" onClick={() => setZoom((z) => Math.min(3, Math.round(z * 1.15 * 100) / 100))} disabled={zoom >= 2.99} aria-label="Zoom in" className="flex h-8 w-8 items-center justify-center text-base font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-40">+</button>
                 </div>
               </div>
             )}
