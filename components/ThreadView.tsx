@@ -6,7 +6,7 @@ import { renderHighlighted, type Highlight } from "@/lib/highlight";
 import { PAGE_SIZES, formatPageNumber, rgba, type NumFormat, type NumPos, type Orientation, type PageLabel, type PageSizeId, type PaperTheme } from "@/lib/paper";
 import type { PostData } from "@/lib/types";
 
-export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; numFormat: NumFormat; label: PageLabel | null; hl: Record<number, Highlight[]>; redact: Redact; pick?: boolean; fontSize?: number; leftMarks?: boolean; margins?: MarginMode };
+export type ViewOpts = { numbers: boolean; media: boolean; stats: boolean; printing: boolean; numPos: NumPos; numFormat: NumFormat; label: PageLabel | null; hl: Record<number, Highlight[]>; redact: Redact; pick?: boolean; fontSize?: number; leftMarks?: boolean; margins?: MarginMode; multi?: { sources: number }; mediaOnly?: "one" | "auto"; sizes?: Record<string, { w: number; h: number }> };
 
 export type Redact = { name: boolean; avatar: boolean; media: boolean };
 export const NO_REDACT: Redact = { name: false, avatar: false, media: false };
@@ -37,7 +37,20 @@ export function pagePx(size: PageSizeId, orientation: Orientation, margins: Marg
   return { w: Math.round(w * MM), h: Math.round(h * MM), margin: mx, mx, my, footer: 30 };
 }
 
-export function AuthorHeader({ posts, theme, redact, showCount = true }: { posts: PostData[]; theme: PaperTheme; redact: Redact; showCount?: boolean }) {
+/** Header for a PDF made from many links: no single author, so it says what the file holds. */
+function CompileHeader({ posts, sources, theme }: { posts: PostData[]; sources: number; theme: PaperTheme }) {
+  return (
+    <header className="pb-4" style={{ borderBottom: `1px solid ${theme.line}`, marginBottom: 16 }}>
+      <div className="text-lg font-bold">Compiled posts</div>
+      <div className="text-xs" style={{ color: theme.muted }}>
+        {posts.length} post{posts.length === 1 ? "" : "s"} from {sources} link{sources === 1 ? "" : "s"}
+      </div>
+    </header>
+  );
+}
+
+export function AuthorHeader({ posts, theme, redact, showCount = true, multi }: { posts: PostData[]; theme: PaperTheme; redact: Redact; showCount?: boolean; multi?: { sources: number } }) {
+  if (multi) return <CompileHeader posts={posts} sources={multi.sources} theme={theme} />;
   const a = posts[0];
   return (
     <header className="flex items-center gap-3 pb-4" style={{ borderBottom: `1px solid ${theme.line}`, marginBottom: 16 }}>
@@ -74,6 +87,12 @@ export function PostBody({ p, i, n, theme, o }: { p: PostData; i: number; n: num
       {o.numbers && n > 1 && (
         <div className="mb-1 text-[11px] font-semibold tabular-nums" style={{ color: theme.muted }}>
           {i + 1}/{n}
+        </div>
+      )}
+      {o.multi && (
+        <div className="mb-0.5 text-xs font-bold" style={{ color: theme.fg }}>
+          {o.redact.name ? "[hidden]" : p.name}
+          {!o.redact.name && <span className="ml-1 font-normal" style={{ color: theme.muted }}>{handle(p)}</span>}
         </div>
       )}
       <p data-post={o.pick ? i : undefined} style={{ fontSize: o.fontSize ?? 16 }} className={`whitespace-pre-wrap break-words leading-relaxed${o.pick ? " select-text" : ""}`}>{renderHighlighted(p.text, o.hl[i], !!o.pick)}</p>
@@ -123,7 +142,7 @@ export function Reading({ posts, theme, o, width }: { posts: PostData[]; theme: 
     <article className="relative mx-auto w-full p-4" style={{ maxWidth: width, background: theme.bg, color: theme.fg, border: `1px solid ${theme.line}` }}>
       <LabelOverlay label={o.label} w={width} />
       <div style={{ position: "relative", zIndex: 1 }}>
-      <AuthorHeader posts={posts} theme={theme} redact={o.redact} />
+      <AuthorHeader posts={posts} theme={theme} redact={o.redact} multi={o.multi} />
       <ol>
         {posts.map((p, i) => (
           <li key={p.id || i} className="py-4" style={{ borderBottom: i < posts.length - 1 ? `1px solid ${theme.line}` : undefined }}>
@@ -259,7 +278,7 @@ function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation,
 
   const measurer = (
     <div ref={ref} aria-hidden="true" style={{ position: "fixed", left: -100000, top: 0, width: boxW, visibility: "hidden", pointerEvents: "none" }}>
-      <div data-m="h"><AuthorHeader posts={posts} theme={theme} redact={o.redact} showCount={false} /></div>
+      <div data-m="h"><AuthorHeader posts={posts} theme={theme} redact={o.redact} showCount={false} multi={o.multi} /></div>
       {posts.map((p, i) => (<div key={i} data-m={i}><PostRow p={p} i={i} n={posts.length} theme={theme} o={{ ...o, pick: false }} /></div>))}
     </div>
   );
@@ -296,7 +315,7 @@ function Page({ posts, group, idx, total, size, orientation, theme, o }: { posts
       <LabelOverlay label={o.label} w={w} />
       <div style={{ position: "absolute", left: mx, top: my, width: boxW, height: boxH, overflow: "hidden", zIndex: 1 }}>
         <div ref={inner}>
-          {group.header && <AuthorHeader posts={posts} theme={theme} redact={o.redact} showCount={false} />}
+          {group.header && <AuthorHeader posts={posts} theme={theme} redact={o.redact} showCount={false} multi={o.multi} />}
           {group.items.map((i) => (
             <PostRow key={i} p={posts[i]} i={i} n={posts.length} theme={theme} o={o} />
           ))}
@@ -307,12 +326,99 @@ function Page({ posts, group, idx, total, size, orientation, theme, o }: { posts
   );
 }
 
+type MediaItem = { key: string; src: string; w: number; h: number; video: boolean };
+type MediaGroup = { items: { it: MediaItem; w: number; h: number }[] };
+
+/** Every photo and video (as its poster picture) in order. Sizes come from the loaded pictures. */
+export function collectMedia(posts: PostData[], sizes: Record<string, { w: number; h: number }> = {}): MediaItem[] {
+  const out: MediaItem[] = [];
+  posts.forEach((p, i) => {
+    p.photos.forEach((u, j) => out.push({ key: `${i}-${j}`, src: proxied(u), ...(sizes[u] ?? { w: 4, h: 3 }), video: false }));
+    if (p.video?.poster) out.push({ key: `${i}-v`, src: proxied(p.video.poster), ...(p.video.width && p.video.height ? { w: p.video.width, h: p.video.height } : (sizes[p.video.poster] ?? { w: 16, h: 9 })), video: true });
+  });
+  return out;
+}
+
+/**
+ * Puts the pictures on pages. "one": each picture alone, as large as the page allows. "auto": pictures flow down
+ * the page at full width; one that does not fit the space left is shrunk to fit if that keeps it at least 70% of
+ * its size, otherwise it starts the next page.
+ */
+export function layoutMedia(items: MediaItem[], boxW: number, boxH: number, mode: "one" | "auto"): MediaGroup[] {
+  const GAP = 14;
+  const fitOne = (it: MediaItem, maxW: number, maxH: number) => {
+    const k = Math.min(maxW / it.w, maxH / it.h, 2.5);
+    return { w: it.w * k, h: it.h * k };
+  };
+  if (mode === "one") return items.map((it) => ({ items: [{ it, ...fitOne(it, boxW, boxH) }] }));
+  const groups: MediaGroup[] = [];
+  let cur: MediaGroup = { items: [] };
+  let used = 0;
+  for (const it of items) {
+    const full = fitOne(it, boxW, boxH);
+    const left = boxH - used - (cur.items.length ? GAP : 0);
+    if (cur.items.length && full.h > left) {
+      const shrunk = fitOne(it, boxW, left);
+      if (shrunk.w / full.w >= 0.7) {
+        cur.items.push({ it, ...shrunk });
+        used += GAP + shrunk.h;
+        continue;
+      }
+      groups.push(cur);
+      cur = { items: [] };
+      used = 0;
+    }
+    used += (cur.items.length ? GAP : 0) + full.h;
+    cur.items.push({ it, ...full });
+  }
+  if (cur.items.length) groups.push(cur);
+  return groups;
+}
+
+function MediaPage({ group, idx, total, size, orientation, theme, o }: { group: MediaGroup; idx: number; total: number; size: PageSizeId; orientation: Orientation; theme: PaperTheme; o: ViewOpts }) {
+  const { w, h, mx, my, footer } = pagePx(size, orientation, o.margins);
+  const boxW = w - mx * 2;
+  const boxH = h - my * 2 - footer;
+  return (
+    <div data-page style={{ width: w, height: h, background: theme.bg, color: theme.fg, position: "relative", overflow: "hidden", flex: "none" }}>
+      <LabelOverlay label={o.label} w={w} />
+      <div style={{ position: "absolute", left: mx, top: my, width: boxW, height: boxH, zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: o.mediaOnly === "one" ? "center" : "flex-start", gap: 14 }}>
+        {group.items.map(({ it, w: iw, h: ih }) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={it.key} src={it.src} alt="" loading="eager" style={{ width: iw, height: ih, objectFit: "contain", border: `1px solid ${theme.line}`, flex: "none", display: "block" }} />
+        ))}
+      </div>
+      <PageNumber text={formatPageNumber(idx, total, o.numFormat)} pos={o.numPos} w={w} h={h} margin={Math.min(mx, my)} theme={theme} />
+    </div>
+  );
+}
+
+function useMediaGroups(posts: PostData[], size: PageSizeId, orientation: Orientation, o: ViewOpts): MediaGroup[] {
+  const { w, h, mx, my, footer } = pagePx(size, orientation, o.margins);
+  return layoutMedia(collectMedia(posts, o.sizes), w - mx * 2, h - my * 2 - footer, o.mediaOnly ?? "one");
+}
+
 /** Print preview: every page at its real proportions, scaled down to fit the available width. */
 export function Pages({ posts, size, orientation, theme, o, containerWidth, zoom = 1 }: { posts: PostData[]; size: PageSizeId; orientation: Orientation; theme: PaperTheme; o: ViewOpts; containerWidth: number; zoom?: number }) {
   const { w, h } = pagePx(size, orientation, o.margins);
   // zoom 1 = the whole page width fits the window (never bigger than real size); above 1 it grows past that
   const k = Math.max(0.1, Math.min(1, containerWidth / w) * zoom);
   const { groups, measurer } = usePages(posts, size, orientation, theme, o);
+  const mediaGroups = useMediaGroups(posts, size, orientation, o);
+  if (o.mediaOnly) {
+    return (
+      <div className="flex flex-col items-center gap-5">
+        {!mediaGroups.length && <p className="py-10 text-sm text-stone-500">No photos or videos were found in these posts.</p>}
+        {mediaGroups.map((g, i) => (
+          <div key={g.items[0].it.key} style={{ width: w * k, height: h * k, boxShadow: "0 2px 14px rgba(0,0,0,.18)", flex: "none" }}>
+            <div style={{ width: w, height: h, transform: `scale(${k})`, transformOrigin: "top left" }}>
+              <MediaPage group={g} idx={i} total={mediaGroups.length} size={size} orientation={orientation} theme={theme} o={o} />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col items-center gap-5">
       {measurer}
@@ -330,6 +436,16 @@ export function Pages({ posts, size, orientation, theme, o, containerWidth, zoom
 /** The same pages at full size, kept off screen so they can be photographed into the PDF. */
 export function PrintPages(props: { posts: PostData[]; size: PageSizeId; orientation: Orientation; theme: PaperTheme; o: ViewOpts }) {
   const { groups, measurer } = usePages(props.posts, props.size, props.orientation, props.theme, props.o);
+  const mediaGroups = useMediaGroups(props.posts, props.size, props.orientation, props.o);
+  if (props.o.mediaOnly) {
+    return (
+      <div aria-hidden="true" style={{ position: "fixed", left: -100000, top: 0, display: "flex", flexDirection: "column" }}>
+        {mediaGroups.map((g, i) => (
+          <MediaPage key={g.items[0].it.key} group={g} idx={i} total={mediaGroups.length} size={props.size} orientation={props.orientation} theme={props.theme} o={props.o} />
+        ))}
+      </div>
+    );
+  }
   return (
     <div aria-hidden="true" style={{ position: "fixed", left: -100000, top: 0, display: "flex", flexDirection: "column" }}>
       {measurer}

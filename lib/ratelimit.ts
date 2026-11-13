@@ -14,6 +14,8 @@ const num = (v: string | undefined, d: number) => (Number.isFinite(Number(v)) &&
 export const BUCKETS = {
   /** Tweet and thread lookups. */
   api: { name: "api", max: num(process.env.RATE_LIMIT_API_MAX, 30), windowSec: num(process.env.RATE_LIMIT_API_WINDOW_SEC, 600) },
+  /** Loading many tweet links in one go (each call can hold up to 40 links). */
+  batch: { name: "batch", max: num(process.env.RATE_LIMIT_BATCH_MAX, 8), windowSec: num(process.env.RATE_LIMIT_BATCH_WINDOW_SEC, 600) },
   /** Image proxy, video playback and media-size checks. */
   media: { name: "media", max: num(process.env.RATE_LIMIT_MEDIA_MAX, 300), windowSec: num(process.env.RATE_LIMIT_MEDIA_WINDOW_SEC, 600) },
   /** Video file downloads. */

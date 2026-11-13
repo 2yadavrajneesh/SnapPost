@@ -14,8 +14,9 @@ import { MARGIN_MODES, NO_REDACT, Pages, PrintPages, Reading, type MarginMode, t
 import { type Highlight } from "@/lib/highlight";
 import { compact, formatDate, formatTime, proxied } from "@/lib/format";
 import type { PostData } from "@/lib/types";
+import { tweetLinksInFile } from "@/lib/linkfile";
 
-type Thread = { posts: PostData[]; isThread: boolean; link: string };
+type Thread = { posts: PostData[]; isThread: boolean; link: string; sources?: number };
 
 const btn =
   "inline-flex items-center justify-center border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50";
@@ -122,6 +123,13 @@ export default function Unroller() {
   const [hl, setHl] = useState<Record<number, Highlight[]>>({});
   const [redact, setRedact] = useState<Redact>(NO_REDACT);
   const [editIdx, setEditIdx] = useState(0);
+  const [mode, setMode] = useState<"one" | "many">("one");
+  const [manyText, setManyText] = useState("");
+  const [expand, setExpand] = useState(true);
+  const [skipped, setSkipped] = useState<string[]>([]);
+  const [content, setContent] = useState<"full" | "media">("full");
+  const [mediaLayout, setMediaLayout] = useState<"one" | "auto">("auto");
+  const [sizes, setSizes] = useState<Record<string, { w: number; h: number }>>({});
   // Marking straight on the pages: the selected words, the style, and the earlier states for Undo.
   const [pageSel, setPageSel] = useState<{ post: number; start: number; end: number } | null>(null);
   const [markStyle, setMarkStyle] = useState<"marker" | "underline">("marker");
@@ -175,6 +183,60 @@ export default function Unroller() {
       if (id === reqId.current) setBusy(false);
     }
   }
+
+  const manyLinks = Array.from(new Set((manyText.match(/https?:\/\/(?:www\.|mobile\.)?(?:x|twitter)\.com\/[^\s"'<>)]+/gi) ?? []).filter((u) => parseTweetUrl(u))));
+
+  async function loadMany() {
+    if (!manyLinks.length) return;
+    setBusy(true);
+    setError(null);
+    setSkipped([]);
+    try {
+      const r = await fetch("/api/batch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ urls: manyLinks, threads: expand }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || "Couldn't load those links.");
+      const results = (j.results ?? []) as { url: string; posts?: PostData[]; error?: string }[];
+      const ok = results.filter((x) => x.posts?.length);
+      if (!ok.length) throw new Error("None of those links could be loaded.");
+      setSkipped(results.filter((x) => !x.posts?.length).map((x) => x.url));
+      setHl({});
+      setEditIdx(0);
+      setThread({ posts: ok.flatMap((x) => x.posts!), isThread: true, link: manyLinks[0], sources: ok.length });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function addLinkFile(f: File | undefined) {
+    if (!f) return;
+    try {
+      const found = await tweetLinksInFile(f);
+      if (!found.length) setError("No tweet links found in that file.");
+      else {
+        setError(null);
+        setManyText((t) => (t.trim() ? t.trim() + "\n" : "") + found.join("\n"));
+      }
+    } catch {
+      setError("Couldn't read that file.");
+    }
+  }
+
+  // Picture sizes, so media-only pages can fit each picture to the page.
+  useEffect(() => {
+    if (!thread || content !== "media") return;
+    thread.posts.forEach((p) => {
+      const urls = [...p.photos, ...(p.video?.poster && !(p.video.width && p.video.height) ? [p.video.poster] : [])];
+      urls.forEach((u) => {
+        if (sizes[u]) return;
+        const im = new Image();
+        im.onload = () => setSizes((c) => (c[u] ? c : { ...c, [u]: { w: im.naturalWidth || 4, h: im.naturalHeight || 3 } }));
+        im.src = proxied(u);
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [thread, content]);
 
   const opts: ExportOpts = { numbers, media, hl, redact };
 
@@ -291,6 +353,7 @@ export default function Unroller() {
     try {
       // Wait for the off-screen pages to mount, shrink to fit and load their pictures.
       await new Promise((r) => setTimeout(r, 400));
+      if (content === "media") await new Promise((r) => setTimeout(r, 800)); // let picture sizes settle
       const root = printRoot.current;
       const nodes = root ? Array.from(root.querySelectorAll<HTMLElement>("[data-page]")) : [];
       await Promise.all(
@@ -306,9 +369,9 @@ export default function Unroller() {
       setPrinting(false);
     }
   }
-  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, numFormat, label, hl, redact, pick: !printing, fontSize, leftMarks, margins });
+  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, numFormat, label, hl, redact, pick: !printing, fontSize, leftMarks, margins, multi: thread?.sources ? { sources: thread.sources } : undefined, mediaOnly: content === "media" ? mediaLayout : undefined, sizes });
   const a = thread?.posts[0];
-  const base = a && !redact.name ? `thread-${a.username}-${a.id}` : "thread-redacted";
+  const base = thread?.sources ? `compiled-${thread.sources}-links` : a && !redact.name ? `thread-${a.username}-${a.id}` : "thread-redacted";
 
   return (
     <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden" style={{ ["--accent" as string]: "#0f766e" }}>
@@ -317,7 +380,36 @@ export default function Unroller() {
       <main className="grid w-full flex-1 lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
         <aside className="order-2 min-w-0 border-t border-stone-300 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:border-r lg:border-t-0">
           <Section title="Source">
-            <div>
+            <Segmented value={mode} onChange={(m) => { setMode(m); setThread(null); setPending(null); setError(null); }} options={[{ value: "one", label: "One thread" }, { value: "many", label: "Many links" }]} />
+            {mode === "many" && (
+              <div className="mt-3 space-y-2">
+                <Label>Paste links (one per line) or upload a file that has them</Label>
+                <textarea
+                  value={manyText}
+                  onChange={(e) => setManyText(e.target.value)}
+                  rows={6}
+                  placeholder={"https://x.com/user/status/123\nhttps://x.com/user/status/456"}
+                  aria-label="Tweet links"
+                  className="w-full border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-[color:var(--accent)] focus:ring-1 focus:ring-[color:var(--accent)]"
+                />
+                <label className="flex items-center gap-2 text-xs text-stone-700">
+                  <input type="checkbox" checked={expand} onChange={(e) => setExpand(e.target.checked)} /> Include the whole thread for each link
+                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button type="button" disabled={busy || !manyLinks.length} onClick={() => void loadMany()} className="bg-accent px-3 py-2 text-xs font-semibold text-white transition hover:brightness-110 disabled:opacity-50">
+                    {busy ? "Loading…" : `Load ${manyLinks.length} link${manyLinks.length === 1 ? "" : "s"}`}
+                  </button>
+                  <label className={`${btn} cursor-pointer`}>
+                    Upload file
+                    <input type="file" accept=".txt,.csv,.docx,.xlsx,.pdf,.md" className="hidden" onChange={(e) => { void addLinkFile(e.target.files?.[0]); e.target.value = ""; }} />
+                  </label>
+                  <button type="button" className={btn} onClick={() => { setManyText(""); setThread(null); setSkipped([]); }}>Clear</button>
+                </div>
+                {error && <p role="alert" className="bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+                {skipped.length > 0 && <p className="bg-amber-50 px-3 py-2 text-xs text-amber-900">{skipped.length} link{skipped.length === 1 ? "" : "s"} couldn&apos;t be loaded and were left out.</p>}
+              </div>
+            )}
+            {mode === "one" && <div>
               <Label>Link to any post in the thread (loads automatically)</Label>
               <div className="flex gap-2">
                 <div className="relative min-w-0 flex-1">
@@ -366,6 +458,15 @@ export default function Unroller() {
                 </p>
               )}
               {thread && !thread.isThread && <p className="mt-2 text-xs text-stone-500">Showing a single post, because no thread was found.</p>}
+            </div>}
+            <div className="mt-3">
+              <Label>PDF contents</Label>
+              <Segmented value={content} onChange={setContent} options={[{ value: "full", label: "Full posts" }, { value: "media", label: "Media only" }]} />
+              {content === "media" && (
+                <div className="mt-2">
+                  <Segmented value={mediaLayout} onChange={setMediaLayout} options={[{ value: "one", label: "One per page" }, { value: "auto", label: "Auto-fit pages" }]} />
+                </div>
+              )}
             </div>
           </Section>
 
