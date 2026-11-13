@@ -126,7 +126,8 @@ export default function ExtractTool({ onSent, onClean }: { onSent: () => void; o
   return (
     <div className="space-y-4">
       <Card step={1} title="Paste text or add a document" chip={name && <Chip>{name}</Chip>}>
-        <label className="block text-xs font-medium text-stone-600">
+        <div className="grid gap-3 lg:grid-cols-2 lg:items-stretch">
+        <label className="flex flex-col text-xs font-medium text-stone-600">
           Paste text from a syllabus, article, email or notes
           <textarea
             value={text}
@@ -136,11 +137,16 @@ export default function ExtractTool({ onSent, onClean }: { onSent: () => void; o
             }}
             spellCheck={false}
             placeholder={"Paste your text here, such as a syllabus, article, email or notes.\n\nNote: every web address in it is listed below, so you can copy it, download it or send it to batches."}
-            className="mt-1 h-40 w-full resize-y border border-stone-300 bg-white p-2.5 font-mono text-xs text-stone-800 outline-none focus:border-[color:var(--accent)]"
+            className="mt-1 h-40 w-full lg:flex-1 lg:min-h-[200px] resize-y border border-stone-300 bg-white p-2.5 font-mono text-xs text-stone-800 outline-none focus:border-[color:var(--accent)]"
           />
         </label>
-        <div className="text-center text-[11px] font-semibold uppercase tracking-wider text-stone-400">or</div>
-        <DropZone accept=".docx,.pdf,.txt,.md,.csv,.html,.htm" title={file.current ? `${file.current.name}. Choose another file to replace it.` : "Drop a Word or PDF file or browse"} note=".docx, .pdf, .txt, .md, .html. The file stays in your browser." onFile={(f) => void runFile(f, opts)} />
+        <div className="flex flex-col gap-3">
+          <div className="text-center text-[11px] font-semibold uppercase tracking-wider text-stone-400 lg:hidden">or</div>
+          <div className="lg:flex-1 [&>label]:h-full [&>label]:justify-center">
+            <DropZone accept=".docx,.pdf,.txt,.md,.csv,.html,.htm" title={file.current ? `${file.current.name}. Choose another file to replace it.` : "Drop a Word or PDF file or browse"} note=".docx, .pdf, .txt, .md, .html. The file stays in your browser." onFile={(f) => void runFile(f, opts)} />
+          </div>
+        </div>
+      </div>
         <p role="note" className="text-[11px] text-stone-500">Maximum file size is 100 MB per file.</p>
         <div className="flex flex-wrap gap-x-5 gap-y-2">
           <Check checked={opts.dedupe} onChange={(v) => setOpt("dedupe", v)}>Remove duplicates</Check>

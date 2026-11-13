@@ -191,7 +191,8 @@ export default function CleanerTool({ inbox, onSent }: { inbox: Inbox; onSent: (
   return (
     <div className="space-y-4">
       <Card step={1} title="Paste messy links" chip={name && <Chip>{name}</Chip>}>
-        <label className="block text-xs font-medium text-stone-600">
+        <div className="grid gap-3 lg:grid-cols-2 lg:items-stretch">
+        <label className="flex flex-col text-xs font-medium text-stone-600">
           One link per line, or any text that contains links
           <textarea
             value={text}
@@ -202,11 +203,16 @@ export default function CleanerTool({ inbox, onSent }: { inbox: Inbox; onSent: (
             }}
             spellCheck={false}
             placeholder={"Paste your links here, one per line.\n\nNote: tracking codes and redirect wrappers are removed, and so is everything after the ? when the page does not need it."}
-            className="mt-1 h-40 w-full resize-y border border-stone-300 bg-white p-2.5 font-mono text-xs text-stone-800 outline-none focus:border-[color:var(--accent)]"
+            className="mt-1 h-40 w-full lg:flex-1 lg:min-h-[200px] resize-y border border-stone-300 bg-white p-2.5 font-mono text-xs text-stone-800 outline-none focus:border-[color:var(--accent)]"
           />
         </label>
-        <div className="text-center text-[11px] font-semibold uppercase tracking-wider text-stone-400">or</div>
-        <DropZone accept=".txt,.csv,.md,.html,.htm,.xlsx,.xls,.ods" title={fileTitle ? `${fileTitle}. Choose another file to replace it.` : "Drop a spreadsheet or text file or browse"} note=".xlsx, .xls, .csv, .txt, .md, .html. The file stays in your browser." onFile={(f) => void readFile(f)} />
+        <div className="flex flex-col gap-3">
+          <div className="text-center text-[11px] font-semibold uppercase tracking-wider text-stone-400 lg:hidden">or</div>
+          <div className="lg:flex-1 [&>label]:h-full [&>label]:justify-center">
+            <DropZone accept=".txt,.csv,.md,.html,.htm,.xlsx,.xls,.ods" title={fileTitle ? `${fileTitle}. Choose another file to replace it.` : "Drop a spreadsheet or text file or browse"} note=".xlsx, .xls, .csv, .txt, .md, .html. The file stays in your browser." onFile={(f) => void readFile(f)} />
+          </div>
+        </div>
+      </div>
         <p role="note" className="text-[11px] text-stone-500">Maximum file size is 100 MB per file.</p>
         <label className="block text-xs font-medium text-stone-600">
           Everything after the ? in a link
