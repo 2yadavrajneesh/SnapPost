@@ -2,6 +2,7 @@ import "server-only";
 import { degrees, PDFDocument, PDFFont, PDFPage, rgb, StandardFonts } from "pdf-lib";
 import sharp from "sharp";
 import { drawLine, loadFonts, widthOf, wrapText } from "./fonts";
+import { layoutNews, NEWS, splitPlan } from "./newsLayout";
 
 export type Input = { name: string; bytes: Uint8Array };
 export type Output = { name: string; bytes: Uint8Array; type: string; note?: string };
@@ -59,16 +60,9 @@ async function newsPdf({ inputs, options }: Ctx): Promise<Output> {
       throw new Error(`"${inputs[i].name}" could not be read as an image.`);
     }
     const pieces: { buf: Buffer; w: number; h: number }[] = [];
-    const chunk = Math.round(w * 1.35);
-    if (splitTall && h > w * 2.1 && h > chunk * 1.3) {
-      const n = Math.ceil(h / chunk);
-      const each = Math.ceil(h / n);
-      for (let k = 0; k < n; k++) {
-        const top = k * each;
-        const ph = Math.min(each, h - top);
-        pieces.push({ buf: await sharp(buf).extract({ left: 0, top, width: w, height: ph }).toBuffer(), w, h: ph });
-      }
-    } else pieces.push({ buf, w, h });
+    for (const part of splitPlan(w, h, splitTall)) {
+      pieces.push(part.h === h ? { buf, w, h } : { buf: await sharp(buf).extract({ left: 0, top: part.top, width: w, height: part.h }).toBuffer(), w, h: part.h });
+    }
     for (let k = 0; k < pieces.length; k++) {
       const jpg = await sharp(pieces[k].buf).flatten({ background: "#ffffff" }).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
       items.push({ jpg: new Uint8Array(jpg), w: pieces[k].w, h: pieces[k].h, caption: k === 0 ? caption : "", source: k === 0 ? source : "", n: i + 1, cont: k > 0 });
@@ -76,106 +70,47 @@ async function newsPdf({ inputs, options }: Ctx): Promise<Output> {
   }
   if (items.length > 150) throw new Error("That would make too many pieces. Use fewer or shorter screenshots.");
 
-  // 2. plan pages
-  const [PW, PH] = landscape ? [841.89, 595.28] : [595.28, 841.89];
-  const M = 34;
-  type Plan = { kind: "1" | "2across" | "2down" | "4"; items: NewsItem[] };
-  const plan: Plan[] = [];
-  if (layout === "auto") {
-    // Put two on a page only when both stay at least 62% of their single-page size.
-    const g = 14;
-    const aw = PW - M * 2;
-    const ah = PH - M - (headerMode === "none" ? 0 : 39) - (M + 14) - 26;
-    const fit = (it: NewsItem, cw: number, ch: number) => Math.min(cw / it.w, ch / it.h, 1.25);
-    for (let i = 0; i < items.length; ) {
-      const a = items[i];
-      const b = items[i + 1];
-      if (b) {
-        const sa = fit(a, aw, ah);
-        const sb = fit(b, aw, ah);
-        const across = Math.min(fit(a, (aw - g) / 2, ah) / sa, fit(b, (aw - g) / 2, ah) / sb);
-        const down = Math.min(fit(a, aw, (ah - g) / 2) / sa, fit(b, aw, (ah - g) / 2) / sb);
-        if (Math.max(across, down) >= 0.62) {
-          plan.push({ kind: across >= down ? "2across" : "2down", items: [a, b] });
-          i += 2;
-          continue;
-        }
-      }
-      plan.push({ kind: "1", items: [a] });
-      i += 1;
-    }
-  } else {
-    const per = layout === "1" ? 1 : layout === "4" ? 4 : 2;
-    for (let i = 0; i < items.length; i += per) plan.push({ kind: layout as Plan["kind"], items: items.slice(i, i + per) });
-  }
-
-  // 3. draw
+  // 2. plan pages (shared with the live preview in the browser)
   const doc = await PDFDocument.create();
   doc.setTitle(title);
-  doc.setCreator("PaperNest");
+  doc.setCreator("ClipBook");
   const fonts = await loadFonts(doc);
-  const total = plan.length;
+  const L = layoutNews(items, { layout, landscape, headerMode, numbers }, (t, w, sz, max) => wrapText(fonts.regular, t, sz, w, max));
+  const { pw: PW, ph: PH, margin: M } = L;
+
+  // 3. draw
+  const total = L.pages.length;
   const imgQueue: { page: PDFPage; it: NewsItem; x: number; y: number; w: number; h: number }[] = [];
   const embedCache = new Map<NewsItem, Awaited<ReturnType<PDFDocument["embedJpg"]>>>();
-  for (let pi = 0; pi < plan.length; pi++) {
+  L.pages.forEach((pl, pi) => {
     const page = doc.addPage([PW, PH]);
-    const showHead = headerMode === "every" || (headerMode === "first" && pi === 0);
-    let top = PH - M;
-    if (showHead) {
-      const ts = 17;
-      drawLine(page, fonts.bold, title, M, top - ts, ts, accent);
-      if (date) drawLine(page, fonts.regular, date, PW - M, top - 12, 9.5, [0.3, 0.3, 0.3], "right");
-      page.drawRectangle({ x: M, y: top - ts - 9, width: PW - M * 2, height: 1.6, color: rgb(...accent) });
-      top -= ts + 22;
+    if (L.showHeadOn(pi)) {
+      drawLine(page, fonts.bold, title, M, PH - L.headBase, NEWS.headSize, accent);
+      if (date) drawLine(page, fonts.regular, date, PW - M, PH - L.dateBase, 9.5, [0.3, 0.3, 0.3], "right");
+      page.drawRectangle({ x: M, y: PH - L.headRuleY, width: PW - M * 2, height: 1.6, color: rgb(...accent) });
     }
-    const bottom = M + 14;
-    drawLine(page, fonts.regular, footer, M, M - 6, 8, [0.45, 0.45, 0.45]);
-    drawLine(page, fonts.regular, `Page ${pi + 1} of ${total}`, PW - M, M - 6, 8, [0.45, 0.45, 0.45], "right");
-    const areaX = M;
-    const areaW = PW - M * 2;
-    const areaH = top - bottom;
-    const gap = 14;
-    const k = plan[pi].kind;
-    const cols = k === "2across" || k === "4" ? 2 : 1;
-    const rows = k === "2down" || k === "4" ? 2 : 1;
-    const cw = (areaW - gap * (cols - 1)) / cols;
-    const ch = (areaH - gap * (rows - 1)) / rows;
-    plan[pi].items.forEach((it, idx) => {
-      const c = idx % cols;
-      const r = Math.floor(idx / cols);
-      const cx = areaX + c * (cw + gap);
-      const cyTop = top - r * (ch + gap);
-      const labelBits = `${numbers ? `${it.n}. ` : ""}${it.cont ? "(continued)" : ""}`;
-      const sz = 9;
-      const srcText = it.source;
-      const lines = it.caption ? wrapText(fonts.regular, it.caption, sz, cw - 2, k === "1" ? 5 : 3) : [];
-      const head = [labelBits.trim(), srcText].filter(Boolean).join("  ");
-      const capH = (head ? sz * 1.35 : 0) + lines.length * sz * 1.3 + (head || lines.length ? 6 : 0);
-      const availH = ch - capH;
-      const s = Math.min(cw / it.w, availH / it.h, 1.25);
-      const dw = it.w * s;
-      const dh = it.h * s;
-      const ix = cx + (cw - dw) / 2;
-      const iy = cyTop - dh;
-      page.drawRectangle({ x: ix - 0.5, y: iy - 0.5, width: dw + 1, height: dh + 1, borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 0.75 });
-      imgQueue.push({ page, it, x: ix, y: iy, w: dw, h: dh });
-      let ty = iy - 6 - sz;
-      if (head) {
-        const hasNum = labelBits.trim();
-        let x = ix;
-        if (hasNum) {
-          drawLine(page, fonts.bold, labelBits.trim(), x, ty, sz, accent);
-          x += widthOf(fonts.bold, labelBits.trim() + " ", sz);
+    drawLine(page, fonts.regular, footer, M, PH - L.footBase, 8, [0.45, 0.45, 0.45]);
+    drawLine(page, fonts.regular, `Page ${pi + 1} of ${total}`, PW - M, PH - L.footBase, 8, [0.45, 0.45, 0.45], "right");
+    for (const c of pl.cells) {
+      const iy = PH - (c.y + c.h);
+      page.drawRectangle({ x: c.x - 0.5, y: iy - 0.5, width: c.w + 1, height: c.h + 1, borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 0.75 });
+      imgQueue.push({ page, it: c.it, x: c.x, y: iy, w: c.w, h: c.h });
+      let ty = PH - c.base;
+      if (c.label || c.source) {
+        let x = c.x;
+        if (c.label) {
+          drawLine(page, fonts.bold, c.label, x, ty, c.size, accent);
+          x += widthOf(fonts.bold, c.label + " ", c.size);
         }
-        if (srcText) drawLine(page, fonts.bold, srcText, x, ty, sz, [0.15, 0.15, 0.15]);
-        ty -= sz * 1.35;
+        if (c.source) drawLine(page, fonts.bold, c.source, x, ty, c.size, [0.15, 0.15, 0.15]);
+        ty -= c.size * 1.35;
       }
-      for (const ln of lines) {
-        drawLine(page, fonts.regular, ln, ix, ty, sz, [0.25, 0.25, 0.25]);
-        ty -= sz * 1.3;
+      for (const ln of c.lines) {
+        drawLine(page, fonts.regular, ln, c.x, ty, c.size, [0.25, 0.25, 0.25]);
+        ty -= c.size * 1.3;
       }
-    });
-  }
+    }
+  });
   for (const q of imgQueue) {
     let img = embedCache.get(q.it);
     if (!img) embedCache.set(q.it, (img = await doc.embedJpg(q.it.jpg)));

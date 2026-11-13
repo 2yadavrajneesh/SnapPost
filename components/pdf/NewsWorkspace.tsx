@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, btnPlain, btnPrimary, btnSm, field, useCopy } from "@/components/linkdesk/ui";
+import NewsPreview from "./NewsPreview";
 import { deleteResult, downloadHref, getConfig, runTool, uploadFile, type PdfConfig, type RunResult } from "@/lib/pdf/client";
 
-type Item = { id: number; file: File; url: string; caption: string; source: string };
+type Item = { id: number; file: File; url: string; caption: string; source: string; nw: number; nh: number };
 type Settings = { title: string; footer: string; layout: string; orient: string; header: string; theme: string; numbers: boolean; trim: boolean; splitTall: boolean };
 const KEY = "clipbook:news:v1";
 const DEFAULTS: Settings = { title: "Daily News Update", footer: "", layout: "auto", orient: "portrait", header: "every", theme: "navy", numbers: true, trim: true, splitTall: true };
@@ -70,7 +71,11 @@ export default function NewsWorkspace() {
           msgs.push(`${f.name} is larger than ${size(maxImg)}.`);
           continue;
         }
-        next.push({ id: ++seq, file: f, url: URL.createObjectURL(f), caption: "", source: "" });
+        const item: Item = { id: ++seq, file: f, url: URL.createObjectURL(f), caption: "", source: "", nw: 0, nh: 0 };
+        const im = new Image();
+        im.onload = () => setItems((c) => c.map((x) => (x.id === item.id ? { ...x, nw: im.naturalWidth, nh: im.naturalHeight } : x)));
+        im.src = item.url;
+        next.push(item);
       }
       setItems((cur) => {
         const room = limit - cur.length;
@@ -142,7 +147,7 @@ export default function NewsWorkspace() {
   const sel = `${field}`;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
       <div className="space-y-4">
         <Card step={1} title="Add screenshots" chip={items.length ? <span className="text-[11px] font-semibold text-stone-600">{items.length} added</span> : undefined}>
           <label
@@ -247,6 +252,12 @@ export default function NewsWorkspace() {
               <button type="button" className={`${btnPlain} w-full`} onClick={clearAll}>Delete and start a new day</button>
             </div>
           )}
+        </Card>
+        <Card title="Live PDF preview" chip={items.length ? <span className="text-[11px] font-semibold text-stone-600">updates as you type</span> : undefined}>
+          <div className="max-h-[46vh] overflow-y-auto bg-stone-200 p-2.5">
+            <NewsPreview items={items} s={s} date={date} />
+          </div>
+          <p className="mt-2 text-[11px] leading-snug text-stone-500">Same page layout as the final file. The PDF also trims blank borders if that option is on, so spacing can differ slightly.</p>
         </Card>
         <p className="px-1 text-[11px] leading-relaxed text-stone-500">Screenshots are processed on the server and removed right after. Hindi and English text are both supported in titles and captions.</p>
       </aside>
