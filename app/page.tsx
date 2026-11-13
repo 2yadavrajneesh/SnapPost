@@ -542,15 +542,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
-      <SiteHeader
-        actions={
-          <div className="hidden items-center gap-2 lg:flex">
-            {formatPicker}
-            {copyButton()}
-            {downloadButton()}
-          </div>
-        }
-      />
+      <SiteHeader />
 
       <main className="grid w-full flex-1 lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
         {/* Controls (scroll on their own on desktop, so the preview never moves) */}
@@ -604,6 +596,15 @@ export default function Home() {
                   {fetchError}
                 </p>
               )}
+            </div>
+
+            {/* desktop: format, copy and download sit right under the link (phones have their own bar at the bottom) */}
+            <div className="hidden space-y-2 lg:block">
+              {formatPicker}
+              <div className="flex gap-2 [&>button:last-child]:flex-1">
+                {copyButton()}
+                {downloadButton()}
+              </div>
             </div>
 
             {threadState === "checking" && <p className="text-xs text-stone-500">Checking for a thread…</p>}
