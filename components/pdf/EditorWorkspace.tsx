@@ -27,7 +27,7 @@ const TOOLS: { id: Tool; label: string; icon: string }[] = [
   { id: "ink", label: "Draw", icon: "M4 20c4-1 5-6 9-9l4-4 3 3-4 4c-3 4-8 5-12 6z" },
   { id: "image", label: "Picture", icon: "M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4" },
 ];
-const SIG_KEY = "papernest:signature:v1";
+const SIG_KEY = "editpdf:signature:v1";
 let nid = 0;
 const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
 const size = (n: number) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);

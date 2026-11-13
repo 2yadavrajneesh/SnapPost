@@ -13,11 +13,13 @@ import { LinkProvider, useLinks } from "@/lib/linkdesk/store";
 
 const ICONS: Record<string, string> = {
   maker: "M10 13a5 5 0 0 0 7.1 0l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7M14 11a5 5 0 0 0-7.1 0l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7",
-  batch: "M4 5h16M4 12h16M4 19h10M18 17l3 2-3 2",
-  extract: "M21 21l-4.3-4.3M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14zM8 11h6M11 8v6",
-  clean: "M4 20l9-9M13 11l-2-2 6-6 4 4-6 6-2-2zM4 20h6",
+  batch: "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
+  extract: "M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M12 12v6M9 15l3 3 3-3",
+  clean: "M3 4h18l-7 8v6l-4 2v-8z",
   archive: "M3 7h18v4H3zM5 11v9h14v-9M10 15h4",
 };
+/** Each LinkDesk tool has its own colour, used on its tab and inside its page. */
+const COLORS: Record<string, string> = { maker: "#2563eb", batch: "#0d9488", extract: "#d97706", clean: "#db2777", archive: "#7c3aed" };
 const TABS = [
   { id: "maker", label: "Make links", sub: "Spreadsheet to clickable" },
   { id: "batch", label: "Open in batches", sub: "Open many at a time" },
@@ -61,21 +63,20 @@ function TabBar({ tab, go }: { tab: TabId; go: (t: TabId) => void }) {
             aria-selected={on}
             aria-controls={`view-${t.id}`}
             onClick={() => go(t.id)}
-            className={`group relative flex min-w-[148px] flex-1 items-center gap-2.5 border px-3 py-2.5 text-left transition ${
-              on ? "border-stone-300 border-t-[3px] border-t-accent bg-white shadow-sm" : "border-stone-300 border-t-[3px] border-t-transparent bg-white/60 hover:bg-white"
-            }`}
+            style={{ ["--tc" as string]: COLORS[t.id] }}
+            className="tab-card group relative flex min-w-[148px] flex-1 items-center gap-2.5 border px-3 py-2.5 text-left transition"
           >
-            <span className={`flex h-8 w-8 flex-none items-center justify-center transition ${on ? "bg-accent text-white" : "bg-stone-200 text-stone-600 group-hover:bg-stone-300"}`}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <span className="flex h-9 w-9 flex-none items-center justify-center text-white transition" style={{ background: COLORS[t.id] }}>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={ICONS[t.id]} />
               </svg>
             </span>
             <span className="min-w-0">
-              <span className={`block truncate text-xs font-bold ${on ? "text-stone-900" : "text-stone-700"}`}>{t.label}</span>
+              <span className="block truncate text-xs font-bold text-stone-900">{t.label}</span>
               <span className="hidden truncate text-[11px] text-stone-500 md:block">{t.sub}</span>
             </span>
             {t.id === "batch" && items.length > 0 && (
-              <span className="absolute right-2 top-2 min-w-[20px] bg-accent px-1.5 text-center text-[10px] font-bold leading-[18px] text-white" aria-label={`${items.length} links in the list`}>
+              <span style={{ background: COLORS.batch }} className="absolute right-2 top-2 min-w-[20px] px-1.5 text-center text-[10px] font-bold leading-[18px] text-white" aria-label={`${items.length} links in the list`}>
                 {items.length > 999 ? "999+" : items.length}
               </span>
             )}
@@ -116,10 +117,10 @@ export default function LinkDesk() {
               <ToastProvider>
                 <SessionNotices />
                 <TabBar tab={tab} go={go} />
-                <div role="tabpanel" id="view-maker" aria-labelledby="tab-maker" hidden={tab !== "maker"}>
+                <div role="tabpanel" id="view-maker" aria-labelledby="tab-maker" hidden={tab !== "maker"} style={{ ["--accent" as string]: COLORS.maker }}>
                   <MakerTool onSent={() => go("batch")} />
                 </div>
-                <div role="tabpanel" id="view-extract" aria-labelledby="tab-extract" hidden={tab !== "extract"}>
+                <div role="tabpanel" id="view-extract" aria-labelledby="tab-extract" hidden={tab !== "extract"} style={{ ["--accent" as string]: COLORS.extract }}>
                   <ExtractTool
                     onSent={() => go("batch")}
                     onClean={(text, name) => {
@@ -128,13 +129,13 @@ export default function LinkDesk() {
                     }}
                   />
                 </div>
-                <div role="tabpanel" id="view-clean" aria-labelledby="tab-clean" hidden={tab !== "clean"}>
+                <div role="tabpanel" id="view-clean" aria-labelledby="tab-clean" hidden={tab !== "clean"} style={{ ["--accent" as string]: COLORS.clean }}>
                   <CleanerTool inbox={inbox} onSent={() => go("batch")} />
                 </div>
-                <div role="tabpanel" id="view-archive" aria-labelledby="tab-archive" hidden={tab !== "archive"}>
+                <div role="tabpanel" id="view-archive" aria-labelledby="tab-archive" hidden={tab !== "archive"} style={{ ["--accent" as string]: COLORS.archive }}>
                   <ArchiveTool />
                 </div>
-                <div role="tabpanel" id="view-batch" aria-labelledby="tab-batch" hidden={tab !== "batch"}>
+                <div role="tabpanel" id="view-batch" aria-labelledby="tab-batch" hidden={tab !== "batch"} style={{ ["--accent" as string]: COLORS.batch }}>
                   <BatchTool active={tab === "batch"} />
                 </div>
               </ToastProvider>

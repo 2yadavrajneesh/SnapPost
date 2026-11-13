@@ -357,3 +357,20 @@ html[data-theme="dark"] .pdf-stage {
 @media (prefers-reduced-motion: reduce) {
   .pdf-stage, .pdf-stage::before, .desk-stage, .desk-stage::before, .collage-stage, .collage-stage::before { animation: none; }
 }
+
+/* ----- colourful navigation: each tool carries its own colour through --tc ----- */
+.site-bar { background: color-mix(in srgb, var(--tc) 9%, #faf6f1); border-bottom: 3px solid var(--tc); }
+html[data-theme="dark"] .site-bar { background: color-mix(in srgb, var(--tc) 16%, #14110f); }
+.tool-pill { background: color-mix(in srgb, var(--tc) 11%, #fff); border: 1px solid color-mix(in srgb, var(--tc) 40%, #d6d3d1); color: #1c1917; }
+.tool-pill:hover { background: color-mix(in srgb, var(--tc) 22%, #fff); }
+.tool-pill[aria-current="page"] { background: var(--tc); border-color: var(--tc); color: #fff; }
+html[data-theme="dark"] .tool-pill { background: color-mix(in srgb, var(--tc) 20%, #26211d); border-color: color-mix(in srgb, var(--tc) 55%, #3a332d); color: #f3eee7; }
+html[data-theme="dark"] .tool-pill:hover { background: color-mix(in srgb, var(--tc) 32%, #26211d); }
+html[data-theme="dark"] .tool-pill[aria-current="page"] { background: var(--tc); color: #fff; }
+.tool-pill[aria-current="page"] svg { outline: 2px solid rgba(255, 255, 255, 0.85); }
+.tab-card { background: color-mix(in srgb, var(--tc) 8%, #fff); border-color: color-mix(in srgb, var(--tc) 30%, #d6d3d1); border-top: 3px solid color-mix(in srgb, var(--tc) 55%, transparent); }
+.tab-card:hover { background: color-mix(in srgb, var(--tc) 16%, #fff); }
+.tab-card[aria-selected="true"] { background: color-mix(in srgb, var(--tc) 14%, #fff); border-top-color: var(--tc); box-shadow: 0 2px 8px color-mix(in srgb, var(--tc) 25%, transparent); }
+html[data-theme="dark"] .tab-card { background: color-mix(in srgb, var(--tc) 14%, #26211d); border-color: color-mix(in srgb, var(--tc) 40%, #3a332d); }
+html[data-theme="dark"] .tab-card:hover { background: color-mix(in srgb, var(--tc) 26%, #26211d); }
+html[data-theme="dark"] .tab-card[aria-selected="true"] { background: color-mix(in srgb, var(--tc) 28%, #26211d); }

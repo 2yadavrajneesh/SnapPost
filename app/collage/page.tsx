@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import CollageFrame, { type FrameLook, type Item } from "@/components/collage/CollageFrame";
+import CollageFrame, { type FrameLook, type Item, type Picture } from "@/components/collage/CollageFrame";
 import { BORDERS, type BorderKind, type CardStyle } from "@/components/collage/CollageCard";
 import ScrollTop from "@/components/ScrollTop";
 import SiteHeader from "@/components/SiteHeader";
@@ -11,7 +11,36 @@ import { downloadBlob, renderPdf, renderPng } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
 import type { PostData } from "@/lib/types";
 
-type Entry = { key: string; id: string; url: string; status: "loading" | "ok" | "error"; post?: PostData; error?: string };
+type Entry = { key: string; id: string; url: string; status: "loading" | "ok" | "error"; post?: PostData; image?: Picture; label?: string; error?: string };
+
+const MAX_PICTURE_BYTES = 25 * 1024 * 1024;
+const MAX_SIDE = 1800;
+
+/** Reads a picture file, scales it down to a sensible size and returns it as a data URL. */
+async function readPicture(file: File): Promise<Picture> {
+  if (!file.type.startsWith("image/")) throw new Error(`${file.name} is not a picture.`);
+  if (file.size > MAX_PICTURE_BYTES) throw new Error(`${file.name} is over 25 MB.`);
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((ok, no) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = () => no(new Error(`${file.name} could not be opened.`));
+      i.src = url;
+    });
+    const k = Math.min(1, MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * k));
+    const h = Math.max(1, Math.round(img.naturalHeight * k));
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    c.getContext("2d")!.drawImage(img, 0, 0, w, h);
+    const png = file.type === "image/png" || file.type === "image/webp" || file.type === "image/gif";
+    return { src: c.toDataURL(png ? "image/png" : "image/jpeg", 0.92), w, h };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 
 const CONCURRENCY = 3;
 const btn = "inline-flex h-9 items-center justify-center gap-1.5 border px-3 text-xs font-semibold transition disabled:opacity-40";
@@ -24,6 +53,8 @@ export default function CollageMaker() {
   const [text, setText] = useState("");
   const [notice, setNotice] = useState("");
   const [natural, setNatural] = useState<Record<string, number>>({});
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [overDrop, setOverDrop] = useState(false);
 
   // layout
   const [mode, setMode] = useState<LayoutMode>("grid");
@@ -110,6 +141,42 @@ export default function CollageMaker() {
     return take.length > 0 || dup > 0;
   }
 
+  async function addFiles(list: FileList | File[]) {
+    const files = Array.from(list).filter((f) => f.type.startsWith("image/") || /\.(png|jpe?g|webp|gif)$/i.test(f.name));
+    if (!files.length) return flash("Choose picture files (PNG, JPG, WebP or GIF).");
+    const room = MAX_TWEETS - entries.length;
+    if (room <= 0) return flash(`Only ${MAX_TWEETS} items fit in one collage.`);
+    const take = files.slice(0, room);
+    const fresh: Entry[] = [];
+    let bad = 0;
+    for (const f of take) {
+      try {
+        const image = await readPicture(f);
+        fresh.push({ key: `file-${Date.now()}-${fresh.length}-${Math.random().toString(36).slice(2, 6)}`, id: f.name, url: "", status: "ok", image, label: f.name });
+      } catch {
+        bad++;
+      }
+    }
+    if (fresh.length) setEntries((l) => [...l, ...fresh].slice(0, MAX_TWEETS));
+    const bits: string[] = [];
+    if (fresh.length) bits.push(`Added ${fresh.length} ${fresh.length === 1 ? "picture" : "pictures"}`);
+    if (files.length > take.length) bits.push(`only ${MAX_TWEETS} items fit in one collage`);
+    if (bad) bits.push(`${bad} could not be read`);
+    flash(bits.join(". ") + ".");
+  }
+
+  // pasting a picture (Ctrl+V) anywhere on the page adds it too
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const files = Array.from(e.clipboardData?.files ?? []).filter((f) => f.type.startsWith("image/"));
+      if (!files.length) return;
+      e.preventDefault();
+      void addFiles(files);
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  });
+
   const submit = () => {
     if (!text.trim()) return;
     if (addLinks(text)) setText("");
@@ -136,7 +203,7 @@ export default function CollageMaker() {
     });
 
   /* ----- the picture ----- */
-  const items: Item[] = useMemo(() => entries.filter((e) => e.status === "ok" && e.post).map((e) => ({ key: e.key, post: e.post as PostData })), [entries]);
+  const items: Item[] = useMemo(() => entries.filter((e) => e.status === "ok" && (e.post || e.image)).map((e) => ({ key: e.key, post: e.post, image: e.image })), [entries]);
   const onNatural = useCallback((key: string, h: number) => setNatural((m) => (m[key] === h ? m : { ...m, [key]: h })), []);
   const bg = bgId === "custom" ? customBg : (BACKGROUNDS.find((b) => b.id === bgId) ?? BACKGROUNDS[1]).css;
   const look: FrameLook = { background: bg, gap, pad, cellRadius: card.corners === "sharp" ? 0 : card.corners === "soft" ? 24 : 44, shadow };
@@ -168,7 +235,7 @@ export default function CollageMaker() {
       // let every picture finish loading first
       await Promise.all(Array.from(node.querySelectorAll("img")).map((im) => (im.complete ? Promise.resolve() : new Promise((r) => { im.onload = im.onerror = () => r(null); }))));
       const r = await renderPng(node, { maxWidth: FRAME_W * quality });
-      const base = `collage-${items.length}-tweets`;
+      const base = `collage-${items.length}-${items.length === 1 ? "item" : "items"}`;
       if (format === "pdf") downloadBlob(await renderPdf(r.dataUrl, r.width, r.height), `${base}.pdf`);
       else {
         const blob = await (await fetch(r.dataUrl)).blob();
@@ -190,7 +257,7 @@ export default function CollageMaker() {
       <SiteHeader />
       <main className="grid w-full flex-1 lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
         <aside className="order-2 min-w-0 border-t border-stone-300 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:border-r lg:border-t-0">
-          <Section title="Tweets">
+          <Section title="Tweets and pictures">
             <div>
               <Label>Paste tweet links, one per line</Label>
               <textarea
@@ -202,19 +269,32 @@ export default function CollageMaker() {
                 className="h-28 w-full resize-y border border-stone-200 bg-white p-2.5 font-mono text-xs outline-none focus:border-[color:var(--accent)]"
               />
               <div className="mt-2 flex gap-2">
-                <button type="button" className={`${btnPrimary} flex-1`} disabled={!text.trim() || entries.length >= MAX_TWEETS} onClick={submit}>Add tweets</button>
+                <button type="button" className={`${btnPrimary} flex-1`} disabled={!text.trim() || entries.length >= MAX_TWEETS} onClick={submit}>Add links</button>
                 <button type="button" onClick={() => void pasteClipboard()} aria-label="Paste links from clipboard" title="Paste from clipboard" className={`${btnPlain} w-10 px-0`}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></svg>
                 </button>
-                <button type="button" onClick={() => (setEntries([]), setNatural({}))} disabled={!entries.length} aria-label="Remove all tweets" title="Start over" className={`${btnPlain} w-10 px-0`}>
+                <button type="button" onClick={() => (setEntries([]), setNatural({}))} disabled={!entries.length} aria-label="Remove everything" title="Start over" className={`${btnPlain} w-10 px-0`}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>
                 </button>
               </div>
-              <p className="mt-1.5 text-[11px] text-stone-500">{entries.length} of {MAX_TWEETS} tweets{loading ? ` · loading ${loading}…` : ""}{failed ? ` · ${failed} failed` : ""}</p>
+              <input ref={fileInput} type="file" accept="image/*" multiple hidden onChange={(e) => { if (e.target.files) void addFiles(e.target.files); e.target.value = ""; }} />
+              <div
+                onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); setOverDrop(true); } }}
+                onDragLeave={() => setOverDrop(false)}
+                onDrop={(e) => { if (e.dataTransfer.files.length) { e.preventDefault(); void addFiles(e.dataTransfer.files); } setOverDrop(false); }}
+                className={`mt-2 flex flex-col items-center gap-1 border-2 border-dashed px-3 py-3 text-center transition ${overDrop ? "border-accent bg-pink-50" : "border-stone-300 bg-white"}`}
+              >
+                <button type="button" className={`${btnPlain} w-full`} disabled={entries.length >= MAX_TWEETS} onClick={() => fileInput.current?.click()}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>
+                  Upload pictures
+                </button>
+                <span className="text-[11px] text-stone-500">or drop files here, or paste a picture with Ctrl+V</span>
+              </div>
+              <p className="mt-1.5 text-[11px] text-stone-500">{entries.length} of {MAX_TWEETS} items{loading ? ` · loading ${loading}…` : ""}{failed ? ` · ${failed} failed` : ""}</p>
             </div>
 
             {entries.length > 0 && (
-              <ol className="space-y-1.5" aria-label="Tweets in the collage">
+              <ol className="space-y-1.5" aria-label="Items in the collage">
                 {entries.map((e, i) => (
                   <li
                     key={e.key}
@@ -233,7 +313,16 @@ export default function CollageMaker() {
                   >
                     <span className="w-5 flex-none cursor-grab text-center text-[11px] font-bold text-stone-400" title="Drag to reorder">{i + 1}</span>
                     <div className="min-w-0 flex-1">
-                      {e.status === "ok" && e.post ? (
+                      {e.status === "ok" && e.image ? (
+                        <div className="flex items-center gap-2">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={e.image.src} alt="" className="h-8 w-8 flex-none border border-stone-200 object-cover" />
+                          <div className="min-w-0">
+                            <div className="truncate text-xs font-semibold text-stone-800">{e.label}</div>
+                            <div className="text-[11px] text-stone-500">Uploaded picture</div>
+                          </div>
+                        </div>
+                      ) : e.status === "ok" && e.post ? (
                         <>
                           <div className="truncate text-xs font-semibold text-stone-800">{e.post.name} <span className="font-normal text-stone-500">@{e.post.username}</span></div>
                           <div className="truncate text-[11px] text-stone-500">{e.post.text || (e.post.photos.length ? "Photo" : e.post.video ? "Video" : "")}</div>
@@ -244,9 +333,9 @@ export default function CollageMaker() {
                         <div role="alert" className="text-[11px] text-red-700">{e.error} <button type="button" onClick={() => retry(e.key)} className="font-semibold underline">Retry</button></div>
                       )}
                     </div>
-                    <button type="button" className={iconBtn} aria-label={`Move tweet ${i + 1} up`} disabled={i === 0} onClick={() => move(i, i - 1)}>↑</button>
-                    <button type="button" className={iconBtn} aria-label={`Move tweet ${i + 1} down`} disabled={i === entries.length - 1} onClick={() => move(i, i + 1)}>↓</button>
-                    <button type="button" className={iconBtn} aria-label={`Remove tweet ${i + 1}`} onClick={() => remove(e.key)}>×</button>
+                    <button type="button" className={iconBtn} aria-label={`Move item ${i + 1} up`} disabled={i === 0} onClick={() => move(i, i - 1)}>↑</button>
+                    <button type="button" className={iconBtn} aria-label={`Move item ${i + 1} down`} disabled={i === entries.length - 1} onClick={() => move(i, i + 1)}>↓</button>
+                    <button type="button" className={iconBtn} aria-label={`Remove item ${i + 1}`} onClick={() => remove(e.key)}>×</button>
                   </li>
                 ))}
               </ol>
@@ -275,7 +364,7 @@ export default function CollageMaker() {
                 </div>
               </>
             )}
-            <Slider label="Gap between tweets" value={gap} min={8} max={80} step={4} suffix="px" lowLabel="Tight" highLabel="Airy" onChange={setGap} />
+            <Slider label="Gap between items" value={gap} min={8} max={80} step={4} suffix="px" lowLabel="Tight" highLabel="Airy" onChange={setGap} />
             <Slider label="Outer margin" value={pad} min={0} max={160} step={8} suffix="px" lowLabel="None" highLabel="Wide" onChange={setPad} />
           </CollapsibleSection>
 
@@ -351,8 +440,8 @@ export default function CollageMaker() {
               <div ref={area} className="mx-auto w-full max-w-[1100px]">
                 {!items.length ? (
                   <div className="border border-stone-300 bg-white p-8 text-center text-sm text-stone-600">
-                    <div className="mb-1 text-base font-bold text-stone-900">{loading ? "Loading your tweets…" : "Make a tweet collage"}</div>
-                    {loading ? "They appear here as soon as they load." : `Paste up to ${MAX_TWEETS} tweet links on the left. They are arranged into a clean, even grid you can download as a PNG or PDF.`}
+                    <div className="mb-1 text-base font-bold text-stone-900">{loading ? "Loading your tweets…" : "Make a collage"}</div>
+                    {loading ? "They appear here as soon as they load." : `Paste tweet links or upload pictures on the left, up to ${MAX_TWEETS} in all. They are arranged into a clean, even grid you can download as a PNG or PDF.`}
                   </div>
                 ) : (
                   <div style={{ width: FRAME_W * scale, height: frameH * scale }} className="mx-auto shadow-lg">

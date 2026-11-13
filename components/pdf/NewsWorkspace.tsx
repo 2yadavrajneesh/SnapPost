@@ -6,7 +6,7 @@ import { deleteResult, downloadHref, getConfig, runTool, uploadFile, type PdfCon
 
 type Item = { id: number; file: File; url: string; caption: string; source: string };
 type Settings = { title: string; footer: string; layout: string; orient: string; header: string; theme: string; numbers: boolean; trim: boolean; splitTall: boolean };
-const KEY = "papernest:news:v1";
+const KEY = "clipbook:news:v1";
 const DEFAULTS: Settings = { title: "Daily News Update", footer: "", layout: "auto", orient: "portrait", header: "every", theme: "navy", numbers: true, trim: true, splitTall: true };
 const today = () => new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 const size = (n: number) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);

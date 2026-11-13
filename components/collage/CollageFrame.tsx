@@ -1,13 +1,16 @@
 "use client";
 
-import { forwardRef, useCallback, useMemo, useState } from "react";
+import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
 import { CARD_W, FRAME_W, layoutCollage, type Cell, type LastRow, type LayoutMode } from "@/lib/collage";
 import type { PostData } from "@/lib/types";
 import CollageCard, { cardBorder, type CardStyle } from "./CollageCard";
 
 export type FrameLook = { background: string; gap: number; pad: number; cellRadius: number; shadow: boolean };
 
-export type Item = { key: string; post: PostData };
+/** An uploaded picture, already scaled down and stored as a data URL so it exports cleanly. */
+export type Picture = { src: string; w: number; h: number };
+
+export type Item = { key: string; post?: PostData; image?: Picture };
 
 const BORDER_PX = { none: 0, thin: 2, thick: 7, double: 7, dashed: 4, dotted: 5 } as const;
 
@@ -15,6 +18,11 @@ function CellView({ item, cell, style, look, onNatural, stretch }: { stretch: bo
   const onHeight = useCallback((h: number) => onNatural(item.key, h), [item.key, onNatural]);
   const [fit, setFit] = useState<{ w: number; h: number } | null>(null);
   const onFit = useCallback((w: number, h: number) => setFit((c) => (c && c.w === w && Math.abs(c.h - h) < 1 ? c : { w, h })), []);
+  const pic = item.image;
+  // a picture reports the height it has at the card width, like a tweet does
+  useEffect(() => {
+    if (pic) onHeight(Math.round((CARD_W * pic.h) / pic.w));
+  }, [pic, onHeight]);
   const card = style.theme === "dark" ? "#000000" : "#ffffff";
   const bw = BORDER_PX[style.border];
   // grid cells: the tweet is drawn at the width that fills the cell; masonry keeps the fixed card width
@@ -39,9 +47,14 @@ function CellView({ item, cell, style, look, onNatural, stretch }: { stretch: bo
         boxSizing: "border-box",
       }}
     >
-      <div style={{ width: cardW, transform: `scale(${scale})`, transformOrigin: "top left", marginLeft: Math.max(0, (box.w - inner) / 2) }}>
-        <CollageCard post={item.post} style={style} fill={fill} width={cardW} onHeight={onHeight} fitBox={stretch ? box : undefined} onFit={stretch ? onFit : undefined} />
-      </div>
+      {pic ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={pic.src} alt="" width={pic.w} height={pic.h} style={{ display: "block", width: box.w, height: box.h, objectFit: stretch ? "contain" : "fill" }} />
+      ) : item.post ? (
+        <div style={{ width: cardW, transform: `scale(${scale})`, transformOrigin: "top left", marginLeft: Math.max(0, (box.w - inner) / 2) }}>
+          <CollageCard post={item.post} style={style} fill={fill} width={cardW} onHeight={onHeight} fitBox={stretch ? box : undefined} onFit={stretch ? onFit : undefined} />
+        </div>
+      ) : null}
     </div>
   );
 }

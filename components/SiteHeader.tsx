@@ -44,7 +44,7 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
   }, [open]);
 
   return (
-    <header ref={root} className="sticky top-0 z-30 border-b border-stone-300 bg-[#faf6f1]/95 backdrop-blur">
+    <header ref={root} className="site-bar sticky top-0 z-30 backdrop-blur" style={{ ["--tc" as string]: tool.accent }}>
       <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 py-2 sm:px-6">
         <Link href={tool.href} className="flex min-w-0 items-center gap-2.5" aria-label={`${tool.name} home`}>
           <ToolIcon id={tool.id} />
@@ -63,9 +63,8 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
               href={n.href}
               title={n.hint}
               aria-current={n.id === tool.id ? "page" : undefined}
-              className={`flex items-center gap-2 whitespace-nowrap py-1 pl-1 pr-3 text-xs font-semibold transition ${
-                n.id === tool.id ? "bg-stone-900 text-white" : "border border-stone-300 bg-white text-stone-800 hover:bg-stone-100"
-              }`}
+              style={{ ["--tc" as string]: n.accent }}
+              className="tool-pill flex items-center gap-2 whitespace-nowrap py-1 pl-1 pr-3 text-xs font-semibold transition"
             >
               <ToolIcon id={n.id} size={24} />
               {n.name}
@@ -121,7 +120,8 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
                   href={n.href}
                   title={n.hint}
                   aria-current={here ? "page" : undefined}
-                  className={`flex flex-col items-center gap-1.5 px-1 py-2.5 text-center text-xs font-semibold transition ${here ? "bg-stone-900 text-white" : "bg-white text-stone-800 hover:bg-stone-100"}`}
+                  style={{ ["--tc" as string]: n.accent }}
+                  className="tool-pill flex flex-col items-center gap-1.5 px-1 py-2.5 text-center text-xs font-semibold transition"
                 >
                   <ToolIcon id={n.id} size={40} />
                   {n.name}
