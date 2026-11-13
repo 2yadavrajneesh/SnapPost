@@ -10,11 +10,15 @@ export type FrameLook = { background: string; gap: number; pad: number; cellRadi
 /** An uploaded picture, already scaled down and stored as a data URL so it exports cleanly. */
 export type Picture = { src: string; w: number; h: number };
 
+export type Heading = { text: string; size: number; color: string };
+/** Height of the title band above the cells. */
+export const headingHeight = (size: number) => Math.round(size * 1.25 + 44);
+
 export type Item = { key: string; post?: PostData; image?: Picture };
 
 const BORDER_PX = { none: 0, thin: 2, thick: 7, double: 7, dashed: 4, dotted: 5 } as const;
 
-function CellView({ item, cell, style, look, onNatural, stretch }: { stretch: boolean; item: Item; cell: Cell; style: CardStyle; look: FrameLook; onNatural: (key: string, h: number) => void }) {
+function CellView({ item, cell, style, look, onNatural, stretch, crop, nat }: { stretch: boolean; crop: boolean; nat: number | undefined; item: Item; cell: Cell; style: CardStyle; look: FrameLook; onNatural: (key: string, h: number) => void }) {
   const onHeight = useCallback((h: number) => onNatural(item.key, h), [item.key, onNatural]);
   const [fit, setFit] = useState<{ w: number; h: number } | null>(null);
   const onFit = useCallback((w: number, h: number) => setFit((c) => (c && c.w === w && Math.abs(c.h - h) < 1 ? c : { w, h })), []);
@@ -28,9 +32,11 @@ function CellView({ item, cell, style, look, onNatural, stretch }: { stretch: bo
   // grid cells: the tweet is drawn at the width that fills the cell; masonry keeps the fixed card width
   const box = { w: cell.w - 2 * bw, h: cell.h - 2 * bw };
   const cardW = stretch && fit ? fit.w : CARD_W;
-  const scale = stretch && fit ? Math.min(box.w / fit.w, box.h / fit.h) : cell.scale;
+  // "fill" look: the tweet is drawn as wide as its cell, centred when short and cut off at the bottom when tall
+  const scale = crop ? box.w / CARD_W : stretch && fit ? Math.min(box.w / fit.w, box.h / fit.h) : cell.scale;
   const inner = cardW * scale;
-  const fill = stretch ? box.h / scale : undefined;
+  const dropDown = crop ? Math.max(0, (box.h - (nat ?? 0) * scale) / 2) : 0;
+  const fill = stretch && !crop ? box.h / scale : undefined;
   return (
     <div
       style={{
@@ -51,8 +57,8 @@ function CellView({ item, cell, style, look, onNatural, stretch }: { stretch: bo
         // eslint-disable-next-line @next/next/no-img-element
         <img src={pic.src} alt="" width={pic.w} height={pic.h} style={{ display: "block", width: box.w, height: box.h, objectFit: stretch ? "contain" : "fill" }} />
       ) : item.post ? (
-        <div style={{ width: cardW, transform: `scale(${scale})`, transformOrigin: "top left", marginLeft: Math.max(0, (box.w - inner) / 2) }}>
-          <CollageCard post={item.post} style={style} fill={fill} width={cardW} onHeight={onHeight} fitBox={stretch ? box : undefined} onFit={stretch ? onFit : undefined} />
+        <div style={{ width: cardW, transform: `scale(${scale})`, transformOrigin: "top left", marginLeft: crop ? 0 : Math.max(0, (box.w - inner) / 2), marginTop: dropDown }}>
+          <CollageCard post={item.post} style={style} fill={fill} width={cardW} onHeight={onHeight} fitBox={stretch && !crop ? box : undefined} onFit={stretch && !crop ? onFit : undefined} />
         </div>
       ) : null}
     </div>
@@ -65,15 +71,25 @@ function CellView({ item, cell, style, look, onNatural, stretch }: { stretch: bo
  */
 const CollageFrame = forwardRef<
   HTMLDivElement,
-  { items: Item[]; natural: Record<string, number>; onNatural: (key: string, h: number) => void; mode: LayoutMode; cols: number; ratio: number | null; lastRow: LastRow; style: CardStyle; look: FrameLook }
->(function CollageFrame({ items, natural, onNatural, mode, cols, ratio, lastRow, style, look }, ref) {
+  { items: Item[]; natural: Record<string, number>; onNatural: (key: string, h: number) => void; mode: LayoutMode; cols: number; ratio: number | null; lastRow: LastRow; style: CardStyle; look: FrameLook; crop?: boolean; heading?: Heading }
+>(function CollageFrame({ items, natural, onNatural, mode, cols, ratio, lastRow, style, look, crop = false, heading }, ref) {
+  const H = heading?.text.trim() ? headingHeight(heading.size) : 0;
+  // a fixed picture shape covers the heading too, so the cells get what is left
+  const cellRatio = mode === "masonry" || !ratio ? null : FRAME_W / Math.max(200, FRAME_W / ratio - H);
   const layout = useMemo(
-    () => layoutCollage({ n: items.length, mode, cols, ratio: mode === "masonry" ? null : ratio, gap: look.gap, pad: look.pad, lastRow, natural: items.map((i) => natural[i.key]) }),
-    [items, natural, mode, cols, ratio, lastRow, look.gap, look.pad],
+    () => layoutCollage({ n: items.length, mode, cols, ratio: cellRatio, gap: look.gap, pad: look.pad, lastRow, natural: items.map((i) => natural[i.key]) }),
+    [items, natural, mode, cols, cellRatio, lastRow, look.gap, look.pad],
   );
   return (
-    <div ref={ref} style={{ position: "relative", width: FRAME_W, height: layout.height, background: look.background, overflow: "hidden" }}>
-      {items.map((it, i) => (layout.cells[i] ? <CellView key={it.key} item={it} cell={layout.cells[i]} style={style} look={look} onNatural={onNatural} stretch={mode === "grid"} /> : null))}
+    <div ref={ref} style={{ position: "relative", width: FRAME_W, height: layout.height + H, background: look.background, overflow: "hidden" }}>
+      {H > 0 && heading && (
+        <div style={{ position: "absolute", left: 0, top: 0, width: FRAME_W, height: H, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 48px", boxSizing: "border-box", textAlign: "center", fontFamily: '"DejaVu Sans", Verdana, "Segoe UI", Arial, "Noto Sans Devanagari", sans-serif', fontWeight: 800, fontSize: heading.size, lineHeight: 1.2, color: heading.color }}>
+          {heading.text.trim()}
+        </div>
+      )}
+      <div style={{ position: "absolute", left: 0, top: H, width: FRAME_W, height: layout.height }}>
+        {items.map((it, i) => (layout.cells[i] ? <CellView key={it.key} item={it} cell={layout.cells[i]} style={style} look={look} onNatural={onNatural} stretch={mode === "grid"} crop={crop && mode === "grid"} nat={natural[it.key]} /> : null))}
+      </div>
     </div>
   );
 });

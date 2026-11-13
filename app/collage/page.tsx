@@ -8,7 +8,8 @@ import SiteHeader from "@/components/SiteHeader";
 import { CollapsibleSection, Label, Section, Segmented, Slider, Toggle } from "@/components/ui";
 import { BACKGROUNDS, CANVASES, FRAME_W, MAX_TWEETS, type CanvasKey, type LastRow, type LayoutMode } from "@/lib/collage";
 import { downloadBlob, renderPdf, renderPng } from "@/lib/export";
-import { parseTweetUrl } from "@/lib/parse";
+import { findTweetLinks, parseTweetUrl } from "@/lib/parse";
+import { getXLSX } from "@/lib/linkdesk/loader";
 import type { PostData } from "@/lib/types";
 
 type Entry = { key: string; id: string; url: string; status: "loading" | "ok" | "error"; post?: PostData; image?: Picture; label?: string; error?: string };
@@ -68,6 +69,10 @@ export default function CollageMaker() {
   const [customBg, setCustomBg] = useState("#f4d8e6");
   const [card, setCard] = useState<CardStyle>({ theme: "light", corners: "soft", logo: "x", textSize: 24, stats: true, media: true, dateTime: true, border: "thin", borderColor: "auto" });
   const [shadow, setShadow] = useState(false);
+  const [crop, setCrop] = useState(false);
+  const [headText, setHeadText] = useState("");
+  const [headSize, setHeadSize] = useState(44);
+  const [headDark, setHeadDark] = useState(true);
   // export
   const [format, setFormat] = useState<"png" | "pdf">("png");
   const [quality, setQuality] = useState<1 | 2>(1);
@@ -111,10 +116,12 @@ export default function CollageMaker() {
   }, [entries]);
 
   function addLinks(raw: string) {
-    const tokens = raw.split(/[\s,]+/).filter(Boolean);
+    // find tweet links anywhere in the text, so notes, CSV rows or whole web pages work too
+    const tokens = findTweetLinks(raw);
+    const stray = tokens.length === 0 && raw.trim().length > 0;
     const have = new Set(entries.map((e) => e.id));
     const fresh: Entry[] = [];
-    let bad = 0;
+    let bad = stray ? 1 : 0;
     let dup = 0;
     for (const t of tokens) {
       const p = parseTweetUrl(t);
@@ -141,37 +148,86 @@ export default function CollageMaker() {
     return take.length > 0 || dup > 0;
   }
 
+  /** Reads the text of a file that may hold links: text, CSV, JSON, HTML or a spreadsheet. */
+  async function readLinkFile(f: File): Promise<string> {
+    if (/\.(xlsx|xls|xlsm|ods)$/i.test(f.name)) {
+      const XLSX = await getXLSX();
+      const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
+      const parts: string[] = [];
+      for (const name of wb.SheetNames) {
+        const sheet = wb.Sheets[name];
+        for (const key of Object.keys(sheet)) {
+          if (key[0] === "!") continue;
+          const c = sheet[key];
+          parts.push(`${c?.l?.Target ?? ""} ${c?.v ?? ""}`);
+        }
+      }
+      return parts.join("\n");
+    }
+    return f.text();
+  }
+
   async function addFiles(list: FileList | File[]) {
-    const files = Array.from(list).filter((f) => f.type.startsWith("image/") || /\.(png|jpe?g|webp|gif)$/i.test(f.name));
-    if (!files.length) return flash("Choose picture files (PNG, JPG, WebP or GIF).");
-    const room = MAX_TWEETS - entries.length;
-    if (room <= 0) return flash(`Only ${MAX_TWEETS} items fit in one collage.`);
-    const take = files.slice(0, room);
-    const fresh: Entry[] = [];
-    let bad = 0;
-    for (const f of take) {
+    const all = Array.from(list);
+    const pics = all.filter((f) => f.type.startsWith("image/") || /\.(png|jpe?g|webp|gif)$/i.test(f.name));
+    const docs = all.filter((f) => !pics.includes(f));
+    const bits: string[] = [];
+    // files with links inside: find the tweet links automatically and load them
+    const found: string[] = [];
+    for (const f of docs) {
       try {
-        const image = await readPicture(f);
-        fresh.push({ key: `file-${Date.now()}-${fresh.length}-${Math.random().toString(36).slice(2, 6)}`, id: f.name, url: "", status: "ok", image, label: f.name });
+        const links = findTweetLinks(await readLinkFile(f));
+        if (!links.length) bits.push(`No tweet links found in ${f.name}`);
+        else {
+          found.push(...links);
+          bits.push(`Found ${links.length} ${links.length === 1 ? "link" : "links"} in ${f.name}`);
+        }
       } catch {
-        bad++;
+        bits.push(`${f.name} could not be read`);
       }
     }
-    if (fresh.length) setEntries((l) => [...l, ...fresh].slice(0, MAX_TWEETS));
-    const bits: string[] = [];
-    if (fresh.length) bits.push(`Added ${fresh.length} ${fresh.length === 1 ? "picture" : "pictures"}`);
-    if (files.length > take.length) bits.push(`only ${MAX_TWEETS} items fit in one collage`);
-    if (bad) bits.push(`${bad} could not be read`);
-    flash(bits.join(". ") + ".");
+    if (found.length) addLinks(found.join("\n"));
+    if (pics.length) {
+      const room = MAX_TWEETS - entries.length;
+      if (room <= 0) bits.push(`Only ${MAX_TWEETS} items fit in one collage`);
+      else {
+        const take = pics.slice(0, room);
+        const fresh: Entry[] = [];
+        let bad = 0;
+        for (const f of take) {
+          try {
+            const image = await readPicture(f);
+            fresh.push({ key: `file-${Date.now()}-${fresh.length}-${Math.random().toString(36).slice(2, 6)}`, id: f.name, url: "", status: "ok", image, label: f.name });
+          } catch {
+            bad++;
+          }
+        }
+        if (fresh.length) setEntries((l) => [...l, ...fresh].slice(0, MAX_TWEETS));
+        if (fresh.length) bits.push(`Added ${fresh.length} ${fresh.length === 1 ? "picture" : "pictures"}`);
+        if (pics.length > take.length) bits.push(`only ${MAX_TWEETS} items fit in one collage`);
+        if (bad) bits.push(`${bad} could not be read`);
+      }
+    }
+    if (bits.length) flash(bits.join(". ") + ".");
   }
 
   // pasting a picture (Ctrl+V) anywhere on the page adds it too
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
       const files = Array.from(e.clipboardData?.files ?? []).filter((f) => f.type.startsWith("image/"));
-      if (!files.length) return;
-      e.preventDefault();
-      void addFiles(files);
+      if (files.length) {
+        e.preventDefault();
+        void addFiles(files);
+        return;
+      }
+      // pasted text with tweet links is added straight away, unless you are typing in a box
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "TEXTAREA" || el.tagName === "INPUT")) return;
+      const text = e.clipboardData?.getData("text") ?? "";
+      if (findTweetLinks(text).length) {
+        e.preventDefault();
+        addLinks(text);
+      }
     };
     window.addEventListener("paste", onPaste);
     return () => window.removeEventListener("paste", onPaste);
@@ -189,6 +245,25 @@ export default function CollageMaker() {
     } catch {
       flash("Paste with Ctrl+V or long-press, then press Add");
     }
+  }
+
+  /** One click for the look of the sample collage: tidy grey page, white cells, a title on top, tweets filling each cell. */
+  function classicLook() {
+    setMode("grid");
+    setCols(3);
+    setCanvas("portrait");
+    setLastRow("center");
+    setGap(10);
+    setPad(10);
+    setBgId("custom");
+    setCustomBg("#ececec");
+    setCard({ theme: "light", corners: "sharp", logo: "x", textSize: 24, stats: false, media: true, dateTime: false, border: "none", borderColor: "auto" });
+    setShadow(false);
+    setCrop(true);
+    setHeadDark(true);
+    setHeadSize(44);
+    setHeadText((t) => t || "My collage title");
+    flash("Applied the classic grid look. Change the title on the left.");
   }
 
   const retry = (key: string) => setEntries((l) => l.map((e) => (e.key === key ? { ...e, status: "loading", error: undefined } : e)));
@@ -235,7 +310,8 @@ export default function CollageMaker() {
       // let every picture finish loading first
       await Promise.all(Array.from(node.querySelectorAll("img")).map((im) => (im.complete ? Promise.resolve() : new Promise((r) => { im.onload = im.onerror = () => r(null); }))));
       const r = await renderPng(node, { maxWidth: FRAME_W * quality });
-      const base = `collage-${items.length}-${items.length === 1 ? "item" : "items"}`;
+      const slug = headText.trim().replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").slice(0, 40);
+      const base = slug ? `collage-${slug}` : `collage-${items.length}-${items.length === 1 ? "item" : "items"}`;
       if (format === "pdf") downloadBlob(await renderPdf(r.dataUrl, r.width, r.height), `${base}.pdf`);
       else {
         const blob = await (await fetch(r.dataUrl)).blob();
@@ -264,6 +340,14 @@ export default function CollageMaker() {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => (e.ctrlKey || e.metaKey) && e.key === "Enter" && submit()}
+                onPaste={(e) => {
+                  // links pasted into the box are recognised and added at once
+                  const t = e.clipboardData.getData("text");
+                  if (findTweetLinks(t).length) {
+                    e.preventDefault();
+                    addLinks(t);
+                  }
+                }}
                 placeholder={"https://x.com/user/status/123…\nhttps://x.com/user/status/456…"}
                 aria-label="Tweet links"
                 className="h-28 w-full resize-y border border-stone-200 bg-white p-2.5 font-mono text-xs outline-none focus:border-[color:var(--accent)]"
@@ -277,18 +361,23 @@ export default function CollageMaker() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>
                 </button>
               </div>
-              <input ref={fileInput} type="file" accept="image/*" multiple hidden onChange={(e) => { if (e.target.files) void addFiles(e.target.files); e.target.value = ""; }} />
+              <input ref={fileInput} type="file" accept="image/*,.txt,.csv,.tsv,.json,.md,.html,.htm,.xml,.xlsx,.xls,.xlsm,.ods" multiple hidden onChange={(e) => { if (e.target.files) void addFiles(e.target.files); e.target.value = ""; }} />
               <div
-                onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); setOverDrop(true); } }}
+                onDragOver={(e) => { e.preventDefault(); setOverDrop(true); }}
                 onDragLeave={() => setOverDrop(false)}
-                onDrop={(e) => { if (e.dataTransfer.files.length) { e.preventDefault(); void addFiles(e.dataTransfer.files); } setOverDrop(false); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (e.dataTransfer.files.length) void addFiles(e.dataTransfer.files);
+                  else addLinks(e.dataTransfer.getData("text/uri-list") || e.dataTransfer.getData("text"));
+                  setOverDrop(false);
+                }}
                 className={`mt-2 flex flex-col items-center gap-1 border-2 border-dashed px-3 py-3 text-center transition ${overDrop ? "border-accent bg-pink-50" : "border-stone-300 bg-white"}`}
               >
                 <button type="button" className={`${btnPlain} w-full`} disabled={entries.length >= MAX_TWEETS} onClick={() => fileInput.current?.click()}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>
-                  Upload pictures
+                  Upload files
                 </button>
-                <span className="text-[11px] text-stone-500">or drop files here, or paste a picture with Ctrl+V</span>
+                <span className="text-[11px] text-stone-500">Pictures, or a text, CSV, HTML or Excel file with links: tweet links inside are found for you. Drop files here or paste with Ctrl+V.</span>
               </div>
               <p className="mt-1.5 text-[11px] text-stone-500">{entries.length} of {MAX_TWEETS} items{loading ? ` · loading ${loading}…` : ""}{failed ? ` · ${failed} failed` : ""}</p>
             </div>
@@ -342,6 +431,26 @@ export default function CollageMaker() {
             )}
           </Section>
 
+          <Section title="Title and look">
+            <div>
+              <Label>Title on top (optional)</Label>
+              <input value={headText} onChange={(e) => setHeadText(e.target.value)} maxLength={120} placeholder="e.g. Sonia Gandhi - Belonging: A Journey of Love" aria-label="Collage title" className="h-9 w-full border border-stone-200 bg-white px-2.5 text-xs outline-none focus:border-[color:var(--accent)]" />
+            </div>
+            {headText.trim() && (
+              <>
+                <Slider label="Title size" value={headSize} min={28} max={80} step={2} suffix="px" lowLabel="Small" highLabel="Large" onChange={setHeadSize} />
+                <div>
+                  <Label>Title colour</Label>
+                  <Segmented value={headDark ? "dark" : "light"} onChange={(v) => setHeadDark(v === "dark")} options={[{ value: "dark", label: "Dark" }, { value: "light", label: "Light" }]} />
+                </div>
+              </>
+            )}
+            <button type="button" className={`${btnPlain} w-full`} onClick={classicLook}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
+              Use the classic grid look (title + 3 columns)
+            </button>
+          </Section>
+
           <CollapsibleSection title="Layout">
             <div>
               <Label>Style</Label>
@@ -357,6 +466,11 @@ export default function CollageMaker() {
                 <div>
                   <Label>Picture shape</Label>
                   <Segmented value={canvas} onChange={setCanvas} wrap options={(Object.keys(CANVASES) as CanvasKey[]).map((k) => ({ value: k, label: `${CANVASES[k].label} ${CANVASES[k].ratio ? CANVASES[k].note : ""}`.trim() }))} />
+                </div>
+                <div>
+                  <Label>Tweet in each cell</Label>
+                  <Segmented value={crop ? "fill" : "whole"} onChange={(v) => setCrop(v === "fill")} options={[{ value: "whole", label: "Whole tweet" }, { value: "fill", label: "Fill width" }]} />
+                  <p className="mt-1 text-[11px] text-stone-500">{crop ? "Each tweet is as wide as its cell. Very tall ones are cut off at the bottom." : "Tall tweets shrink so the whole tweet shows."}</p>
                 </div>
                 <div>
                   <Label>Incomplete last row</Label>
@@ -446,7 +560,7 @@ export default function CollageMaker() {
                 ) : (
                   <div style={{ width: FRAME_W * scale, height: frameH * scale }} className="mx-auto shadow-lg">
                     <div style={{ width: FRAME_W, transform: `scale(${scale})`, transformOrigin: "top left" }}>
-                      <CollageFrame ref={frame} items={items} natural={natural} onNatural={onNatural} mode={mode} cols={cols} ratio={CANVASES[canvas].ratio} lastRow={lastRow} style={card} look={look} />
+                      <CollageFrame ref={frame} items={items} natural={natural} onNatural={onNatural} mode={mode} cols={cols} ratio={CANVASES[canvas].ratio} lastRow={lastRow} style={card} look={look} crop={crop} heading={{ text: headText, size: headSize, color: headDark ? "#111111" : "#ffffff" }} />
                     </div>
                   </div>
                 )}
