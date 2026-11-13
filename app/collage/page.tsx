@@ -10,6 +10,7 @@ import { BACKGROUNDS, CANVASES, FRAME_W, MAX_TWEETS, type CanvasKey, type LastRo
 import { downloadBlob, renderPdf, renderPng } from "@/lib/export";
 import { findTweetLinks, parseTweetUrl } from "@/lib/parse";
 import { getXLSX } from "@/lib/linkdesk/loader";
+import { readDocx, readPdf } from "@/lib/linkdesk/extract";
 import type { PostData } from "@/lib/types";
 
 type Entry = { key: string; id: string; url: string; status: "loading" | "ok" | "error"; post?: PostData; image?: Picture; label?: string; error?: string };
@@ -164,6 +165,14 @@ export default function CollageMaker() {
       }
       return parts.join("\n");
     }
+    // Word and PDF: clickable words, link fields and typed addresses are all read
+    if (/\.docx$/i.test(f.name) || /\.pdf$/i.test(f.name)) {
+      const opts = { dedupe: true, repair: true, bare: true };
+      const buf = await f.arrayBuffer();
+      const found = /\.pdf$/i.test(f.name) ? (await readPdf(buf, opts)).items : await readDocx(buf, opts);
+      return found.map((x) => x.url).join("\n");
+    }
+    if (/\.(doc|rtf)$/i.test(f.name)) throw new Error("Save it as .docx first.");
     return f.text();
   }
 
@@ -361,7 +370,7 @@ export default function CollageMaker() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>
                 </button>
               </div>
-              <input ref={fileInput} type="file" accept="image/*,.txt,.csv,.tsv,.json,.md,.html,.htm,.xml,.xlsx,.xls,.xlsm,.ods" multiple hidden onChange={(e) => { if (e.target.files) void addFiles(e.target.files); e.target.value = ""; }} />
+              <input ref={fileInput} type="file" accept="image/*,.txt,.csv,.tsv,.json,.md,.html,.htm,.xml,.docx,.pdf,.xlsx,.xls,.xlsm,.ods" multiple hidden onChange={(e) => { if (e.target.files) void addFiles(e.target.files); e.target.value = ""; }} />
               <div
                 onDragOver={(e) => { e.preventDefault(); setOverDrop(true); }}
                 onDragLeave={() => setOverDrop(false)}
@@ -377,7 +386,7 @@ export default function CollageMaker() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>
                   Upload files
                 </button>
-                <span className="text-[11px] text-stone-500">Pictures, or a text, CSV, HTML or Excel file with links: tweet links inside are found for you. Drop files here or paste with Ctrl+V.</span>
+                <span className="text-[11px] text-stone-500">Pictures, or a Word, PDF, text, CSV, HTML or Excel file with links: tweet links inside are found for you. Drop files here or paste with Ctrl+V.</span>
               </div>
               <p className="mt-1.5 text-[11px] text-stone-500">{entries.length} of {MAX_TWEETS} items{loading ? ` · loading ${loading}…` : ""}{failed ? ` · ${failed} failed` : ""}</p>
             </div>
