@@ -47,11 +47,17 @@ function SessionNotices() {
 
 function TabBar({ tab, go }: { tab: TabId; go: (t: TabId) => void }) {
   const { items } = useLinks();
+  const bar = useRef<HTMLElement>(null);
+  // Keep the chosen tab in view by moving only the tab bar itself. scrollIntoView also scrolls the whole page
+  // sideways on narrow screens, which made the page jump left and drift back.
   useEffect(() => {
-    document.getElementById(`tab-${tab}`)?.scrollIntoView({ inline: "center", block: "nearest" });
+    const nav = bar.current;
+    const el = document.getElementById(`tab-${tab}`);
+    if (!nav || !el || nav.scrollWidth <= nav.clientWidth) return;
+    nav.scrollLeft = el.offsetLeft - (nav.clientWidth - el.offsetWidth) / 2;
   }, [tab]);
   return (
-    <nav role="tablist" aria-label="LinkDesk tools" className="mb-5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <nav ref={bar} role="tablist" aria-label="LinkDesk tools" className="relative mb-5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {TABS.map((t) => {
         const on = tab === t.id;
         return (
