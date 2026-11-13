@@ -2,7 +2,9 @@
 
 import type { ReactNode } from "react";
 import type { Settings } from "@/lib/types";
-import { BIRD, XLOGO } from "./TweetCard";
+import { BIRD, FONT_STACKS, XLOGO } from "./TweetCard";
+
+export const FONT_LABELS: Record<Settings["font"], string> = { sans: "Chirp", rounded: "Rounded", inter: "Inter", geist: "Geist", serif: "Serif", mono: "Mono" };
 
 type Props = {
   settings: Settings;
@@ -121,19 +123,14 @@ export default function AppearanceTiles({ settings, onChange }: Props) {
       />
       <Tile
         name="Font"
-        label={font === "sans" ? "Sans" : font === "rounded" ? "Rounded" : "Serif"}
+        label={FONT_LABELS[font]}
         active={font !== "sans"}
-        onClick={() => onChange("font", next(["sans", "rounded", "serif"] as const, font))}
+        onClick={() => onChange("font", next(["sans", "rounded", "inter", "geist", "serif", "mono"] as const, font))}
         icon={
           <span
             className="text-[19px] font-bold leading-none"
             style={{
-              fontFamily:
-                font === "serif"
-                  ? "Georgia, 'Times New Roman', serif"
-                  : font === "rounded"
-                    ? "ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, sans-serif"
-                    : "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+              fontFamily: FONT_STACKS[font],
             }}
           >
             Aa

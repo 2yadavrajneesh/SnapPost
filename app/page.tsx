@@ -3,21 +3,24 @@
 import SiteHeader from "@/components/SiteHeader";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import AppearanceTiles from "@/components/AppearanceTiles";
+import AppearanceTiles, { FONT_LABELS } from "@/components/AppearanceTiles";
 import Lightbox from "@/components/Lightbox";
 import ScrollTop from "@/components/ScrollTop";
 import HighlightEditor from "@/components/HighlightEditor";
 import MediaDownload from "@/components/MediaDownload";
 import type { Highlight } from "@/lib/highlight";
 import RatioTiles from "@/components/RatioTiles";
-import TweetCard, { ALL_INFO, type DisplayInfo, type Redact } from "@/components/TweetCard";
+import TweetCard, { ALL_INFO, FONT_STACKS, type DisplayInfo, type Redact } from "@/components/TweetCard";
 import { Check, CollapsibleSection, Label, Section, Segmented, Slider, TextField, Toggle } from "@/components/ui";
 import { formatDate, formatTime } from "@/lib/format";
 import { copyPngToClipboard, downloadBlob, downloadUrl, renderPdf, renderPdfPages, renderPng, renderVideo, zipFiles } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
 import {
+  ACCENTS,
+  BACKGROUNDS,
   DEFAULT_SETTINGS,
   DEFAULT_TWEET,
+  FRAME_MARGIN,
   FRAME_W,
   MAX_EXPORT_WIDTH,
   RATIOS,
@@ -824,6 +827,48 @@ export default function Home() {
           <CollapsibleSection title="Layout">
             <Slider label="Text size" value={settings.textSize} min={24} max={64} step={4} suffix="px" lowLabel="Smaller" highLabel="Larger" ticks emphasizeHigh onChange={(v) => set("textSize", v)} />
             <Slider label="Padding" value={settings.padding} min={50} max={150} step={5} suffix="%" lowLabel="Tighter" highLabel="Looser" onChange={(v) => set("padding", v)} />
+          </CollapsibleSection>
+
+          <CollapsibleSection title="More styles">
+            <div>
+              <Label>Background</Label>
+              <div className="grid grid-cols-7 gap-1.5" role="radiogroup" aria-label="Background">
+                {BACKGROUNDS.map((b) => (
+                  <button key={b.id} type="button" role="radio" aria-checked={settings.bg === b.id} aria-label={b.label} title={b.label} onClick={() => set("bg", b.id)} className={`flex h-9 items-center justify-center rounded-md border-2 transition ${settings.bg === b.id ? "border-[#1b2420] ring-2 ring-white" : "border-stone-300"}`} style={{ background: b.id === "none" ? "#f4efe8" : b.css }}>
+                    {b.id === "none" && (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#44403c" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M6.3 6.3l11.4 11.4" /></svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Slider label="Margin" value={settings.margin ?? Math.round((settings.style === "minimal" && settings.bg === "none" && settings.shadow === "none" ? 96 : 72) * (settings.padding / 100))} min={FRAME_MARGIN.min} max={FRAME_MARGIN.max} step={4} suffix="px" lowLabel="Tighter" highLabel="Roomier" onChange={(v) => set("margin", v)} />
+            <div>
+              <Label>Shadow</Label>
+              <Segmented value={settings.shadow} onChange={(v) => set("shadow", v)} options={[{ value: "none", label: "None" }, { value: "soft", label: "Soft" }, { value: "lifted", label: "Lifted" }]} />
+              {settings.shadow !== "none" && settings.margin !== null && settings.margin < 40 && <p className="mt-1 text-[11px] text-stone-500">Give the shadow room: raise the margin so it is not cut off.</p>}
+            </div>
+            <div>
+              <Label>Font</Label>
+              <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Font">
+                {(Object.keys(FONT_LABELS) as Settings["font"][]).map((f) => (
+                  <button key={f} type="button" role="radio" aria-checked={settings.font === f} onClick={() => set("font", f)} style={{ fontFamily: FONT_STACKS[f] }} className={`border px-2 py-3 text-sm font-semibold transition ${settings.font === f ? "border-[#1b2420] bg-[#1b2420] text-white" : "border-stone-200 bg-[#f4efe8] text-stone-700 hover:bg-[#ece6dc]"}`}>
+                    {FONT_LABELS[f]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label>Accent</Label>
+              <div className="flex gap-2" role="radiogroup" aria-label="Accent colour">
+                {ACCENTS.map((a) => (
+                  <button key={a.value} type="button" role="radio" aria-checked={settings.accent === a.value} aria-label={a.label} title={a.label} onClick={() => set("accent", a.value)} className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition ${settings.accent === a.value ? "border-[#1b2420] ring-2 ring-white" : "border-transparent"}`} style={{ background: a.value }}>
+                    {settings.accent === a.value && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1 text-[11px] text-stone-500">Colours the bird logo, the blue verified badge and the &quot;Replying to&quot; name.</p>
+            </div>
           </CollapsibleSection>
         </aside>
 

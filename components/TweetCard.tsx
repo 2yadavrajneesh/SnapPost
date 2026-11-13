@@ -1,17 +1,26 @@
 "use client";
 
+import "@fontsource/inter/latin-400.css";
+import "@fontsource/inter/latin-700.css";
+import "@fontsource/geist-sans/latin-400.css";
+import "@fontsource/geist-sans/latin-700.css";
 import { forwardRef, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { compact, formatDate, formatTime, proxied, relativeTime, videoSrc } from "@/lib/format";
 import { renderHighlighted, type Highlight } from "@/lib/highlight";
-import { FRAME_W, RATIOS, type PostData, type Settings, type TweetData, type VerifiedType, type VideoData } from "@/lib/types";
+import { BACKGROUNDS, FRAME_W, RATIOS, type PostData, type Settings, type TweetData, type VerifiedType, type VideoData } from "@/lib/types";
 
 const FONTS: Record<Settings["font"], string> = {
   sans: `"TwitterChirp", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`,
   rounded: `ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif`,
+  inter: `"Inter", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`,
+  geist: `"Geist Sans", "Inter", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`,
   serif: `Georgia, "Times New Roman", serif`,
+  mono: `ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace`,
 };
+export const FONT_STACKS = FONTS;
 
-const BLUE = "#1d9bf0";
+/** The accent colour comes from the frame (--snap-accent) so every part of the card follows it. */
+const BLUE = "var(--snap-accent, #1d9bf0)";
 
 const THEMES = {
   light: { card: "#ffffff", text: "#0f1419", muted: "#536471", border: "#cfd9de" },
@@ -47,7 +56,7 @@ export const BIRD =
 function Logo({ kind, size, color }: { kind: Settings["logo"]; size: number; color: string }) {
   if (kind === "none") return null;
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={kind === "bird" ? BLUE : color} aria-hidden="true" style={{ flex: "none" }}>
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flex: "none", fill: kind === "bird" ? BLUE : color }}>
       <path d={kind === "bird" ? BIRD : XLOGO} />
     </svg>
   );
@@ -61,7 +70,7 @@ export function Badge({ size, kind = "blue" }: { size: number; kind?: VerifiedTy
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-label={BADGE_LABEL[kind]} style={{ flex: "none" }}>
       <path
-        fill={BADGE_COLOR[kind]}
+        style={{ fill: BADGE_COLOR[kind] }}
         d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z"
       />
     </svg>
@@ -711,10 +720,12 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
   const fs = settings.textSize;
   const p = settings.padding / 100;
   const radius = RADIUS[settings.corners];
-  const minimal = settings.style === "minimal";
+  // Minimalist is a flat, card-less look; a background colour or a shadow needs the card back
+  const minimal = settings.style === "minimal" && settings.bg === "none" && settings.shadow === "none";
+  const bgCss = BACKGROUNDS.find((b) => b.id === settings.bg)?.css ?? "transparent";
   const ratio = RATIOS[settings.ratio].value;
 
-  const framePad = Math.round((minimal ? 96 : 72) * p);
+  const framePad = settings.margin !== null ? settings.margin : Math.round((minimal ? 96 : 72) * p);
   const cardPad = minimal ? 0 : Math.round(fs * 1.1 * p);
   const gap = Math.round(fs * 0.7);
   const nameSize = Math.round(fs * 0.8);
@@ -786,9 +797,10 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
         // Corners apply to the whole picture (so exports are rounded too), not just the inner card.
         borderRadius: radius,
         // No panel behind the post in either theme: only the tweet itself is visible (Minimalist keeps its solid fill).
-        background: minimal ? t.card : "transparent",
+        background: minimal ? t.card : bgCss,
         color: t.text,
         fontFamily: FONTS[settings.font],
+        ...({ "--snap-accent": settings.accent } as React.CSSProperties),
       }}
     >
       <div
@@ -801,8 +813,10 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
           background: minimal ? "transparent" : t.card,
           borderRadius: minimal ? 0 : radius,
           overflow: "hidden",
-          // No drop shadow: the frame is transparent, so a shadow would be clipped into a visible halo.
-          boxShadow: minimal ? "none" : settings.theme === "light" ? "0 0 0 1px rgba(0,0,0,0.06)" : "0 0 0 1px rgba(255,255,255,0.08)",
+          // Shadows live in the frame margin, so with a small margin they are clipped at the edge.
+          boxShadow: minimal
+            ? "none"
+            : `${settings.shadow === "soft" ? "0 10px 30px rgba(0,0,0,0.22), " : settings.shadow === "lifted" ? "0 26px 60px rgba(0,0,0,0.34), " : ""}${settings.theme === "light" ? "0 0 0 1px rgba(0,0,0,0.06)" : "0 0 0 1px rgba(255,255,255,0.08)"}`,
           transform: ratio && fit ? `scale(${fit})` : undefined,
           ...(ratio && fit ? ({ "--snap-media-max": `${(availH * MEDIA_BUDGET) / mediaN.current / fit}px` } as React.CSSProperties) : {}),
           transformOrigin: "center center",
