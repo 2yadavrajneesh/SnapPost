@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { clearApp } from "@/lib/session";
 import type { ToolId } from "@/lib/tools";
 
@@ -15,10 +16,11 @@ export default function ResetPageDialog({ open, onClose, app, name }: { open: bo
     document.addEventListener("keydown", key);
     return () => document.removeEventListener("keydown", key);
   }, [open, busy, onClose]);
-  if (!open) return null;
-  return (
-    <div className="snap-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onMouseDown={(e) => e.target === e.currentTarget && !busy && onClose()}>
-      <div role="alertdialog" aria-modal="true" aria-labelledby="rs-t" aria-describedby="rs-d" className="snap-scale w-full max-w-sm border-t-4 border-amber-500 bg-white p-5 shadow-2xl">
+  if (!open || typeof document === "undefined") return null;
+  // drawn on the page itself, not inside the header, so it is never boxed in or cut off
+  return createPortal(
+    <div className="snap-backdrop fixed inset-0 z-[100] flex overflow-y-auto bg-black/50 p-4" onMouseDown={(e) => e.target === e.currentTarget && !busy && onClose()}>
+      <div role="alertdialog" aria-modal="true" aria-labelledby="rs-t" aria-describedby="rs-d" className="snap-scale mx-auto my-auto w-full max-w-sm border-t-4 border-amber-500 bg-white p-5 shadow-2xl">
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 flex-none items-center justify-center bg-amber-100 text-amber-700">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -49,6 +51,7 @@ export default function ResetPageDialog({ open, onClose, app, name }: { open: bo
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
