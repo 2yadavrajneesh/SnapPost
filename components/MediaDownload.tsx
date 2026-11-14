@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { NativeSelect } from "@/components/ui/native-select";
 import { MAX_VIDEO_BYTES, MAX_VIDEO_MB } from "@/lib/limits";
 import { downloadHref, photoSize, proxied } from "@/lib/format";
 import type { PostData, TweetData, VideoData } from "@/lib/types";
@@ -66,13 +67,13 @@ function Picker({ options, capped }: { options: Option[]; capped?: boolean }) {
     <div>
       <div className="flex items-stretch gap-1.5">
         <div className="relative min-w-0 flex-1">
-          <select aria-label="Resolution" className={sel} value={i} onChange={(e) => setI(Number(e.target.value))}>
+          <NativeSelect aria-label="Resolution" className={sel} value={i} onChange={(e) => setI(Number(e.target.value))}>
             {options.map((x, k) => (
               <option key={x.key} value={k}>
                 {x.label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           <svg className="pointer-events-none absolute right-2.5 top-1/2 -mt-[5px]" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M6 9l6 6 6-6" />
           </svg>

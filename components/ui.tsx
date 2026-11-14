@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Slider as UiSlider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -29,20 +32,22 @@ export function CollapsibleSection({ title, children, defaultOpen = false }: { t
     window.addEventListener("snap:section-open", onOpen);
     return () => window.removeEventListener("snap:section-open", onOpen);
   }, []);
-  const toggle = () => {
-    if (!open && me.current) window.dispatchEvent(new CustomEvent("snap:section-open", { detail: me.current }));
-    setOpen((o) => !o);
+  const change = (next: boolean) => {
+    if (next && me.current) window.dispatchEvent(new CustomEvent("snap:section-open", { detail: me.current }));
+    setOpen(next);
   };
   return (
-    <section ref={me} className="border-b border-stone-300">
-      <button type="button" aria-expanded={open} onClick={toggle} className="flex w-full items-center justify-between px-5 py-4 text-left">
-        <h2 className="text-sm font-bold text-stone-900">{title}</h2>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`text-stone-500 transition-transform ${open ? "rotate-180" : ""}`}>
-          <path d="M6 9l6 6 6-6" />
-        </svg>
-      </button>
-      {open && <div className="snap-fade space-y-3 px-5 pb-5">{children}</div>}
-    </section>
+    <Collapsible open={open} onOpenChange={change} asChild>
+      <section ref={me} className="border-b border-stone-300">
+        <CollapsibleTrigger className="flex w-full items-center justify-between px-5 py-4 text-left">
+          <h2 className="text-sm font-bold text-stone-900">{title}</h2>
+          <ChevronDown aria-hidden="true" className={`size-3.5 text-stone-500 transition-transform ${open ? "rotate-180" : ""}`} />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+          <div className="space-y-3 px-5 pb-5">{children}</div>
+        </CollapsibleContent>
+      </section>
+    </Collapsible>
   );
 }
 
@@ -167,15 +172,9 @@ export function TextField({
   return (
     <label className="block">
       <Label>{label}</Label>
-      <div className="flex items-center border border-stone-200 bg-white focus-within:border-orange-600 focus-within:ring-2 focus-within:ring-orange-200">
-        {prefix && <span className="pl-2.5 text-sm text-stone-400">{prefix}</span>}
-        <input
-          type={type}
-          value={value}
-          placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full min-w-0 bg-transparent px-2.5 py-1.5 text-sm outline-none"
-        />
+      <div className="flex items-center gap-1.5">
+        {prefix && <span className="text-sm text-stone-400">{prefix}</span>}
+        <Input type={type} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} className="h-9 rounded-none text-sm" />
       </div>
     </label>
   );

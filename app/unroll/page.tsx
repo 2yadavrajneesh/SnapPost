@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import StepHints from "@/components/StepHints";
 import SiteHeader from "@/components/SiteHeader";
@@ -584,13 +585,13 @@ export default function Unroller() {
             <div>
               <Label>Page size</Label>
               <div className="relative">
-                <select aria-label="Page size" value={size} onChange={(e) => setSize(e.target.value as PageSizeId)} className="w-full appearance-none border border-stone-300 bg-white py-2 pl-2.5 pr-8 text-xs font-medium text-stone-800">
+                <NativeSelect aria-label="Page size" value={size} onChange={(e) => setSize(e.target.value as PageSizeId)} className="w-full appearance-none border border-stone-300 bg-white py-2 pl-2.5 pr-8 text-xs font-medium text-stone-800">
                   {PAGE_SIZES.map((z) => (
                     <option key={z.id} value={z.id}>
                       {z.label} ({z.w} × {z.h} mm)
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
                 <svg className="pointer-events-none absolute right-2.5 top-1/2 -mt-[5px]" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M6 9l6 6 6-6" />
                 </svg>
@@ -675,7 +676,7 @@ export default function Unroller() {
                 <div>
                   <Label>Post to edit</Label>
                   <div className="relative">
-                  <select
+                  <NativeSelect
                     aria-label="Post to edit"
                     value={Math.min(editIdx, thread.posts.length - 1)}
                     onChange={(e) => setEditIdx(Number(e.target.value))}
@@ -686,7 +687,7 @@ export default function Unroller() {
                         {i + 1}/{thread.posts.length} · {p.text.replace(/\s+/g, " ").slice(0, 38)}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                   <svg className="pointer-events-none absolute right-2.5 top-1/2 -mt-[5px]" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M6 9l6 6 6-6" />
                   </svg>

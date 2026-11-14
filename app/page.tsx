@@ -1,6 +1,7 @@
 "use client";
 
 import SiteHeader from "@/components/SiteHeader";
+import { NativeSelect } from "@/components/ui/native-select";
 import { useSessionSnapshot, useWork } from "@/lib/session";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
@@ -534,12 +535,12 @@ export default function Home() {
       <div className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">PDF page</div>
       <label className="block text-xs font-medium text-stone-600">
         Page size
-        <select value={pdfSize} onChange={(e) => setPdfSize(e.target.value as PageSizeId | "fit")} className="mt-1 h-9 w-full border border-stone-300 bg-white px-2 text-xs text-stone-800">
+        <NativeSelect value={pdfSize} onChange={(e) => setPdfSize(e.target.value as PageSizeId | "fit")} className="mt-1 h-9 w-full border border-stone-300 bg-white px-2 text-xs text-stone-800">
           <option value="fit">Same shape as the picture</option>
           {PAGE_SIZES.map((p) => (
             <option key={p.id} value={p.id}>{p.label}</option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       {pdfSize !== "fit" && (
         <div>

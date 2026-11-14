@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Ico } from "@/components/Icons";
 import { host, LIMITS, checkFileSize, looksLikeUrl, plural, type RawLink } from "@/lib/linkdesk/core";
 import { getXLSX } from "@/lib/linkdesk/loader";
@@ -324,23 +325,23 @@ export default function BatchTool({ active }: { active: boolean }) {
             <div className="grid gap-2 sm:grid-cols-3">
               <label className="text-[11px] font-medium text-stone-600">
                 Worksheet
-                <select className={`${field} mt-1`} value={sheetName} onChange={(e) => pickSheet(e.target.value, L.source?.name ?? "")}>
+                <NativeSelect className={`${field} mt-1`} value={sheetName} onChange={(e) => pickSheet(e.target.value, L.source?.name ?? "")}>
                   {sheets.map((n) => <option key={n}>{n}</option>)}
-                </select>
+                </NativeSelect>
               </label>
               <label className="text-[11px] font-medium text-stone-600">
                 Link column
-                <select className={`${field} mt-1`} value={urlChoice} onChange={(e) => (setUrlChoice(e.target.value), extract(sheetName, e.target.value, labelChoice, L.source?.name ?? ""))}>
+                <NativeSelect className={`${field} mt-1`} value={urlChoice} onChange={(e) => (setUrlChoice(e.target.value), extract(sheetName, e.target.value, labelChoice, L.source?.name ?? ""))}>
                   <option value="auto">Find links in every column</option>
                   {cols.map((c) => <option key={c.i} value={c.i}>{c.name}</option>)}
-                </select>
+                </NativeSelect>
               </label>
               <label className="text-[11px] font-medium text-stone-600">
                 Title column
-                <select className={`${field} mt-1`} value={labelChoice} onChange={(e) => (setLabelChoice(e.target.value), extract(sheetName, urlChoice, e.target.value, L.source?.name ?? ""))}>
+                <NativeSelect className={`${field} mt-1`} value={labelChoice} onChange={(e) => (setLabelChoice(e.target.value), extract(sheetName, urlChoice, e.target.value, L.source?.name ?? ""))}>
                   <option value="none">First text column</option>
                   {cols.map((c) => <option key={c.i} value={c.i}>{c.name}</option>)}
-                </select>
+                </NativeSelect>
               </label>
             </div>
           )}
@@ -487,10 +488,10 @@ export default function BatchTool({ active }: { active: boolean }) {
             ))}
           </div>
           <div className="relative">
-            <select aria-label="Filter by batch" value={bf} onChange={(e) => (setBatchFilter(e.target.value), setLimit(PAGE))} className={`${field} h-9 !w-auto cursor-pointer appearance-none !py-0 !pl-3 !pr-8`}>
+            <NativeSelect aria-label="Filter by batch" value={bf} onChange={(e) => (setBatchFilter(e.target.value), setLimit(PAGE))} className={`${field} h-9 !w-auto cursor-pointer appearance-none !py-0 !pl-3 !pr-8`}>
               <option value="all">All batches</option>
               {Array.from({ length: nBatches }, (_, k) => k + 1).map((b) => <option key={b} value={b}>Batch {b} ({start(b) + 1} to {Math.min(b * size, total)})</option>)}
-            </select>
+            </NativeSelect>
             <svg className="pointer-events-none absolute right-2.5 top-1/2 -mt-[5px] text-stone-500" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
           </div>
           <button type="button" className={`${btnSm} !h-9`} disabled={!total} onClick={resetAll}><Ico n="reset" />Reset status</button>

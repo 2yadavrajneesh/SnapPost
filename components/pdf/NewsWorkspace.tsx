@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Progress } from "@/components/ui/progress";
 import ResetButton from "@/components/ResetButton";
 import { Ico } from "@/components/Icons";
@@ -245,11 +246,11 @@ export default function NewsWorkspace() {
           {items.length > 0 && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="text-[11px] font-semibold text-stone-600">Sort by</span>
-              <select aria-label="Sort by" className="h-8 border border-stone-300 bg-white px-2 text-[11px] font-semibold text-stone-800" value={sortKey} onChange={(e) => setSortKey(e.target.value as "name" | "time" | "size")}>
+              <NativeSelect aria-label="Sort by" className="h-8 border border-stone-300 bg-white px-2 text-[11px] font-semibold text-stone-800" value={sortKey} onChange={(e) => setSortKey(e.target.value as "name" | "time" | "size")}>
                 <option value="name">Name</option>
                 <option value="time">Date / time</option>
                 <option value="size">File size</option>
-              </select>
+              </NativeSelect>
               <button type="button" className={btnSm} onClick={() => sortBy("up")} disabled={!!busy} title="Smallest, oldest or A first">↑ Increasing</button>
               <button type="button" className={btnSm} onClick={() => sortBy("down")} disabled={!!busy} title="Largest, newest or Z first">↓ Decreasing</button>
               <button type="button" className={btnSm} onClick={reverse} disabled={!!busy}>Reverse</button>
@@ -305,19 +306,19 @@ export default function NewsWorkspace() {
               <input className={`${sel} mt-1`} value={date} maxLength={60} onChange={(e) => setDate(e.target.value)} />
             </label>
             <label className="block text-xs font-semibold text-stone-700">Screenshots per page
-              <select className={`${sel} mt-1`} value={s.layout} onChange={(e) => set("layout", e.target.value)}>{LAYOUTS.map((l) => <option key={l.v} value={l.v}>{l.l}</option>)}</select>
+              <NativeSelect className={`${sel} mt-1`} value={s.layout} onChange={(e) => set("layout", e.target.value)}>{LAYOUTS.map((l) => <option key={l.v} value={l.v}>{l.l}</option>)}</NativeSelect>
             </label>
             <label className="block text-xs font-semibold text-stone-700">Page direction
-              <select className={`${sel} mt-1`} value={s.orient} onChange={(e) => set("orient", e.target.value)}><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select>
+              <NativeSelect className={`${sel} mt-1`} value={s.orient} onChange={(e) => set("orient", e.target.value)}><option value="portrait">Portrait</option><option value="landscape">Landscape</option></NativeSelect>
             </label>
             <label className="block text-xs font-semibold text-stone-700">Title on
-              <select className={`${sel} mt-1`} value={s.header} onChange={(e) => set("header", e.target.value)}><option value="every">Every page</option><option value="first">First page only</option><option value="none">No title</option></select>
+              <NativeSelect className={`${sel} mt-1`} value={s.header} onChange={(e) => set("header", e.target.value)}><option value="every">Every page</option><option value="first">First page only</option><option value="none">No title</option></NativeSelect>
             </label>
             <label className="block text-xs font-semibold text-stone-700">Title style
-              <select className={`${sel} mt-1`} value={s.titleStyle} onChange={(e) => set("titleStyle", e.target.value)}>{TITLE_STYLES.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}</select>
+              <NativeSelect className={`${sel} mt-1`} value={s.titleStyle} onChange={(e) => set("titleStyle", e.target.value)}>{TITLE_STYLES.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}</NativeSelect>
             </label>
             <label className="block text-xs font-semibold text-stone-700">Accent colour
-              <select className={`${sel} mt-1`} value={s.theme} onChange={(e) => set("theme", e.target.value)}><option value="navy">Navy</option><option value="red">Red</option><option value="green">Green</option><option value="black">Black</option></select>
+              <NativeSelect className={`${sel} mt-1`} value={s.theme} onChange={(e) => set("theme", e.target.value)}><option value="navy">Navy</option><option value="red">Red</option><option value="green">Green</option><option value="black">Black</option></NativeSelect>
             </label>
             <label className="block text-xs font-semibold text-stone-700 sm:col-span-2">Footer text (optional)
               <input className={`${sel} mt-1`} value={s.footer} maxLength={90} placeholder="Compiled by the media desk" onChange={(e) => set("footer", e.target.value)} />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Ico } from "@/components/Icons";
 import { Card, btnPlain, btnSm, btnIcon, useToast } from "@/components/linkdesk/ui";
 import { assembleRedacted } from "@/lib/pdf/browser";
@@ -189,7 +190,7 @@ export default function Redact() {
             </div>
           </Field>
           {found && <p className="text-[11px] text-stone-600" aria-live="polite">{found}</p>}
-          <Field label="Cover colour"><select className={sel} value={fill} onChange={(e) => setFill(e.target.value)}><option value="#000000">Black</option><option value="#ffffff">White</option><option value="#6b7280">Grey</option></select></Field>
+          <Field label="Cover colour"><NativeSelect className={sel} value={fill} onChange={(e) => setFill(e.target.value)}><option value="#000000">Black</option><option value="#ffffff">White</option><option value="#6b7280">Grey</option></NativeSelect></Field>
           <div className="flex items-center justify-between text-xs font-semibold text-stone-700">
             <span>{boxes.length} area{boxes.length === 1 ? "" : "s"} marked</span>
             <button title="Clear all" aria-label="Clear all" type="button" className={btnIcon} disabled={!boxes.length} onClick={() => { const prev = boxes; setBoxes([]); setSelected(null); setMade(null); toast(`Cleared ${prev.length} ${prev.length === 1 ? "box" : "boxes"}.`, "ok", { label: "Undo", run: () => setBoxes(prev) }); }}><Ico n="trash" /></button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Card, btnPlain } from "@/components/linkdesk/ui";
 import { addWatermark, textMark } from "@/lib/pdf/browser";
 import { Field, Finish, Open, PosGrid, Seg, Thumb, sel, stem, useSource, type Made } from "./shared";
@@ -108,7 +109,7 @@ export default function Watermark() {
           <>
             <Field label="Text (any language)"><textarea rows={2} className={sel} value={text} maxLength={120} onChange={(e) => touch(setText)(e.target.value)} /></Field>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Field label="Font"><select className={sel} value={font} onChange={(e) => touch(setFont)(e.target.value)}>{FONTS.map((f) => <option key={f}>{f}</option>)}</select></Field>
+              <Field label="Font"><NativeSelect className={sel} value={font} onChange={(e) => touch(setFont)(e.target.value)}>{FONTS.map((f) => <option key={f}>{f}</option>)}</NativeSelect></Field>
               <Field label="Size"><input type="number" min={8} max={300} className={sel} value={size} onChange={(e) => touch(setSize)(Math.min(300, Math.max(8, Number(e.target.value) || 60)))} /></Field>
               <Field label="Colour"><input type="color" className="h-8 w-full border border-stone-300 bg-white" value={color} onChange={(e) => touch(setColor)(e.target.value)} /></Field>
               <Field label="Style">
@@ -134,14 +135,14 @@ export default function Watermark() {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Transparency">
-            <select className={sel} value={opacity} onChange={(e) => touch(setOpacity)(Number(e.target.value))}>
+            <NativeSelect className={sel} value={opacity} onChange={(e) => touch(setOpacity)(Number(e.target.value))}>
               <option value={1}>No transparency</option><option value={0.75}>25%</option><option value={0.5}>50%</option><option value={0.25}>75%</option>
-            </select>
+            </NativeSelect>
           </Field>
           <Field label="Rotation">
-            <select className={sel} value={rotation} onChange={(e) => touch(setRotation)(Number(e.target.value))}>
+            <NativeSelect className={sel} value={rotation} onChange={(e) => touch(setRotation)(Number(e.target.value))}>
               <option value={0}>Do not rotate</option><option value={45}>45°</option><option value={-45}>−45°</option><option value={90}>90°</option><option value={180}>180°</option><option value={270}>270°</option>
-            </select>
+            </NativeSelect>
           </Field>
           <Field label="From page"><input type="number" min={1} max={src.count} className={sel} value={from} onChange={(e) => touch(setFrom)(Math.max(1, Math.floor(Number(e.target.value)) || 1))} /></Field>
           <Field label="To page"><input type="number" min={1} max={src.count} className={sel} value={to} onChange={(e) => touch(setTo)(Math.min(src.count, Math.floor(Number(e.target.value)) || src.count))} /></Field>

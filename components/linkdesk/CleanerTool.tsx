@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Ico } from "@/components/Icons";
 import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
 import { checkFileSize, LIMITS, plural } from "@/lib/linkdesk/core";
@@ -229,7 +230,7 @@ export default function CleanerTool({ inbox, onSent }: { inbox: Inbox; onSent: (
         <p role="note" className="text-[11px] text-stone-500">Maximum file size is 100 MB per file.</p>
         <label className="block text-xs font-medium text-stone-600">
           Everything after the ? in a link
-          <select
+          <NativeSelect
             value={query}
             onChange={(e) => {
               const q = e.target.value as QueryMode;
@@ -242,7 +243,7 @@ export default function CleanerTool({ inbox, onSent }: { inbox: Inbox; onSent: (
             <option value="all">Always remove it</option>
             <option value="tracking">Remove tracking codes only</option>
             <option value="keep">Keep it all</option>
-          </select>
+          </NativeSelect>
           <span className="mt-1 block text-[11px] font-normal text-stone-500">Example: x.com/user/status/123?a=abc becomes x.com/user/status/123. Search pages, YouTube videos and .php or .aspx pages keep what they need.</span>
         </label>
         <div className="grid gap-2 sm:grid-cols-2">

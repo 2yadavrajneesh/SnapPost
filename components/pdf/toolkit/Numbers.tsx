@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Card, btnPlain } from "@/components/linkdesk/ui";
 import { addPageNumbers, numberLabel, type NumberOpts } from "@/lib/pdf/browser";
 import { Field, Finish, Open, PosGrid, Seg, Thumb, sel, stem, useSource, type Made } from "./shared";
@@ -51,9 +52,9 @@ export default function Numbers() {
         <div className="flex flex-wrap items-start gap-6">
           <Field label="Position"><PosGrid value={o.pos} onChange={(v) => set("pos", v)} /></Field>
           <Field label="Margin" className="min-w-[10rem] flex-1">
-            <select className={sel} value={o.margin} onChange={(e) => set("margin", e.target.value as keyof typeof MARGINS)}>
+            <NativeSelect className={sel} value={o.margin} onChange={(e) => set("margin", e.target.value as keyof typeof MARGINS)}>
               <option value="small">Small</option><option value="rec">Recommended</option><option value="big">Big</option>
-            </select>
+            </NativeSelect>
           </Field>
         </div>
         {o.facing && <p className="text-[11px] text-stone-500">Facing pages: on even pages the number moves to the opposite side, so numbers sit on the outer edge when printed two-sided.</p>}
@@ -63,15 +64,15 @@ export default function Numbers() {
           <Field label="To page"><input type="number" min={1} max={src.count} className={sel} value={o.to} onChange={(e) => set("to", Math.min(src.count, Math.floor(Number(e.target.value)) || src.count))} /></Field>
         </div>
         <Field label="Text">
-          <select className={sel} value={o.text} onChange={(e) => set("text", e.target.value as NumberOpts["text"])}>
+          <NativeSelect className={sel} value={o.text} onChange={(e) => set("text", e.target.value as NumberOpts["text"])}>
             <option value="n">Only the page number (recommended)</option>
             <option value="page-n">Page n</option>
             <option value="page-n-of-N">Page n of N</option>
             <option value="n-of-N">n of N</option>
-          </select>
+          </NativeSelect>
         </Field>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Field label="Font"><select className={sel} value={o.font} onChange={(e) => set("font", e.target.value as NumberOpts["font"])}><option>Helvetica</option><option>Times</option><option>Courier</option></select></Field>
+          <Field label="Font"><NativeSelect className={sel} value={o.font} onChange={(e) => set("font", e.target.value as NumberOpts["font"])}><option>Helvetica</option><option>Times</option><option>Courier</option></NativeSelect></Field>
           <Field label="Size"><input type="number" min={6} max={72} className={sel} value={o.size} onChange={(e) => set("size", Math.min(72, Math.max(6, Number(e.target.value) || 12)))} /></Field>
           <Field label="Colour"><input type="color" className="h-8 w-full border border-stone-300 bg-white" value={o.color} onChange={(e) => set("color", e.target.value)} /></Field>
           <Field label="Style">

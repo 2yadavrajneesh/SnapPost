@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import HistoryBar from "@/components/HistoryBar";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -23,25 +24,10 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
   useEffect(() => setOpen(false), [path]);
   useEffect(() => {
     if (!open) return;
-    const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOpen(false);
-        menuBtn.current?.focus();
-      }
-    };
-    const away = (e: PointerEvent) => {
-      if (root.current && !root.current.contains(e.target as Node)) setOpen(false);
-    };
     const wide = window.matchMedia("(min-width: 1280px)");
     const grow = () => wide.matches && setOpen(false);
-    document.addEventListener("keydown", key);
-    document.addEventListener("pointerdown", away);
     wide.addEventListener("change", grow);
-    return () => {
-      document.removeEventListener("keydown", key);
-      document.removeEventListener("pointerdown", away);
-      wide.removeEventListener("change", grow);
-    };
+    return () => wide.removeEventListener("change", grow);
   }, [open]);
 
   return (
@@ -100,8 +86,7 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
             type="button"
             aria-label={open ? "Close tool switcher" : "Switch tool"}
             aria-expanded={open}
-            aria-controls="tools-menu"
-            onClick={() => setOpen((o) => !o)}
+                        onClick={() => setOpen((o) => !o)}
             className={`flex h-9 w-9 items-center justify-center rounded-full border transition xl:hidden ${open ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300 bg-white text-stone-800 hover:bg-stone-100"}`}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -111,9 +96,13 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
         </div>
       </div>
 
-      {open && (
-        <div id="tools-menu" className="absolute right-3 top-full z-40 mt-2 w-[232px] border border-stone-300 bg-[#faf6f1] p-2 shadow-xl sm:right-6 xl:hidden">
-          <nav aria-label="Tools" className="grid grid-cols-2 gap-1.5">
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="right" className="w-[272px] gap-0 bg-[#faf6f1] p-0 sm:max-w-[272px] xl:hidden">
+          <SheetHeader className="border-b border-stone-300 p-4">
+            <SheetTitle className="text-sm">Switch tool</SheetTitle>
+            <SheetDescription className="sr-only">Choose which tool to open</SheetDescription>
+          </SheetHeader>
+          <nav aria-label="Tools" className="grid grid-cols-2 gap-2 p-3">
             {TOOLS.map((n) => {
               const here = n.id === tool.id;
               return (
@@ -123,7 +112,7 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
                   title={n.hint}
                   aria-current={here ? "page" : undefined}
                   style={{ ["--tc" as string]: n.accent }}
-                  className="tool-pill flex flex-col items-center gap-1.5 px-1 py-2.5 text-center text-xs font-semibold transition"
+                  className="tool-pill flex flex-col items-center gap-1.5 px-1 py-3 text-center text-xs font-semibold transition"
                 >
                   <ToolIcon id={n.id} size={40} />
                   {n.name}
@@ -131,8 +120,8 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
               );
             })}
           </nav>
-        </div>
-      )}
+        </SheetContent>
+      </Sheet>
     </header>
   );
 }
