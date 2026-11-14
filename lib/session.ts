@@ -110,6 +110,7 @@ export async function sSet(key: string, value: unknown): Promise<boolean> {
   if (resetting) return false;
   try {
     await tx("readwrite", (s) => s.put(value, key));
+    window.dispatchEvent(new Event("snap:saved"));
     return true;
   } catch {
     return false;
