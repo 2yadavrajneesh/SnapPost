@@ -1,57 +1,53 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
+import { TriangleAlert } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { clearApp } from "@/lib/session";
 import type { ToolId } from "@/lib/tools";
 
 /** Warning shown before the whole page is put back to its starting state. */
 export default function ResetPageDialog({ open, onClose, app, name }: { open: boolean; onClose: () => void; app: ToolId; name: string }) {
   const [busy, setBusy] = useState(false);
-  const cancel = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    cancel.current?.focus();
-    const key = (e: KeyboardEvent) => e.key === "Escape" && !busy && onClose();
-    document.addEventListener("keydown", key);
-    return () => document.removeEventListener("keydown", key);
-  }, [open, busy, onClose]);
-  if (!open || typeof document === "undefined") return null;
-  // drawn on the page itself, not inside the header, so it is never boxed in or cut off
-  return createPortal(
-    <div className="snap-backdrop fixed inset-0 z-[100] flex overflow-y-auto bg-black/50 p-4" onMouseDown={(e) => e.target === e.currentTarget && !busy && onClose()}>
-      <div role="alertdialog" aria-modal="true" aria-labelledby="rs-t" aria-describedby="rs-d" className="snap-scale mx-auto my-auto w-full max-w-sm border-t-4 border-amber-500 bg-white p-5 shadow-2xl">
-        <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 flex-none items-center justify-center bg-amber-100 text-amber-700">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M12 3 2 20h20zM12 10v4M12 17.5v.01" />
-            </svg>
-          </span>
-          <div>
-            <h2 id="rs-t" className="text-sm font-bold text-stone-900">Reset the whole {name} page?</h2>
-            <p id="rs-d" className="mt-1 text-xs leading-relaxed text-stone-600">
-              Everything on this page goes back to how it looked when you first opened it: your files, links, pictures, settings and undo history are deleted from this browser. This cannot be undone.
-            </p>
+  return (
+    <AlertDialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
+      <AlertDialogContent className="max-h-[92vh] overflow-y-auto border-t-4 border-t-amber-500 sm:max-w-sm">
+        <AlertDialogHeader className="text-left">
+          <div className="flex items-start gap-3">
+            <span className="flex size-10 flex-none items-center justify-center bg-amber-100 text-amber-700">
+              <TriangleAlert className="size-5" aria-hidden="true" />
+            </span>
+            <div className="space-y-1">
+              <AlertDialogTitle className="text-sm font-bold">Reset the whole {name} page?</AlertDialogTitle>
+              <AlertDialogDescription className="text-xs leading-relaxed">
+                Everything on this page goes back to how it looked when you first opened it: your files, links, pictures, settings and undo history are deleted from this browser. This cannot be undone.
+              </AlertDialogDescription>
+            </div>
           </div>
-        </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <button ref={cancel} type="button" disabled={busy} onClick={onClose} className="h-9 border border-stone-300 bg-white px-4 text-xs font-semibold text-stone-800 hover:bg-stone-100">
-            Cancel
-          </button>
-          <button
-            type="button"
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-row justify-end gap-2">
+          <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+          <Button
+            variant="destructive"
             disabled={busy}
             onClick={() => {
               setBusy(true);
               void clearApp(app).then(() => window.location.reload());
             }}
-            className="h-9 bg-red-600 px-4 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
           >
             {busy ? "Resetting…" : "Yes, reset the page"}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
