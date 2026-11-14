@@ -10,7 +10,7 @@ let uid = 0;
 
 /** Shared by Organize (reorder, delete, duplicate, add blank pages) and Rotate (turn pages one by one). */
 export default function Organize({ mode }: { mode: "organize" | "rotate" }) {
-  const { src, error: srcErr, loading, load, clear } = useSource();
+  const { src, error: srcErr, loading, load, clear } = useSource(mode);
   const [pages, setPages] = useState<P[]>([]);
   const [drag, setDrag] = useState<number | null>(null);
   const [over, setOver] = useState<number | null>(null);

@@ -19,7 +19,7 @@ async function pictureFile(f: File): Promise<{ bytes: Uint8Array; png: boolean; 
 }
 
 export default function Watermark() {
-  const { src, error: srcErr, loading, load, clear } = useSource();
+  const { src, error: srcErr, loading, load, clear } = useSource("watermark");
   const [kind, setKind] = useState<"text" | "image">("text");
   const [text, setText] = useState("CONFIDENTIAL");
   const [font, setFont] = useState("Arial");

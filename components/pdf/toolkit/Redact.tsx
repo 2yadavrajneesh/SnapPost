@@ -100,7 +100,7 @@ async function findBoxes(src: Source, term: string): Promise<Omit<Box, "id">[]> 
 }
 
 export default function Redact() {
-  const { src, error: srcErr, loading, load, clear } = useSource();
+  const { src, error: srcErr, loading, load, clear } = useSource("redact");
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [term, setTerm] = useState("");

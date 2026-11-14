@@ -8,7 +8,7 @@ import { Field, Finish, Open, PosGrid, Seg, Thumb, sel, stem, useSource, type Ma
 const MARGINS = { small: 18, rec: 36, big: 60 } as const;
 
 export default function Numbers() {
-  const { src, error: srcErr, loading, load, clear } = useSource();
+  const { src, error: srcErr, loading, load, clear } = useSource("numbers");
   const [o, setO] = useState({ pos: 8, facing: false, margin: "rec" as keyof typeof MARGINS, first: 1, from: 1, to: 1, text: "n" as NumberOpts["text"], font: "Helvetica" as NumberOpts["font"], size: 12, bold: false, italic: false, color: "#111111" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");

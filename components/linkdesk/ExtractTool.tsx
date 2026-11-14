@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
 import { checkFileSize, LIMITS, plural } from "@/lib/linkdesk/core";
 import { getXLSX } from "@/lib/linkdesk/loader";
 import { finish, fromText, readDocx, readPdf, type ExtractOpts, type Found } from "@/lib/linkdesk/extract";
@@ -22,6 +23,24 @@ export default function ExtractTool({ onSent, onClean }: { onSent: () => void; o
   const [busy, setBusy] = useState("");
   const [limit, setLimit] = useState(PAGE);
   const file = useRef<File | null>(null);
+
+  const restoredX = useSessionSnapshot("linkdesk:extract", { text, opts, items, name, fileName: file.current?.name ?? "" }, async (v) => {
+    setText(v.text ?? "");
+    if (v.opts) setOpts(v.opts);
+    setItems(v.items ?? []);
+    setName(v.name ?? "");
+    if (v.fileName) {
+      const blob = await sGet<Blob>("linkdesk:extract:file");
+      if (blob) file.current = new File([blob], v.fileName);
+    }
+  });
+  const savedFile = useRef<File | null>(null);
+  useEffect(() => {
+    if (!restoredX || savedFile.current === file.current) return;
+    savedFile.current = file.current;
+    if (file.current) void sSet("linkdesk:extract:file", file.current);
+    else void sDel("linkdesk:extract:file");
+  });
   const job = useRef(0);
 
   function show(list: Found[], label: string, n = "") {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
 import { Card, btnPlain, btnPrimary, btnSm, useCopy } from "@/components/linkdesk/ui";
 import { deleteResult, downloadHref, getConfig, runTool, uploadFile, type PdfConfig, type RunResult } from "@/lib/pdf/client";
 
@@ -309,6 +310,20 @@ export default function EditorWorkspace() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<RunResult | null>(null);
   const [over, setOver] = useState(false);
+
+  // the PDF and everything drawn on it stay after a reload
+  const restoredEdit = useSessionSnapshot("editpdf:edit:state", { name: file?.name ?? "", annots, zoom }, async (v) => {
+    const blob = v.name ? await sGet<Blob>("editpdf:edit:file") : undefined;
+    if (!blob) return;
+    await open(new File([blob], v.name, { type: "application/pdf" }));
+    setAnnots(v.annots ?? []);
+    setZoom(v.zoom ?? 1);
+  });
+  useEffect(() => {
+    if (!restoredEdit) return;
+    if (file) void sSet("editpdf:edit:file", file);
+    else void sDel("editpdf:edit:file");
+  }, [file, restoredEdit]);
   const scroller = useRef<HTMLDivElement>(null);
   const pageEls = useRef(new Map<number, HTMLElement>());
   const imgInput = useRef<HTMLInputElement>(null);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
 import { checkFileSize, LIMITS, plural } from "@/lib/linkdesk/core";
 import { getXLSX } from "@/lib/linkdesk/loader";
 import { collectLinks, convertWorkbook, type MakerStats } from "@/lib/linkdesk/maker";
@@ -22,6 +23,14 @@ export default function MakerTool({ onSent }: { onSent: () => void }) {
   const [res, setRes] = useState<{ wb: any; stats: MakerStats } | null>(null);
   const [sheet, setSheet] = useState(0);
   const [msg, setMsg] = useState<{ text: string; kind: "" | "warn" | "ok" }>({ text: "", kind: "" });
+
+  // the spreadsheet you opened comes back after a reload
+  const restoredM = useSessionSnapshot("linkdesk:maker", { name, bare }, async (v) => {
+    setBare(!!v.bare);
+    const saved = v.name ? await sGet<{ name: string; bytes: ArrayBuffer }>("linkdesk:maker:file") : undefined;
+    if (saved) await loadFile(new File([saved.bytes], saved.name));
+  });
+  void restoredM;
 
   /** Reads the saved file again and converts it (needed whenever "also link bare domains" changes). */
   function build(withBare: boolean) {
@@ -56,6 +65,7 @@ export default function MakerTool({ onSent }: { onSent: () => void }) {
     const previous = buf.current;
     try {
       buf.current = await file.arrayBuffer();
+      void sSet("linkdesk:maker:file", { name: file.name, bytes: buf.current });
       setName(file.name);
       setSheet(0);
       build(bare);

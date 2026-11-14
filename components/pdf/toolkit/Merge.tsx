@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, btnPlain, btnSm } from "@/components/linkdesk/ui";
 import { loadDoc, mergePdfs } from "@/lib/pdf/browser";
+import { sDel, sGet, sSet } from "@/lib/session";
 import { Finish, MAX_BYTES, fmtSize, type Made } from "./shared";
 
 type F = { id: number; name: string; bytes: Uint8Array; pages: number };
@@ -15,6 +16,26 @@ export default function Merge() {
   const [error, setError] = useState("");
   const [made, setMade] = useState<Made | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const [restored, setRestored] = useState(false);
+  const saved = useRef(new Set<number>());
+  // the list of files comes back after a reload
+  useEffect(() => {
+    let dead = false;
+    sGet<{ id: number; name: string; bytes: Uint8Array; pages: number }[]>("editpdf:merge:files").then((v) => {
+      if (!dead && v?.length) {
+        uid = Math.max(uid, ...v.map((x) => x.id));
+        v.forEach((x) => saved.current.add(x.id));
+        setFiles(v);
+      }
+      if (!dead) setRestored(true);
+    });
+    return () => { dead = true; };
+  }, []);
+  useEffect(() => {
+    if (!restored) return;
+    if (files.length) void sSet("editpdf:merge:files", files);
+    else void sDel("editpdf:merge:files");
+  }, [files, restored]);
 
   async function add(list: FileList | File[]) {
     setError("");

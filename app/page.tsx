@@ -1,6 +1,7 @@
 "use client";
 
 import SiteHeader from "@/components/SiteHeader";
+import { useSessionSnapshot } from "@/lib/session";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import AppearanceTiles, { FONT_LABELS } from "@/components/AppearanceTiles";
@@ -112,6 +113,31 @@ export default function Home() {
   const [viewportH, setViewportH] = useState(800);
   const [isDesktop, setIsDesktop] = useState(false);
   const [zoom, setZoom] = useState<number | null>(null); // null = fit to window
+
+  // everything the person has set up is kept in this browser until Reset or a long idle spell
+  const saved = useSessionSnapshot("snappost:state", { tweet, settings, link, hasTweet, showEdit, showQuote, displayInfo, showMedia, showParents, showParentMedia, thread, threadState: threadState === "found" ? "found" : threadState === "none" ? "none" : "idle", shot, slide, highlights, redact, format, pdfSize, pdfOrient }, (v) => {
+    lastFetched.current = v.link; // already loaded: do not fetch it again
+    setTweet(v.tweet);
+    setSettings({ ...DEFAULT_SETTINGS, ...v.settings });
+    setLink(v.link);
+    setHasTweet(v.hasTweet);
+    setShowEdit(v.showEdit);
+    setShowQuote(v.showQuote);
+    setDisplayInfo(v.displayInfo);
+    setShowMedia(v.showMedia);
+    setShowParents(v.showParents);
+    setShowParentMedia(v.showParentMedia);
+    setThread(v.thread);
+    setThreadState(v.threadState as ThreadState);
+    setShot(v.shot);
+    setSlide(v.slide);
+    setHighlights(v.highlights);
+    setRedact(v.redact);
+    setFormat(v.format);
+    setPdfSize(v.pdfSize);
+    setPdfOrient(v.pdfOrient);
+  });
+  void saved;
 
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) => setSettings((s) => ({ ...s, [key]: value }));
   const setT = <K extends keyof TweetData>(key: K, value: TweetData[K]) => setTweet((t) => ({ ...t, [key]: value }));
@@ -825,7 +851,7 @@ export default function Home() {
                 <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
                 <path d="M21 3v5h-5" />
               </svg>
-              Reset
+              Reset styles
             </button>
           </div>
 

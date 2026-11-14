@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
 import { checkFileSize, LIMITS, plural } from "@/lib/linkdesk/core";
 import { cleanText, workbookText, type CleanItem, type CleanOpts, type QueryMode, type Rejected } from "@/lib/linkdesk/clean";
 import { getXLSX } from "@/lib/linkdesk/loader";
@@ -42,6 +43,17 @@ export default function CleanerTool({ inbox, onSent }: { inbox: Inbox; onSent: (
   const [busy, setBusy] = useState("");
   const [limit, setLimit] = useState(PAGE);
   const [fileTitle, setFileTitle] = useState("");
+
+  useSessionSnapshot("linkdesk:cleaner", { text, query, flags, items, rejected, dups, name, fileTitle }, (v) => {
+    setText(v.text ?? "");
+    setQuery(v.query ?? "smart");
+    if (v.flags) setFlags(v.flags);
+    setItems(v.items ?? []);
+    setRejected(v.rejected ?? []);
+    setDups(v.dups ?? 0);
+    setName(v.name ?? "");
+    setFileTitle(v.fileTitle ?? "");
+  });
   const fileText = useRef<{ text: string; name: string } | null>(null);
   const token = useRef(0);
 

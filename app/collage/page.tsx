@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSessionSnapshot } from "@/lib/session";
 import CollageFrame, { type FrameLook, type Item, type Picture } from "@/components/collage/CollageFrame";
 import { BORDERS, type BorderKind, type CardStyle } from "@/components/collage/CollageCard";
 import ScrollTop from "@/components/ScrollTop";
@@ -78,6 +79,33 @@ export default function CollageMaker() {
   // export
   const [format, setFormat] = useState<"png" | "pdf">("png");
   const [quality, setQuality] = useState<1 | 2>(1);
+
+  useSessionSnapshot(
+    "collage:state",
+    { entries, text, mode, cols, canvas, lastRow, gap, pad, bgId, customBg, card, shadow, crop, headText, headSize, headDark, classic, format, quality, before: before.current },
+    (v) => {
+      setEntries(v.entries ?? []);
+      setText(v.text ?? "");
+      setMode(v.mode ?? "grid");
+      setCols(v.cols ?? 0);
+      setCanvas(v.canvas ?? "auto");
+      setLastRow(v.lastRow ?? "center");
+      setGap(v.gap ?? 28);
+      setPad(v.pad ?? 56);
+      setBgId(v.bgId ?? "cream");
+      setCustomBg(v.customBg ?? "#f4d8e6");
+      if (v.card) setCard(v.card);
+      setShadow(!!v.shadow);
+      setCrop(!!v.crop);
+      setHeadText(v.headText ?? "");
+      setHeadSize(v.headSize ?? 44);
+      setHeadDark(v.headDark ?? true);
+      setClassic(!!v.classic);
+      before.current = v.before ?? null;
+      setFormat(v.format ?? "png");
+      setQuality(v.quality ?? 1);
+    },
+  );
   const [exporting, setExporting] = useState(false);
 
   const stage = useRef<HTMLDivElement>(null);

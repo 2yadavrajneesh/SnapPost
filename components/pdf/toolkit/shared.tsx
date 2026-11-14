@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Card, DropZone, btnPlain, btnPrimary, field } from "@/components/linkdesk/ui";
 import { zipFiles } from "@/lib/pdf/browser";
+import { sDel, sGet, sSet } from "@/lib/session";
 
 export type PdfDocProxy = import("pdfjs-dist").PDFDocumentProxy;
 export const MAX_BYTES = 150 * 1048576;
@@ -18,7 +19,7 @@ export async function openPdfjs(bytes: Uint8Array): Promise<PdfDocProxy> {
 export type Source = { name: string; bytes: Uint8Array; doc: PdfDocProxy; count: number; sizes: [number, number][] };
 
 /** Loads one PDF from a file: its bytes, a viewer document and the size of each page. */
-export function useSource() {
+export function useSource(key?: string) {
   const [src, setSrc] = useState<Source | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,6 +41,7 @@ export function useSource() {
       const s = { name: f.name, bytes, doc, count: doc.numPages, sizes };
       cur.current = s;
       setSrc(s);
+      if (key) void sSet(`editpdf:tool:${key}`, { name: f.name, bytes });
     } catch (e) {
       setError(e instanceof Error && /password/i.test(e.message) ? "This PDF is password protected. Remove the password first." : "That file could not be read as a PDF.");
     } finally {
@@ -53,6 +55,18 @@ export function useSource() {
     setError("");
   }, []);
 
+  // the open file comes back after a reload
+  useEffect(() => {
+    if (!key) return;
+    let dead = false;
+    sGet<{ name: string; bytes: Uint8Array }>(`editpdf:tool:${key}`).then((v) => {
+      if (v && !dead) void load(new File([v.bytes as BlobPart], v.name, { type: "application/pdf" }));
+    });
+    return () => {
+      dead = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
   return { src, error, setError, loading, load, clear };
 }
 

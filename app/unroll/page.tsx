@@ -7,6 +7,7 @@ import { downloadBlob } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
 import { DEFAULT_LABEL_STRENGTH, LABEL_COLORS, LABEL_PRESETS, NUM_FORMATS, PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type NumFormat, type NumPos, type Orientation, type PageLabel, type PageSizeId } from "@/lib/paper";
 import NumPosPicker from "@/components/NumPosPicker";
+import { useSessionSnapshot } from "@/lib/session";
 import PageModePicker, { type PageMode } from "@/components/PageModePicker";
 import ScrollTop from "@/components/ScrollTop";
 import HighlightEditor from "@/components/HighlightEditor";
@@ -149,6 +150,40 @@ export default function Unroller() {
   const theme = PAPER_THEMES.find((t) => t.id === themeId) ?? PAPER_THEMES[0];
   const reqId = useRef(0);
   const lastFetched = useRef("");
+
+  useSessionSnapshot(
+    "threadscroll:state",
+    { link, thread, numbers, leftMarks, margins, zoom, media, stats, size, orientation, fontSize, numPos, numFormat, label, hl, redact, editIdx, mode, manyText, expand, skipped, fileName, fileLinks, pageMode, themeId, markStyle },
+    (v) => {
+      lastFetched.current = v.link; // already loaded
+      setLink(v.link ?? "");
+      setThread(v.thread ?? null);
+      setNumbers(v.numbers ?? true);
+      setLeftMarks(v.leftMarks ?? true);
+      setMargins(v.margins ?? "default");
+      setZoom(v.zoom ?? 1);
+      setMedia(v.media ?? true);
+      setStats(v.stats ?? false);
+      setSize(v.size ?? "a4");
+      setOrientation(v.orientation ?? "portrait");
+      setFontSize(v.fontSize ?? 16);
+      setNumPos(v.numPos ?? "bottom");
+      setNumFormat(v.numFormat ?? "of");
+      setLabel(v.label ?? null);
+      setHl(v.hl ?? {});
+      setRedact(v.redact ?? NO_REDACT);
+      setEditIdx(v.editIdx ?? 0);
+      setMode(v.mode ?? "one");
+      setManyText(v.manyText ?? "");
+      setExpand(v.expand ?? true);
+      setSkipped(v.skipped ?? []);
+      setFileName(v.fileName ?? "");
+      setFileLinks(v.fileLinks ?? []);
+      setPageMode(v.pageMode ?? "single");
+      setThemeId(v.themeId ?? PAPER_THEMES[0].id);
+      setMarkStyle(v.markStyle ?? "marker");
+    },
+  );
   const linkInput = useRef<HTMLInputElement>(null);
   const flash = (m: string) => {
     setNotice(m);

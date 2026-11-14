@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
 import { archiveLinks, normalizeWebUrl, snapshotDate, type Snapshot } from "@/lib/archive";
 import { btnPlain, btnPrimary, btnSm, Card, Chip, field, useCopy, useToast } from "./ui";
 
@@ -42,6 +43,7 @@ export default function ArchiveTool() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [fresh, setFresh] = useState<Snapshot | null>(null);
   const [history, setHistory] = useState<Saved[]>([]);
+  useSessionSnapshot("linkdesk:archive", { link }, (v) => setLink(v.link ?? ""));
   const input = useRef<HTMLInputElement>(null);
   const reqId = useRef(0);
 

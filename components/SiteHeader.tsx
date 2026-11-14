@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { TOOLS, ToolIcon, toolFor } from "@/lib/tools";
 import { useSiteTheme } from "@/lib/useSiteTheme";
+import { clearApp } from "@/lib/session";
 
 /**
  * Top bar shared by every tool. On wide screens the five tools sit in the bar; on tablets and phones they
@@ -15,6 +16,7 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
   const [theme, setTheme] = useSiteTheme();
   const tool = toolFor(path);
   const [open, setOpen] = useState(false);
+  const [armed, setArmed] = useState(false);
   const root = useRef<HTMLElement>(null);
   const menuBtn = useRef<HTMLButtonElement>(null);
 
@@ -74,6 +76,26 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
 
         <div className="flex flex-none items-center gap-2">
           {actions}
+          <button
+            type="button"
+            onClick={() => {
+              if (!armed) {
+                setArmed(true);
+                setTimeout(() => setArmed(false), 4000);
+                return;
+              }
+              void clearApp(tool.id).then(() => window.location.reload());
+            }}
+            title={`Clear everything ${tool.name} has saved (files, links, settings) and start fresh`}
+            aria-label={armed ? "Click again to clear all saved data" : `Reset ${tool.name}`}
+            className={`flex h-9 items-center gap-1.5 border px-3 text-xs font-semibold transition ${armed ? "border-red-600 bg-red-600 text-white" : "border-stone-300 bg-white text-stone-800 hover:bg-stone-100"}`}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
+              <path d="M21 3v5h-5" />
+            </svg>
+            <span className={armed ? "" : "hidden sm:inline"}>{armed ? "Click again to clear" : "Reset"}</span>
+          </button>
           <button
             type="button"
             aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}

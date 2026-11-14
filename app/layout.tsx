@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
+import SessionGuard from "@/components/SessionGuard";
 
 export const metadata: Metadata = {
   title: "SnapPost — Turn posts into polished images",
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        <SessionGuard />
         {children}
         <Analytics />
         <SpeedInsights />

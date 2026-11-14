@@ -8,7 +8,7 @@ import { Field, Finish, Open, Seg, Thumb, asZip, sel, stem, useSource, type Made
 type Mode = SplitMode | "pick";
 
 export default function Split() {
-  const { src, error: srcErr, loading, load, clear } = useSource();
+  const { src, error: srcErr, loading, load, clear } = useSource("split");
   const [mode, setMode] = useState<Mode>("ranges");
   const [spec, setSpec] = useState("");
   const [every, setEvery] = useState(1);

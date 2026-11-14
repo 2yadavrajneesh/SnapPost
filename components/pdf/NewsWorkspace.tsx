@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
 import { Card, btnPlain, btnPrimary, btnSm, field, useCopy } from "@/components/linkdesk/ui";
 import NewsPreview from "./NewsPreview";
 import { TITLE_STYLES } from "@/lib/pdf/newsLayout";
@@ -53,6 +54,38 @@ export default function NewsWorkspace() {
       } catch {}
       return next;
     });
+
+  // The pictures themselves are kept as files (one entry each); the rest is a small list of notes about them.
+  const stored = useRef(new Set<number>());
+  const meta = items.map((i) => ({ id: i.id, name: i.file.name, type: i.file.type, mod: i.file.lastModified, caption: i.caption, source: i.source, dx: i.dx, dy: i.dy, page: i.page, nw: i.nw, nh: i.nh }));
+  const restored = useSessionSnapshot("clipbook:state", { meta, date: "" }, async (v) => {
+    const out: Item[] = [];
+    for (const m of v.meta ?? []) {
+      const blob = await sGet<Blob>(`clipbook:file:${m.id}`);
+      if (!blob) continue;
+      const f = new File([blob], m.name, { type: m.type, lastModified: m.mod });
+      stored.current.add(m.id);
+      seq = Math.max(seq, m.id);
+      out.push({ id: m.id, file: f, url: URL.createObjectURL(f), caption: m.caption, source: m.source, nw: m.nw, nh: m.nh, dx: m.dx, dy: m.dy, page: m.page });
+    }
+    setItems(out);
+  });
+  useEffect(() => {
+    if (!restored) return;
+    const now = new Set(items.map((i) => i.id));
+    items.forEach((i) => {
+      if (!stored.current.has(i.id)) {
+        stored.current.add(i.id);
+        void sSet(`clipbook:file:${i.id}`, i.file);
+      }
+    });
+    [...stored.current].forEach((id) => {
+      if (!now.has(id)) {
+        stored.current.delete(id);
+        void sDel(`clipbook:file:${id}`);
+      }
+    });
+  }, [items, restored]);
 
   const maxImg = cfg?.maxImageBytes ?? 25 * 1048576;
   const limit = cfg?.maxFiles ?? 60;
