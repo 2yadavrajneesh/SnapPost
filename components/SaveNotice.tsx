@@ -19,7 +19,8 @@ export default function SaveNotice() {
     const touch = (e: Event) => {
       const t = e.target as Element | null;
       // sample or pre-filled content does not count as the person's own work
-      if (t?.closest?.("[data-no-save-notice]")) { touched = 0; return; }
+      // switching tools or tabs is navigation, not work
+      if (t?.closest?.("[data-no-save-notice], [role=\"tab\"], header, nav")) { touched = 0; return; }
       touched = Date.now();
       // reading uploaded files takes longer, so allow more time before they are stored
       const files = e.type === "drop" ? (e as DragEvent).dataTransfer?.files?.length : e.type === "change" ? (t as HTMLInputElement)?.files?.length : e.type === "paste" ? (e as ClipboardEvent).clipboardData?.files?.length : 0;
