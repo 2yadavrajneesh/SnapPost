@@ -34,6 +34,7 @@ type Store = {
   markOpened: (indices: number[]) => void;
   setOpened: (indices: number[], opened: boolean) => void;
   removeAt: (i: number) => void;
+  restoreAt: (i: number, item: Store["items"][number]) => void;
   clear: () => void;
 };
 
@@ -160,6 +161,7 @@ export function LinkProvider({ children }: { children: ReactNode }) {
       markOpened: (idx) => setState((c) => ({ ...c, items: c.items.map((it, i) => (idx.includes(i) ? { ...it, opened: true, at: nowStr() } : it)) })),
       setOpened: (idx, opened) => setState((c) => ({ ...c, items: c.items.map((it, i) => (idx.includes(i) ? { ...it, opened, at: opened ? nowStr() : null } : it)) })),
       removeAt: (i) => setState((c) => ({ ...c, items: c.items.filter((_, k) => k !== i) })),
+      restoreAt: (i, item) => setState((c) => ({ ...c, items: [...c.items.slice(0, i), item, ...c.items.slice(i)] })),
       clear: () => setState((c) => ({ ...c, items: [], raw: [], source: null })),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps

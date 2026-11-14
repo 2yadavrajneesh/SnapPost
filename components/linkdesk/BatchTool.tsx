@@ -541,7 +541,7 @@ export default function BatchTool({ active }: { active: boolean }) {
                     <td className="px-3 py-2 text-right">
                       <span className="inline-flex gap-1">
                         <button title="Copy" type="button" className={btnIcon} aria-label="Copy link" onClick={() => void copy(it.url, "Copied the link.")}><Ico n="copy" /></button>
-                        <button title="Remove" type="button" className={btnIcon} aria-label="Remove link" onClick={() => (L.removeAt(idx), setManual([]))}><Ico n="x" /></button>
+                        <button title="Remove" type="button" className={btnIcon} aria-label="Remove link" onClick={() => { L.removeAt(idx); setManual([]); toast("Removed the link.", "ok", { label: "Undo", run: () => L.restoreAt(idx, it) }); }}><Ico n="x" /></button>
                       </span>
                     </td>
                   </tr>

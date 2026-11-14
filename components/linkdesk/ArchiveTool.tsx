@@ -195,7 +195,7 @@ export default function ArchiveTool() {
           {history.length > 0 && (
             <span className="flex gap-2">
               <button title="Copy all" aria-label="Copy all" type="button" className={btnIcon} onClick={() => void copy(history.map((h) => `${h.url}\n${h.snapshot}`).join("\n\n"), "List copied")}><Ico n="copy" /></button>
-              <button title="Clear list" aria-label="Clear list" type="button" className={btnIcon} onClick={() => remember([])}><Ico n="trash" /></button>
+              <button title="Clear list" aria-label="Clear list" type="button" className={btnIcon} onClick={() => { const prev = history; remember([]); toast("Cleared the list.", "ok", { label: "Undo", run: () => remember(prev) }); }}><Ico n="trash" /></button>
             </span>
           )}
         </div>

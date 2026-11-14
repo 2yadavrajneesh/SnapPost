@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Ico } from "@/components/Icons";
-import { Card, btnPlain, btnSm, btnIcon } from "@/components/linkdesk/ui";
+import { Card, btnPlain, btnSm, btnIcon, useToast } from "@/components/linkdesk/ui";
 import { assembleRedacted } from "@/lib/pdf/browser";
 import { Field, Finish, Open, sel, stem, useSource, type Made, type PdfDocProxy, type Source } from "./shared";
 
@@ -101,6 +101,7 @@ async function findBoxes(src: Source, term: string): Promise<Omit<Box, "id">[]> 
 }
 
 export default function Redact() {
+  const toast = useToast();
   const { src, error: srcErr, loading, load, clear } = useSource("redact");
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
@@ -191,7 +192,7 @@ export default function Redact() {
           <Field label="Cover colour"><select className={sel} value={fill} onChange={(e) => setFill(e.target.value)}><option value="#000000">Black</option><option value="#ffffff">White</option><option value="#6b7280">Grey</option></select></Field>
           <div className="flex items-center justify-between text-xs font-semibold text-stone-700">
             <span>{boxes.length} area{boxes.length === 1 ? "" : "s"} marked</span>
-            <button title="Clear all" aria-label="Clear all" type="button" className={btnIcon} disabled={!boxes.length} onClick={() => { setBoxes([]); setSelected(null); setMade(null); }}><Ico n="trash" /></button>
+            <button title="Clear all" aria-label="Clear all" type="button" className={btnIcon} disabled={!boxes.length} onClick={() => { const prev = boxes; setBoxes([]); setSelected(null); setMade(null); toast(`Cleared ${prev.length} ${prev.length === 1 ? "box" : "boxes"}.`, "ok", { label: "Undo", run: () => setBoxes(prev) }); }}><Ico n="trash" /></button>
           </div>
         </Card>
         <Finish ready={boxes.length > 0} busy={busy} label="Apply redaction" onRun={run} made={made} onReset={() => setMade(null)} error={error} hint="Pages with boxes become pictures, so the covered text is truly removed. Other pages stay unchanged." />

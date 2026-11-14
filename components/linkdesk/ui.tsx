@@ -72,16 +72,17 @@ export function DropZone({ accept, title, note, onFile, disabled }: { accept: st
 
 /* ---------- toasts ---------- */
 type ToastKind = "ok" | "warn";
-type Toast = { id: number; msg: string; kind: ToastKind };
-const ToastCtx = createContext<(msg: string, kind?: ToastKind) => void>(() => {});
+export type ToastAction = { label: string; run: () => void };
+type Toast = { id: number; msg: string; kind: ToastKind; action?: ToastAction };
+const ToastCtx = createContext<(msg: string, kind?: ToastKind, action?: ToastAction) => void>(() => {});
 export const useToast = () => useContext(ToastCtx);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [list, setList] = useState<Toast[]>([]);
-  const push = useCallback((msg: string, kind: ToastKind = "ok") => {
+  const push = useCallback((msg: string, kind: ToastKind = "ok", action?: ToastAction) => {
     const id = Date.now() + Math.random();
-    setList((l) => [...l.slice(-3), { id, msg, kind }]);
-    setTimeout(() => setList((l) => l.filter((t) => t.id !== id)), 3800);
+    setList((l) => [...l.slice(-3), { id, msg, kind, action }]);
+    setTimeout(() => setList((l) => l.filter((t) => t.id !== id)), action ? 8000 : 3800);
   }, []);
   return (
     <ToastCtx.Provider value={push}>
@@ -89,7 +90,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div aria-live="polite" className="pointer-events-none fixed bottom-4 left-1/2 z-50 flex w-[min(92vw,420px)] -translate-x-1/2 flex-col gap-2">
         {list.map((t) => (
           <div key={t.id} role="status" className={`pointer-events-auto px-4 py-2.5 text-xs font-semibold shadow-lg ${t.kind === "warn" ? "bg-amber-100 text-amber-900" : "bg-stone-900 text-white"}`}>
-            {t.msg}
+            <span className="flex items-center justify-between gap-3">
+              <span>{t.msg}</span>
+              {t.action && (
+                <button type="button" className="shrink-0 border border-white/40 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide hover:bg-white/15" onClick={() => { t.action!.run(); setList((l) => l.filter((x) => x.id !== t.id)); }}>
+                  {t.action.label}
+                </button>
+              )}
+            </span>
           </div>
         ))}
       </div>

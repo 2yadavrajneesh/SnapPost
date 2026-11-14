@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Ico } from "@/components/Icons";
 import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
-import { Card, btnPlain, btnPrimary, btnSm, field, useCopy, btnIcon } from "@/components/linkdesk/ui";
+import { Card, btnPlain, btnPrimary, btnSm, field, useCopy, btnIcon, useToast } from "@/components/linkdesk/ui";
 import NewsPreview from "./NewsPreview";
 import { TITLE_STYLES } from "@/lib/pdf/newsLayout";
 import { deleteResult, downloadHref, getConfig, runTool, uploadFile, type PdfConfig, type RunResult } from "@/lib/pdf/client";
@@ -25,6 +25,7 @@ const LAYOUTS = [
 ];
 
 export default function NewsWorkspace() {
+  const toast = useToast();
   const [cfg, setCfg] = useState<PdfConfig | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [s, setS] = useState<Settings>(DEFAULTS);
@@ -180,11 +181,20 @@ export default function NewsWorkspace() {
   const moveBy = (id: number, dx: number, dy: number) => update(id, { dx, dy });
   const sendTo = (id: number, page: number) => update(id, { page, dx: 0, dy: 0 });
   const clearAll = () => {
-    items.forEach((i) => URL.revokeObjectURL(i.url));
-    if (result) deleteResult(result.url);
+    const prevItems = items;
+    const prevResult = result;
     setItems([]);
     setResult(null);
     setError("");
+    let undone = false;
+    // the pictures and the server copy are only really let go once the undo window has passed
+    setTimeout(() => {
+      if (undone) return;
+      prevItems.forEach((i) => URL.revokeObjectURL(i.url));
+      if (prevResult) deleteResult(prevResult.url);
+    }, 8500);
+    if (prevItems.length) toast(`Removed ${prevItems.length} ${prevItems.length === 1 ? "screenshot" : "screenshots"}.`, "ok", { label: "Undo", run: () => { undone = true; setItems(prevItems); setResult(prevResult); } });
+    else if (prevResult) deleteResult(prevResult.url);
   };
 
   async function run() {

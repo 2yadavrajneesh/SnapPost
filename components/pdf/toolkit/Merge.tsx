@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Ico } from "@/components/Icons";
-import { Card, btnPlain, btnSm, btnIcon } from "@/components/linkdesk/ui";
+import { Card, btnPlain, btnSm, btnIcon, useToast } from "@/components/linkdesk/ui";
 import { loadDoc, mergePdfs } from "@/lib/pdf/browser";
 import { sDel, sGet, sSet } from "@/lib/session";
 import { Finish, MAX_BYTES, fmtSize, type Made } from "./shared";
@@ -11,6 +11,7 @@ type F = { id: number; name: string; bytes: Uint8Array; pages: number };
 let uid = 0;
 
 export default function Merge() {
+  const toast = useToast();
   const [files, setFiles] = useState<F[]>([]);
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -95,7 +96,7 @@ export default function Merge() {
         {files.length > 0 && (
           <div className="flex flex-wrap gap-2">
             <button type="button" className={btnSm} onClick={() => { setMade(null); setFiles((c) => [...c].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))); }}>Sort by name</button>
-            <button title="Remove all" aria-label="Remove all" type="button" className={btnIcon} onClick={() => { setFiles([]); setMade(null); }}><Ico n="trash" /></button>
+            <button title="Remove all" aria-label="Remove all" type="button" className={btnIcon} onClick={() => { const prev = files; const prevMade = made; setFiles([]); setMade(null); toast(`Removed ${prev.length} ${prev.length === 1 ? "file" : "files"}.`, "ok", { label: "Undo", run: () => { setFiles(prev); setMade(prevMade); } }); }}><Ico n="trash" /></button>
           </div>
         )}
         <ul className="space-y-2">
