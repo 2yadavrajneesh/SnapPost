@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Slider as UiSlider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -60,22 +64,23 @@ export function Segmented<T extends string>({
   wrap?: boolean;
 }) {
   return (
-    <div className={`flex gap-1 bg-stone-100 p-1 ${wrap ? "flex-wrap" : ""}`}>
+    <ToggleGroup
+      type="single"
+      value={value}
+      onValueChange={(v) => v && onChange(v as T)}
+      className={`flex w-full gap-1 bg-stone-100 p-1 ${wrap ? "flex-wrap" : ""}`}
+    >
       {options.map((o) => (
-        <button
+        <ToggleGroupItem
           key={o.value}
-          type="button"
+          value={o.value}
           title={o.title}
-          onClick={() => onChange(o.value)}
-          aria-pressed={value === o.value}
-          className={`flex-1 whitespace-nowrap px-2.5 py-1.5 text-xs font-medium transition ${
-            value === o.value ? "bg-white text-stone-900" : "text-stone-500 hover:text-stone-800"
-          }`}
+          className="h-auto flex-1 whitespace-nowrap rounded-none px-2.5 py-1.5 text-xs font-medium text-stone-500 hover:bg-transparent hover:text-stone-800 data-[state=on]:bg-white data-[state=on]:text-stone-900"
         >
           {o.label}
-        </button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   );
 }
 
@@ -125,9 +130,6 @@ export function Slider({
         <span className={emphasizeHigh ? "text-base font-semibold text-stone-800" : "text-xs font-medium text-stone-600"}>{highLabel}</span>
       </div>
       <div className="relative h-7">
-        {/* track + filled part */}
-        <div className="absolute inset-x-0 top-1/2 h-[2px] -translate-y-1/2 bg-stone-300" aria-hidden="true" />
-        <div className="absolute top-1/2 h-[2px] -translate-y-1/2 bg-stone-900" style={{ left: at(0), width: `calc((100% - ${THUMB}px) * ${frac})` }} aria-hidden="true" />
         {ticks &&
           Array.from({ length: count + 1 }, (_, i) => {
             const f = i / count;
@@ -136,21 +138,12 @@ export function Slider({
               <span
                 key={i}
                 aria-hidden="true"
-                className={`absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border ${done ? "border-stone-900 bg-stone-900" : "border-stone-400 bg-white"}`}
+                className={`pointer-events-none absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border ${done ? "border-stone-900 bg-stone-900" : "border-stone-400 bg-white"}`}
                 style={{ left: at(f) }}
               />
             );
           })}
-        <input
-          type="range"
-          aria-label={label}
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="snap-range absolute inset-0 w-full"
-        />
+        <UiSlider aria-label={label} min={min} max={max} step={step} value={[value]} onValueChange={([v]) => onChange(v)} className="absolute inset-0 h-full" />
       </div>
     </div>
   );
@@ -192,12 +185,7 @@ export function Toggle({ label, checked, onChange }: { label: string; checked: b
   return (
     <label className="flex cursor-pointer items-center justify-between text-xs font-medium text-stone-600">
       {label}
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 accent-orange-700"
-      />
+      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
     </label>
   );
 }
@@ -210,7 +198,7 @@ export function Check({ label, checked, onChange }: { label: string; checked: bo
         checked ? "border-stone-300 bg-white text-stone-800" : "border-stone-200 bg-stone-50 text-stone-400"
       }`}
     >
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 accent-stone-900" />
+      <Checkbox checked={checked} onCheckedChange={(v) => onChange(v === true)} aria-label={label} />
       {label}
     </label>
   );

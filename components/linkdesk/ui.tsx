@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 
 export const btn = "inline-flex h-9 items-center justify-center gap-1.5 border px-3 text-xs font-semibold transition disabled:opacity-40";
 export const btnPrimary = `${btn} border-transparent bg-accent text-white hover:brightness-110`;
@@ -73,36 +74,17 @@ export function DropZone({ accept, title, note, onFile, disabled }: { accept: st
 /* ---------- toasts ---------- */
 type ToastKind = "ok" | "warn";
 export type ToastAction = { label: string; run: () => void };
-type Toast = { id: number; msg: string; kind: ToastKind; action?: ToastAction };
-const ToastCtx = createContext<(msg: string, kind?: ToastKind, action?: ToastAction) => void>(() => {});
-export const useToast = () => useContext(ToastCtx);
+/** Shows a message (with an optional action such as Undo) using the shared toast stack. */
+const push = (msg: string, kind: ToastKind = "ok", action?: ToastAction) => {
+  const opts = { duration: action ? 8000 : 3800, action: action ? { label: action.label, onClick: action.run } : undefined };
+  if (kind === "warn") toast.warning(msg, opts);
+  else toast.success(msg, opts);
+};
+export const useToast = () => push;
 
+/** Kept so pages can still wrap themselves; the toast stack itself lives once in the root layout. */
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [list, setList] = useState<Toast[]>([]);
-  const push = useCallback((msg: string, kind: ToastKind = "ok", action?: ToastAction) => {
-    const id = Date.now() + Math.random();
-    setList((l) => [...l.slice(-3), { id, msg, kind, action }]);
-    setTimeout(() => setList((l) => l.filter((t) => t.id !== id)), action ? 8000 : 3800);
-  }, []);
-  return (
-    <ToastCtx.Provider value={push}>
-      {children}
-      <div aria-live="polite" className="pointer-events-none fixed bottom-4 left-1/2 z-50 flex w-[min(92vw,420px)] -translate-x-1/2 flex-col gap-2">
-        {list.map((t) => (
-          <div key={t.id} role="status" className={`snap-pop pointer-events-auto px-4 py-2.5 text-xs font-semibold shadow-lg ${t.kind === "warn" ? "bg-amber-100 text-amber-900" : "bg-stone-900 text-white"}`}>
-            <span className="flex items-center justify-between gap-3">
-              <span>{t.msg}</span>
-              {t.action && (
-                <button type="button" className="shrink-0 border border-white/40 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide hover:bg-white/15" onClick={() => { t.action!.run(); setList((l) => l.filter((x) => x.id !== t.id)); }}>
-                  {t.action.label}
-                </button>
-              )}
-            </span>
-          </div>
-        ))}
-      </div>
-    </ToastCtx.Provider>
-  );
+  return <>{children}</>;
 }
 
 /** Copies text, with a fallback for browsers that block the clipboard API. */

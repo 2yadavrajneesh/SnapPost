@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Progress } from "@/components/ui/progress";
 import ResetButton from "@/components/ResetButton";
 import { Ico } from "@/components/Icons";
 import { sDel, sGet, sSet, useSessionSnapshot, useWork } from "@/lib/session";
@@ -343,6 +344,7 @@ export default function NewsWorkspace() {
             )}
             <ResetButton className="h-auto max-lg:flex-1 lg:flex-none" />
           </div>
+          {busy === "upload" && <Progress value={pct} aria-label="Upload progress" className="mt-2 h-1.5" />}
           {!result && !items.length && <p className="mt-2 text-[11px] text-stone-500">Add at least one screenshot to continue.</p>}
           {error && <p role="alert" className="mt-3 bg-red-50 px-3 py-2 text-xs font-semibold text-red-800">{error}</p>}
           {result && (

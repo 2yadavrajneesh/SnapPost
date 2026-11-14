@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import StepHints from "@/components/StepHints";
 import SiteHeader from "@/components/SiteHeader";
 import { CollapsibleSection, Label, Section, Segmented, Slider } from "@/components/ui";
@@ -824,14 +825,14 @@ export default function Unroller() {
                     </div>
                   </div>
                 ) : !thread && busy ? (
-                  <div role="status" aria-label="Loading the thread" className="mx-auto max-w-[640px] animate-pulse space-y-3">
+                  <div role="status" aria-label="Loading the thread" className="mx-auto max-w-[640px] space-y-3">
                     {[0, 1, 2].map((n) => (
                       <div key={n} className="flex gap-3 border border-stone-300 bg-white p-4">
-                        <div className="h-10 w-10 flex-none rounded-full bg-stone-200" />
+                        <Skeleton className="size-10 flex-none rounded-full" />
                         <div className="flex-1 space-y-2">
-                          <div className="h-3 w-1/3 bg-stone-200" />
-                          <div className="h-3 w-full bg-stone-200" />
-                          <div className="h-3 w-4/5 bg-stone-200" />
+                          <Skeleton className="h-3 w-1/3" />
+                          <Skeleton className="h-3 w-full" />
+                          <Skeleton className="h-3 w-4/5" />
                         </div>
                       </div>
                     ))}

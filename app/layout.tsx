@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ToastProvider } from "@/components/linkdesk/ui";
 import { Analytics } from "@vercel/analytics/next";
@@ -49,7 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SessionGuard />
         <DragOverlay />
         <SaveNotice />
-        <TooltipProvider delayDuration={200}><ToastProvider>{children}</ToastProvider></TooltipProvider>
+        <TooltipProvider delayDuration={200}><ToastProvider>{children}</ToastProvider><Toaster position="bottom-center" /></TooltipProvider>
         <Analytics />
         <SpeedInsights />
       </body>
