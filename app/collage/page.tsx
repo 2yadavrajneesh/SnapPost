@@ -73,17 +73,18 @@ export default function CollageMaker() {
   const [shadow, setShadow] = useState(false);
   const [crop, setCrop] = useState(false);
   const [headText, setHeadText] = useState("");
+  const [showHead, setShowHead] = useState(true);
   const [headSize, setHeadSize] = useState(44);
   const [headDark, setHeadDark] = useState(true);
   const [classic, setClassic] = useState(false);
-  const before = useRef<null | { mode: LayoutMode; cols: number; canvas: CanvasKey; lastRow: LastRow; gap: number; pad: number; bgId: string; customBg: string; card: CardStyle; shadow: boolean; crop: boolean; headDark: boolean; headSize: number }>(null);
+  const before = useRef<null | { mode: LayoutMode; cols: number; canvas: CanvasKey; lastRow: LastRow; gap: number; pad: number; bgId: string; customBg: string; card: CardStyle; shadow: boolean; crop: boolean; headDark: boolean; headSize: number; headText: string; showHead: boolean }>(null);
   // export
   const [format, setFormat] = useState<"png" | "pdf">("png");
   const [quality, setQuality] = useState<1 | 2>(1);
 
   useSessionSnapshot(
     "collage:state",
-    { entries, text, mode, cols, canvas, lastRow, gap, pad, bgId, customBg, card, shadow, crop, headText, headSize, headDark, classic, format, quality, before: before.current },
+    { entries, text, mode, cols, canvas, lastRow, gap, pad, bgId, customBg, card, shadow, crop, headText, showHead, headSize, headDark, classic, format, quality, before: before.current },
     (v) => {
       setEntries(v.entries ?? []);
       setText(v.text ?? "");
@@ -99,6 +100,7 @@ export default function CollageMaker() {
       setShadow(!!v.shadow);
       setCrop(!!v.crop);
       setHeadText(v.headText ?? "");
+      setShowHead(v.showHead ?? true);
       setHeadSize(v.headSize ?? 44);
       setHeadDark(v.headDark ?? true);
       setClassic(!!v.classic);
@@ -277,11 +279,13 @@ export default function CollageMaker() {
       setCrop(b?.crop ?? false);
       setHeadDark(b?.headDark ?? true);
       setHeadSize(b?.headSize ?? 44);
+      setHeadText(b?.headText ?? "");
+      setShowHead(b?.showHead ?? true);
       setClassic(false);
       flash("Classic grid look is off. Your earlier layout is back.");
       return;
     }
-    before.current = { mode, cols, canvas, lastRow, gap, pad, bgId, customBg, card, shadow, crop, headDark, headSize };
+    before.current = { mode, cols, canvas, lastRow, gap, pad, bgId, customBg, card, shadow, crop, headDark, headSize, headText, showHead };
     setClassic(true);
     setMode("grid");
     setCols(3);
@@ -296,6 +300,7 @@ export default function CollageMaker() {
     setCrop(false); // whole tweet: text and media shrink to fit, nothing is cut off
     setHeadDark(true);
     setHeadSize(44);
+    setShowHead(true);
     setHeadText((t) => t || "My collage title");
     flash("Applied the classic grid look. Change the title on the left.");
   }
@@ -467,11 +472,17 @@ export default function CollageMaker() {
           </Section>
 
           <Section title="Title and look">
-            <div>
-              <Label>Title on top (optional)</Label>
+            <button type="button" role="switch" aria-checked={showHead} className={`${btnPlain} w-full justify-between`} onClick={() => setShowHead(!showHead)}>
+              <span>Show title on top</span>
+              <span className={`flex h-5 w-9 items-center rounded-full p-0.5 transition ${showHead ? "bg-emerald-600" : "bg-stone-300"}`}>
+                <span className={`h-4 w-4 rounded-full bg-white shadow transition-transform ${showHead ? "translate-x-4" : ""}`} />
+              </span>
+            </button>
+            {showHead && (<div>
+              <Label>Title text</Label>
               <input value={headText} onChange={(e) => setHeadText(e.target.value)} maxLength={120} placeholder="e.g. Sonia Gandhi - Belonging: A Journey of Love" aria-label="Collage title" className="h-9 w-full border border-stone-200 bg-white px-2.5 text-xs outline-none focus:border-[color:var(--accent)]" />
-            </div>
-            {headText.trim() && (
+            </div>)}
+            {showHead && headText.trim() && (
               <>
                 <Slider label="Title size" value={headSize} min={28} max={80} step={2} suffix="px" lowLabel="Small" highLabel="Large" onChange={setHeadSize} />
                 <div>
@@ -596,7 +607,7 @@ export default function CollageMaker() {
                 ) : (
                   <div style={{ width: FRAME_W * scale, height: frameH * scale }} className="mx-auto shadow-lg">
                     <div style={{ width: FRAME_W, transform: `scale(${scale})`, transformOrigin: "top left" }}>
-                      <CollageFrame ref={frame} items={items} natural={natural} onNatural={onNatural} mode={mode} cols={cols} ratio={CANVASES[canvas].ratio} lastRow={lastRow} style={card} look={look} crop={crop} heading={{ text: headText, size: headSize, color: headDark ? "#111111" : "#ffffff" }} />
+                      <CollageFrame ref={frame} items={items} natural={natural} onNatural={onNatural} mode={mode} cols={cols} ratio={CANVASES[canvas].ratio} lastRow={lastRow} style={card} look={look} crop={crop} heading={showHead ? { text: headText, size: headSize, color: headDark ? "#111111" : "#ffffff" } : undefined} />
                     </div>
                   </div>
                 )}
