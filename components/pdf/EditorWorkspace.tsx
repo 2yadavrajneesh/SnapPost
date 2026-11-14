@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Ico } from "@/components/Icons";
 import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
-import { Card, btnPlain, btnPrimary, btnSm, useCopy } from "@/components/linkdesk/ui";
+import { Card, btnPlain, btnPrimary, btnSm, useCopy, btnIcon } from "@/components/linkdesk/ui";
 import { deleteResult, downloadHref, getConfig, runTool, uploadFile, type PdfConfig, type RunResult } from "@/lib/pdf/client";
 
 type Pt = [number, number];
@@ -561,8 +562,8 @@ export default function EditorWorkspace() {
             <span className="hidden sm:inline">Signature</span>
           </button>
           <span className="mx-1 h-6 w-px bg-stone-300" />
-          <button type="button" className={btnSm} onClick={undo} disabled={!past.length}>Undo</button>
-          <button type="button" className={btnSm} onClick={removeSel} disabled={selected == null}>Delete</button>
+          <button title="Undo" aria-label="Undo" type="button" className={btnIcon} onClick={undo} disabled={!past.length}><Ico n="undo" /></button>
+          <button title="Delete" aria-label="Delete" type="button" className={btnIcon} onClick={removeSel} disabled={selected == null}><Ico n="trash" /></button>
           <span className="ml-auto flex items-center gap-1.5">
             <button type="button" className={btnSm} onClick={() => setZoom((z) => clamp(+(z - 0.15).toFixed(2), 0.5, 1.8))} aria-label="Zoom out">−</button>
             <span className="w-10 text-center text-[11px] font-semibold text-stone-600">{Math.round(zoom * 100)}%</span>
@@ -621,8 +622,8 @@ export default function EditorWorkspace() {
               <div className="space-y-2">
                 {result.note && <p className="bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-800">{result.note}</p>}
                 <p className="text-[11px] text-stone-500">Actual size {size(result.size)}. The link works for about {cfg?.ttlMinutes ?? 30} minutes, then the file is deleted.</p>
-                <a className={`${btnPrimary} w-full`} href={downloadHref(result.url)} download={result.name}>Download</a>
-                <button type="button" className={`${btnPlain} w-full`} onClick={() => copy(result.url, "Link copied.")}>Copy link</button>
+                <a className={`${btnPrimary} w-full`} href={downloadHref(result.url)} download={result.name}><Ico n="download" />Download</a>
+                <button type="button" className={`${btnPlain} w-full`} onClick={() => copy(result.url, "Link copied.")}><Ico n="link" />Copy link</button>
                 <button type="button" className={`${btnPlain} w-full`} onClick={() => { deleteResult(result.url); setResult(null); }}>Keep editing</button>
               </div>
             )}

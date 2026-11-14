@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Ico } from "@/components/Icons";
 import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
 import { checkFileSize, LIMITS, plural } from "@/lib/linkdesk/core";
 import { cleanText, workbookText, type CleanItem, type CleanOpts, type QueryMode, type Rejected } from "@/lib/linkdesk/clean";
 import { getXLSX } from "@/lib/linkdesk/loader";
 import { useLinks } from "@/lib/linkdesk/store";
 import { downloadBlob } from "@/lib/export";
-import { btnPlain, btnPrimary, btnSm, Card, Check, Chip, DropZone, field, useCopy, useToast } from "./ui";
+import { btnPlain, btnPrimary, btnSm, btnIcon, Card, Check, Chip, DropZone, field, useCopy, useToast } from "./ui";
 
 const PAGE = 300;
 
@@ -265,8 +266,8 @@ export default function CleanerTool({ inbox, onSent }: { inbox: Inbox; onSent: (
             <button type="button" className={btnPlain} disabled={!has || !!busy} onClick={() => (hasBad ? (setItems((l) => l.filter((it) => it.state !== "bad")), setNote("Links with no response were removed.")) : void runCheck())}>
               {hasBad ? "Remove no-response links" : "Check they respond"}
             </button>
-            <button type="button" className={btnPlain} disabled={!has} onClick={copyAll}>Copy links</button>
-            <button type="button" className={btnPlain} disabled={!has} onClick={() => void downloadXlsx()}>Download .xlsx</button>
+            <button type="button" className={btnPlain} disabled={!has} onClick={copyAll}><Ico n="copy" />Copy links</button>
+            <button type="button" className={btnPlain} disabled={!has} onClick={() => void downloadXlsx()}><Ico n="sheet" />Download .xlsx</button>
             <button type="button" className={btnPrimary} disabled={!has} onClick={send}>Send to batches</button>
           </div>
         </div>
@@ -298,8 +299,8 @@ export default function CleanerTool({ inbox, onSent }: { inbox: Inbox; onSent: (
                     </td>
                     <td className="px-3 py-2 text-right">
                       <span className="inline-flex gap-1">
-                        <button type="button" className={btnSm} aria-label="Copy this link" onClick={() => void copy(it.url, "Copied the link.")}>Copy</button>
-                        <button type="button" className={btnSm} aria-label="Remove this link" onClick={() => setItems((l) => l.filter((_, k) => k !== i))}>Remove</button>
+                        <button title="Copy" type="button" className={btnIcon} aria-label="Copy this link" onClick={() => void copy(it.url, "Copied the link.")}><Ico n="copy" /></button>
+                        <button title="Remove" type="button" className={btnIcon} aria-label="Remove this link" onClick={() => setItems((l) => l.filter((_, k) => k !== i))}><Ico n="x" /></button>
                       </span>
                     </td>
                   </tr>
@@ -317,8 +318,8 @@ export default function CleanerTool({ inbox, onSent }: { inbox: Inbox; onSent: (
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-stone-200 bg-stone-50 px-4 py-3">
               <span className="text-xs text-stone-600">Finished cleaning? Take all the links with you.</span>
               <span className="flex gap-2">
-                <button type="button" className={btnPlain} onClick={copyAll}>Copy all links</button>
-                <button type="button" className={btnPrimary} onClick={() => void downloadXlsx()}>Download Excel (.xlsx)</button>
+                <button type="button" className={btnPlain} onClick={copyAll}><Ico n="copy" />Copy all links</button>
+                <button type="button" className={btnPrimary} onClick={() => void downloadXlsx()}><Ico n="sheet" />Download Excel (.xlsx)</button>
               </span>
             </div>
           </>

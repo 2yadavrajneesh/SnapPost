@@ -6,6 +6,7 @@ export const btn = "inline-flex h-9 items-center justify-center gap-1.5 border p
 export const btnPrimary = `${btn} border-transparent bg-accent text-white hover:brightness-110`;
 export const btnPlain = `${btn} border-stone-300 bg-white text-stone-800 hover:bg-stone-100`;
 export const btnSm = "inline-flex h-8 items-center justify-center gap-1 border border-stone-300 bg-white px-2.5 text-[11px] font-semibold text-stone-800 transition hover:bg-stone-100 disabled:opacity-40";
+export const btnIcon = "inline-flex h-8 w-8 shrink-0 items-center justify-center border border-stone-300 bg-white text-stone-700 transition hover:bg-stone-100 disabled:opacity-40";
 export const field = "w-full border border-stone-300 bg-white px-2.5 py-2 text-xs font-medium text-stone-800 outline-none focus:border-[color:var(--accent)]";
 
 /** A numbered step card, like the original LinkDesk panels. */

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Ico } from "@/components/Icons";
 import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
 import { checkFileSize, LIMITS, plural } from "@/lib/linkdesk/core";
 import { getXLSX } from "@/lib/linkdesk/loader";
@@ -155,7 +156,7 @@ export default function MakerTool({ onSent }: { onSent: () => void }) {
           </div>
           <div className="flex gap-2">
             <button type="button" className={btnPlain} disabled={!links.length} onClick={send}>Send to batches</button>
-            <button type="button" className={btnPrimary} disabled={!res || res.stats.linked === 0} onClick={download}>Download clickable file</button>
+            <button type="button" className={btnPrimary} disabled={!res || res.stats.linked === 0} onClick={download}><Ico n="download" />Download clickable file</button>
           </div>
         </div>
         <p className={`px-4 pb-3 text-xs ${msg.kind === "warn" ? "font-semibold text-amber-800" : msg.kind === "ok" ? "font-semibold text-emerald-700" : "text-stone-500"}`}>

@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Ico } from "@/components/Icons";
 import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
-import { Card, btnPlain, btnPrimary, btnSm, field, useCopy } from "@/components/linkdesk/ui";
+import { Card, btnPlain, btnPrimary, btnSm, field, useCopy, btnIcon } from "@/components/linkdesk/ui";
 import NewsPreview from "./NewsPreview";
 import { TITLE_STYLES } from "@/lib/pdf/newsLayout";
 import { deleteResult, downloadHref, getConfig, runTool, uploadFile, type PdfConfig, type RunResult } from "@/lib/pdf/client";
@@ -239,7 +240,7 @@ export default function NewsWorkspace() {
               <button type="button" className={btnSm} onClick={() => sortBy("up")} disabled={!!busy} title="Smallest, oldest or A first">↑ Increasing</button>
               <button type="button" className={btnSm} onClick={() => sortBy("down")} disabled={!!busy} title="Largest, newest or Z first">↓ Decreasing</button>
               <button type="button" className={btnSm} onClick={reverse} disabled={!!busy}>Reverse</button>
-              <button type="button" className={btnSm} onClick={clearAll} disabled={!!busy}>Remove all</button>
+              <button title="Remove all" aria-label="Remove all" type="button" className={btnIcon} onClick={clearAll} disabled={!!busy}><Ico n="trash" /></button>
             </div>
           )}
           {items.length > 1 && <p className="mt-3 text-[11px] text-stone-500">Drag a picture onto another to change the order, or use the arrows.</p>}
@@ -273,7 +274,7 @@ export default function NewsWorkspace() {
                       <label className="flex items-center gap-1.5">Go to page
                         <input type="number" min={1} max={200} inputMode="numeric" placeholder="auto" aria-label={`Page number for picture ${i + 1}`} className="w-16 border border-stone-200 bg-white px-1.5 py-1 text-xs" value={it.page || ""} onChange={(e) => update(it.id, { page: Math.max(0, Math.min(200, Math.floor(Number(e.target.value)) || 0)), dx: 0, dy: 0 })} />
                       </label>
-                      {(it.dx !== 0 || it.dy !== 0 || it.page > 0) && <button type="button" className={btnSm} onClick={() => update(it.id, { dx: 0, dy: 0, page: 0 })}>Reset position</button>}
+                      {(it.dx !== 0 || it.dy !== 0 || it.page > 0) && <button title="Reset position" aria-label="Reset position" type="button" className={btnIcon} onClick={() => update(it.id, { dx: 0, dy: 0, page: 0 })}><Ico n="reset" /></button>}
                     </div>
                   </div>
                 </li>
@@ -334,10 +335,10 @@ export default function NewsWorkspace() {
               <p className="truncate text-xs font-semibold text-stone-800">{result.name}</p>
               {result.note && <p className="bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-800">{result.note}</p>}
               <p className="text-[11px] text-stone-500">{size(result.size)}. The link works for about {cfg?.ttlMinutes ?? 30} minutes, then the file is deleted.</p>
-              <a className={`${btnPrimary} w-full`} href={downloadHref(result.url)} download={result.name}>Download</a>
-              <button type="button" className={`${btnPlain} w-full`} onClick={() => copy(result.url, "Link copied.")}>Copy link</button>
+              <a className={`${btnPrimary} w-full`} href={downloadHref(result.url)} download={result.name}><Ico n="download" />Download</a>
+              <button type="button" className={`${btnPlain} w-full`} onClick={() => copy(result.url, "Link copied.")}><Ico n="link" />Copy link</button>
               <button type="button" className={`${btnPlain} w-full`} onClick={() => { deleteResult(result.url); setResult(null); }}>Change something and rebuild</button>
-              <button type="button" className={`${btnPlain} w-full`} onClick={clearAll}>Delete and start a new day</button>
+              <button type="button" className={`${btnPlain} w-full`} onClick={clearAll}><Ico n="trash" />Delete and start a new day</button>
             </div>
           )}
         </Card>

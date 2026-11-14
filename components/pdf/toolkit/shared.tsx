@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Ico } from "@/components/Icons";
 import { Card, DropZone, btnPlain, btnPrimary, field } from "@/components/linkdesk/ui";
 import { zipFiles } from "@/lib/pdf/browser";
 import { sDel, sGet, sSet } from "@/lib/session";
@@ -160,7 +161,7 @@ export function Finish({ ready, busy, label, onRun, made, onReset, error, hint }
         <div className="space-y-2">
           <p className="truncate text-xs font-semibold text-stone-800">{made.name}</p>
           <p className="bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-800">{made.note} {fmtSize(made.bytes.length)}.</p>
-          <button type="button" className={`${btnPrimary} w-full`} onClick={() => save(made.name, made.bytes, made.type)}>Download</button>
+          <button type="button" className={`${btnPrimary} w-full`} onClick={() => save(made.name, made.bytes, made.type)}><Ico n="download" />Download</button>
           <button type="button" className={`${btnPlain} w-full`} onClick={onReset}>Change something and redo</button>
         </div>
       )}

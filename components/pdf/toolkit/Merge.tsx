@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Card, btnPlain, btnSm } from "@/components/linkdesk/ui";
+import { Ico } from "@/components/Icons";
+import { Card, btnPlain, btnSm, btnIcon } from "@/components/linkdesk/ui";
 import { loadDoc, mergePdfs } from "@/lib/pdf/browser";
 import { sDel, sGet, sSet } from "@/lib/session";
 import { Finish, MAX_BYTES, fmtSize, type Made } from "./shared";
@@ -94,7 +95,7 @@ export default function Merge() {
         {files.length > 0 && (
           <div className="flex flex-wrap gap-2">
             <button type="button" className={btnSm} onClick={() => { setMade(null); setFiles((c) => [...c].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))); }}>Sort by name</button>
-            <button type="button" className={btnSm} onClick={() => { setFiles([]); setMade(null); }}>Remove all</button>
+            <button title="Remove all" aria-label="Remove all" type="button" className={btnIcon} onClick={() => { setFiles([]); setMade(null); }}><Ico n="trash" /></button>
           </div>
         )}
         <ul className="space-y-2">

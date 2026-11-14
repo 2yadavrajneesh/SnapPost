@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Ico } from "@/components/Icons";
 import { host, LIMITS, checkFileSize, looksLikeUrl, plural, type RawLink } from "@/lib/linkdesk/core";
 import { getXLSX } from "@/lib/linkdesk/loader";
 import { useLinks } from "@/lib/linkdesk/store";
-import { btn, btnPlain, btnPrimary, btnSm, Card, Check, Chip, DropZone, field, useCopy, useToast } from "./ui";
+import { btn, btnPlain, btnPrimary, btnSm, btnIcon, Card, Check, Chip, DropZone, field, useCopy, useToast } from "./ui";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Sheet = { ws: any; rows: any[][]; range: any };
@@ -308,7 +309,7 @@ export default function BatchTool({ active }: { active: boolean }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-stone-500">Load a list of links, then open them in batches of 10 to 100 tabs, with progress saved in this browser.</p>
         <div className="flex gap-2">
-          <button type="button" className={btnPlain} onClick={() => setPasteOpen(true)}>Paste links</button>
+          <button type="button" className={btnPlain} onClick={() => setPasteOpen(true)}><Ico n="clipboard" />Paste links</button>
           <button type="button" className={btnPlain} onClick={() => (total ? void copy(reportText(), "Copied the status report. Paste it into Excel or Sheets.") : toast("Load some links first.", "warn"))}>
             Copy report
           </button>
@@ -435,7 +436,7 @@ export default function BatchTool({ active }: { active: boolean }) {
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" className={btnSm} onClick={() => setManual((m) => [...m.slice(1), m[0]])}>Skip</button>
-            <button type="button" className={btnSm} onClick={() => void copy(manual.map((i) => items[i].url).join("\n"), `Copied ${plural(manual.length, "link")}.`)}>Copy remaining</button>
+            <button title="Copy remaining" aria-label="Copy remaining" type="button" className={btnIcon} onClick={() => void copy(manual.map((i) => items[i].url).join("\n"), `Copied ${plural(manual.length, "link")}.`)}><Ico n="copy" /></button>
             <button type="button" className={btnSm} onClick={() => setManual([])}>Close</button>
           </div>
         </section>
@@ -465,9 +466,9 @@ export default function BatchTool({ active }: { active: boolean }) {
                     <button type="button" className={isNext ? `${btnSm} flex-1 border-transparent bg-accent text-white hover:brightness-110` : `${btnSm} flex-1`} onClick={() => launch(pendingIndices(b), `Batch ${b}`)}>
                       {finished ? "Open again" : `Open ${plural(sl.length - done, "tab")}`}
                     </button>
-                    <button type="button" className={btnSm} aria-label={`Copy links in batch ${b}`} title="Copy links" onClick={() => void copy(sl.map((x) => x.url).join("\n"), `Copied the links in batch ${b}.`)}>Copy</button>
+                    <button type="button" className={btnIcon} aria-label={`Copy links in batch ${b}`} title="Copy links" onClick={() => void copy(sl.map((x) => x.url).join("\n"), `Copied the links in batch ${b}.`)}><Ico n="copy" /></button>
                     {done > 0 && (
-                      <button type="button" className={btnSm} aria-label={`Mark batch ${b} as unopened`} title="Mark as unopened" onClick={() => (L.setOpened(sl.map((_, i) => start(b) + i), false), toast(`Batch ${b} is pending again.`))}>Undo</button>
+                      <button type="button" className={btnIcon} aria-label={`Mark batch ${b} as unopened`} title="Mark as unopened" onClick={() => (L.setOpened(sl.map((_, i) => start(b) + i), false), toast(`Batch ${b} is pending again.`))}><Ico n="undo" /></button>
                     )}
                   </div>
                 </article>
@@ -492,7 +493,7 @@ export default function BatchTool({ active }: { active: boolean }) {
             </select>
             <svg className="pointer-events-none absolute right-2.5 top-1/2 -mt-[5px] text-stone-500" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
           </div>
-          <button type="button" className={`${btnSm} !h-9`} disabled={!total} onClick={resetAll}>Reset status</button>
+          <button type="button" className={`${btnSm} !h-9`} disabled={!total} onClick={resetAll}><Ico n="reset" />Reset status</button>
           <button
             type="button"
             disabled={!total}
@@ -539,8 +540,8 @@ export default function BatchTool({ active }: { active: boolean }) {
                     </td>
                     <td className="px-3 py-2 text-right">
                       <span className="inline-flex gap-1">
-                        <button type="button" className={btnSm} aria-label="Copy link" onClick={() => void copy(it.url, "Copied the link.")}>Copy</button>
-                        <button type="button" className={btnSm} aria-label="Remove link" onClick={() => (L.removeAt(idx), setManual([]))}>Remove</button>
+                        <button title="Copy" type="button" className={btnIcon} aria-label="Copy link" onClick={() => void copy(it.url, "Copied the link.")}><Ico n="copy" /></button>
+                        <button title="Remove" type="button" className={btnIcon} aria-label="Remove link" onClick={() => (L.removeAt(idx), setManual([]))}><Ico n="x" /></button>
                       </span>
                     </td>
                   </tr>
@@ -562,7 +563,7 @@ export default function BatchTool({ active }: { active: boolean }) {
       {pasteOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4" onClick={(e) => e.target === e.currentTarget && setPasteOpen(false)} onKeyDown={(e) => e.key === "Escape" && setPasteOpen(false)}>
           <div role="dialog" aria-modal="true" aria-labelledby="ld-paste" className="w-full max-w-lg space-y-3 border border-stone-300 bg-white p-5">
-            <h2 id="ld-paste" className="text-sm font-bold text-stone-900">Paste links</h2>
+            <h2 id="ld-paste" className="text-sm font-bold text-stone-900"><Ico n="clipboard" />Paste links</h2>
             <p className="text-[11px] text-stone-500">Copy a column from Excel, Numbers or Google Sheets and paste it here, one link per line. A title in the same row is kept.</p>
             <textarea autoFocus value={pasteText} onChange={(e) => setPasteText(e.target.value)} placeholder={"https://example.com/page-1\nhttps://example.com/page-2\nanthropic.com"} className="h-44 w-full resize-y border border-stone-300 bg-white p-2.5 font-mono text-xs" />
             <div className="flex flex-wrap items-center justify-between gap-2">

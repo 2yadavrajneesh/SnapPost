@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Ico } from "@/components/Icons";
 import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
 import { archiveLinks, normalizeWebUrl, snapshotDate, type Snapshot } from "@/lib/archive";
-import { btnPlain, btnPrimary, btnSm, Card, Chip, field, useCopy, useToast } from "./ui";
+import { btnPlain, btnPrimary, btnSm, btnIcon, Card, Chip, field, useCopy, useToast } from "./ui";
 
 type Lookup = { state: "idle" | "loading" | "done" | "error"; snapshot: Snapshot | null; error?: string };
 type Saved = { url: string; snapshot: string; at: number };
@@ -193,8 +194,8 @@ export default function ArchiveTool() {
           <h2 className="text-sm font-bold text-stone-900">Saved in this browser</h2>
           {history.length > 0 && (
             <span className="flex gap-2">
-              <button type="button" className={btnSm} onClick={() => void copy(history.map((h) => `${h.url}\n${h.snapshot}`).join("\n\n"), "List copied")}>Copy all</button>
-              <button type="button" className={btnSm} onClick={() => remember([])}>Clear list</button>
+              <button title="Copy all" aria-label="Copy all" type="button" className={btnIcon} onClick={() => void copy(history.map((h) => `${h.url}\n${h.snapshot}`).join("\n\n"), "List copied")}><Ico n="copy" /></button>
+              <button title="Clear list" aria-label="Clear list" type="button" className={btnIcon} onClick={() => remember([])}><Ico n="trash" /></button>
             </span>
           )}
         </div>

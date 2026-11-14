@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Ico } from "@/components/Icons";
 import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
 import { checkFileSize, LIMITS, plural } from "@/lib/linkdesk/core";
 import { getXLSX } from "@/lib/linkdesk/loader";
 import { finish, fromText, readDocx, readPdf, type ExtractOpts, type Found } from "@/lib/linkdesk/extract";
 import { useLinks } from "@/lib/linkdesk/store";
 import { downloadBlob } from "@/lib/export";
-import { btnPlain, btnPrimary, btnSm, Card, Check, Chip, DropZone, useCopy, useToast } from "./ui";
+import { btnPlain, btnPrimary, btnSm, btnIcon, Card, Check, Chip, DropZone, useCopy, useToast } from "./ui";
 
 const PAGE = 300;
 
@@ -182,8 +183,8 @@ export default function ExtractTool({ onSent, onClean }: { onSent: () => void; o
           </div>
           <div className="flex flex-wrap gap-2">
             {onClean && <button type="button" className={btnPlain} disabled={!has} onClick={() => onClean(items.map((i) => i.url).join("\n"), name)}>Clean these links</button>}
-            <button type="button" className={btnPlain} disabled={!has} onClick={() => void copy(items.map((i) => i.url).join("\n"), `Copied ${plural(n, "link")}.`)}>Copy links</button>
-            <button type="button" className={btnPlain} disabled={!has} onClick={() => void downloadXlsx()}>Download .xlsx</button>
+            <button type="button" className={btnPlain} disabled={!has} onClick={() => void copy(items.map((i) => i.url).join("\n"), `Copied ${plural(n, "link")}.`)}><Ico n="copy" />Copy links</button>
+            <button type="button" className={btnPlain} disabled={!has} onClick={() => void downloadXlsx()}><Ico n="sheet" />Download .xlsx</button>
             <button type="button" className={btnPrimary} disabled={!has} onClick={send}>Send to batches</button>
           </div>
         </div>
@@ -209,7 +210,7 @@ export default function ExtractTool({ onSent, onClean }: { onSent: () => void; o
                     <td className="max-w-[16rem] truncate px-3 py-2" title={it.label}>{it.label}</td>
                     <td className="max-w-[24rem] truncate px-3 py-2"><a href={it.url} target="_blank" rel="noopener noreferrer" title={it.url} className="text-accent hover:underline">{it.url}</a></td>
                     <td className="px-3 py-2"><span className={`px-1.5 py-0.5 text-[10px] font-bold ${it.src === "link" ? "bg-blue-100 text-blue-800" : "bg-stone-100 text-stone-600"}`}>{it.src === "link" ? "Clickable" : "Text"}</span></td>
-                    <td className="px-3 py-2 text-right"><button type="button" className={btnSm} aria-label="Remove this link" onClick={() => setItems((l) => l.filter((_, k) => k !== i))}>Remove</button></td>
+                    <td className="px-3 py-2 text-right"><button title="Remove" type="button" className={btnIcon} aria-label="Remove this link" onClick={() => setItems((l) => l.filter((_, k) => k !== i))}><Ico n="x" /></button></td>
                   </tr>
                 ))
               )}
