@@ -48,7 +48,7 @@ export default function SaveNotice() {
   }, [path]);
   if (!show) return null;
   return (
-    <div role="status" aria-live="polite" className="pointer-events-none fixed bottom-4 left-4 z-[60] flex items-center gap-2 bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white shadow-lg">
+    <div role="status" aria-live="polite" className="pointer-events-none fixed bottom-20 right-4 z-[60] flex items-center gap-2 bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white shadow-lg">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>
       Your progress is saved
     </div>
