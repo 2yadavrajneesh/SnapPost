@@ -821,6 +821,19 @@ export default function Unroller() {
                       </button>
                     </div>
                   </div>
+                ) : !thread && busy ? (
+                  <div role="status" aria-label="Loading the thread" className="mx-auto max-w-[640px] animate-pulse space-y-3">
+                    {[0, 1, 2].map((n) => (
+                      <div key={n} className="flex gap-3 border border-stone-300 bg-white p-4">
+                        <div className="h-10 w-10 flex-none rounded-full bg-stone-200" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3 w-1/3 bg-stone-200" />
+                          <div className="h-3 w-full bg-stone-200" />
+                          <div className="h-3 w-4/5 bg-stone-200" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : !thread ? (
                   <div className="mx-auto max-w-[640px] border border-stone-300 bg-white p-8 text-center text-sm text-stone-600">
                     <div className="mb-1 text-base font-bold text-stone-900">Unroll a thread</div>

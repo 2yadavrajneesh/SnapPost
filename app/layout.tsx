@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import SessionGuard from "@/components/SessionGuard";
+import DragOverlay from "@/components/DragOverlay";
 
 export const metadata: Metadata = {
   title: "SnapPost — Turn posts into polished images",
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <SessionGuard />
+        <DragOverlay />
         {children}
         <Analytics />
         <SpeedInsights />
