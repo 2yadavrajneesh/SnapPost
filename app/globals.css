@@ -374,3 +374,16 @@ html[data-theme="dark"] .tool-pill[aria-current="page"] { background: var(--tc);
 html[data-theme="dark"] .tab-card { background: color-mix(in srgb, var(--tc) 14%, #26211d); border-color: color-mix(in srgb, var(--tc) 40%, #3a332d); }
 html[data-theme="dark"] .tab-card:hover { background: color-mix(in srgb, var(--tc) 26%, #26211d); }
 html[data-theme="dark"] .tab-card[aria-selected="true"] { background: color-mix(in srgb, var(--tc) 28%, #26211d); }
+
+/* Accessibility: a clear keyboard focus ring everywhere, and comfortable tap targets on phones */
+:where(a, button, input, select, textarea, summary, [role="tab"], [tabindex]):focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+:root[data-theme="dark"] :where(a, button, input, select, textarea, summary, [role="tab"], [tabindex]):focus-visible {
+  outline-color: #93c5fd;
+}
+@media (pointer: coarse) {
+  button, [role="tab"], select { min-height: 40px; }
+  button.h-8, button.h-7 { min-height: 40px; min-width: 40px; }
+}
