@@ -27,7 +27,7 @@ export default function SaveNotice() {
     evs.forEach((e) => window.addEventListener(e, touch, true));
     const on = () => {
       const now = Date.now();
-      if (now - touched > window_) return;
+      if (now - touched > window_ || document.documentElement.hasAttribute("data-sample")) return;
       if (now - last.current < 30000) return;
       last.current = now;
       setShow(true);

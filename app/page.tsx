@@ -75,6 +75,13 @@ export default function Home() {
   const [link, setLink] = useState("");
   const [fetching, setFetching] = useState(false);
   const [hasTweet, setHasTweet] = useState(false); // true once a real tweet was fetched: the sample is never exported
+  // while only the built-in sample is shown, saving is silent (the "progress saved" note is for real work)
+  useEffect(() => {
+    const el = document.documentElement;
+    if (hasTweet) el.removeAttribute("data-sample");
+    else el.setAttribute("data-sample", "");
+    return () => el.removeAttribute("data-sample");
+  }, [hasTweet]);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showEdit, setShowEdit] = useState(false);
   const [showQuote, setShowQuote] = useState(true);
