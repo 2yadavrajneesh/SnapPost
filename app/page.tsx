@@ -144,7 +144,7 @@ export default function Home() {
     setFormat(v.format);
     setPdfSize(v.pdfSize);
     setPdfOrient(v.pdfOrient);
-  });
+  }, { content: ["tweet", "link", "hasTweet", "thread", "threadState"] });
   void saved;
 
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) => setSettings((s) => ({ ...s, [key]: value }));

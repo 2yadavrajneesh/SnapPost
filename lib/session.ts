@@ -8,6 +8,7 @@
  * Everything lives in IndexedDB (it holds files) under "<app>:<name>" keys. Nothing is sent anywhere.
  */
 import { useEffect, useRef, useState } from "react";
+import { emitHistory, registerHistory } from "@/lib/history";
 import type { ToolId } from "./tools";
 
 /** How long the site can sit untouched before every saved session is cleared. */
@@ -176,18 +177,84 @@ export async function sList<T>(prefix: string): Promise<{ key: string; value: T 
  * `restore` runs before anything is written, so an empty first render never overwrites the saved work.
  * Returns whether restoring has finished.
  */
-export function useSessionSnapshot<T>(key: string, snapshot: T, restore: (saved: T) => void | Promise<void>): boolean {
+export type SnapshotOptions = {
+  /** Snapshot fields that hold the person's own content (files, lists, links). "Reset settings" keeps these. */
+  content?: string[];
+};
+
+const hasValue = (v: unknown) => (Array.isArray(v) ? v.length > 0 : typeof v === "string" ? v.trim() !== "" : !!v);
+const HISTORY_MAX = 40;
+
+/**
+ * Saves an app's state to the browser and keeps an undo / redo history of it.
+ * It also remembers the state when content was first added (for "Reset changes") and the
+ * very first default state (for "Reset settings").
+ */
+export function useSessionSnapshot<T>(key: string, snapshot: T, restore: (saved: T) => void | Promise<void>, options: SnapshotOptions = {}): boolean {
   const [ready, setReady] = useState(false);
   const latest = useRef(snapshot);
   latest.current = snapshot;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const restoreRef = useRef(restore);
   restoreRef.current = restore;
+  const contentKeys = useRef(options.content ?? []);
+
+  const initial = useRef<string | null>(null);
+  if (initial.current === null) initial.current = JSON.stringify(snapshot);
+  const hist = useRef<string[]>([]);
+  const ptr = useRef(-1);
+  const baseline = useRef<string | null>(null);
+  const applyingUntil = useRef(0);
+  const flags = useRef({ undo: false, redo: false, changes: false, settings: false });
+
+  const settingsTarget = (cur: string) => {
+    const base = JSON.parse(initial.current as string) as Record<string, unknown>;
+    const now = JSON.parse(cur) as Record<string, unknown>;
+    contentKeys.current.forEach((k) => (base[k] = now[k]));
+    return JSON.stringify(base);
+  };
+
+  /** Put the latest state into the history (called after changes settle, and before any undo / reset). */
+  const record = () => {
+    const cur = JSON.stringify(latest.current);
+    if (ptr.current < 0) {
+      hist.current = [cur];
+      ptr.current = 0;
+    } else if (hist.current[ptr.current] !== cur) {
+      if (Date.now() < applyingUntil.current) {
+        hist.current[ptr.current] = cur; // an undo / redo just landed; keep the entry exact
+      } else {
+        hist.current = [...hist.current.slice(0, ptr.current + 1), cur].slice(-HISTORY_MAX);
+        ptr.current = hist.current.length - 1;
+      }
+    }
+    // remember how the content looked when it first appeared
+    const now = JSON.parse(cur) as Record<string, unknown>;
+    const has = contentKeys.current.some((k) => hasValue(now[k]));
+    if (has && baseline.current === null) {
+      baseline.current = cur;
+      void sSet(`${key}:baseline`, cur);
+    } else if (!has && baseline.current !== null) {
+      baseline.current = null;
+      void sDel(`${key}:baseline`);
+    }
+    flags.current = {
+      undo: ptr.current > 0,
+      redo: ptr.current < hist.current.length - 1,
+      changes: baseline.current !== null && baseline.current !== cur,
+      settings: settingsTarget(cur) !== cur,
+    };
+    emitHistory();
+  };
+  const recordRef = useRef(record);
+  recordRef.current = record;
 
   useEffect(() => {
     let dead = false;
     (async () => {
       const saved = await sGet<T>(key);
+      const base = await sGet<string>(`${key}:baseline`);
+      if (base !== undefined) baseline.current = base;
       if (saved !== undefined && !dead) await restoreRef.current(saved);
       if (!dead) setReady(true);
     })();
@@ -202,6 +269,7 @@ export function useSessionSnapshot<T>(key: string, snapshot: T, restore: (saved:
     timer.current = setTimeout(() => {
       timer.current = null;
       void sSet(key, latest.current);
+      recordRef.current();
     }, 700);
   });
   useEffect(() => {
@@ -215,5 +283,29 @@ export function useSessionSnapshot<T>(key: string, snapshot: T, restore: (saved:
     window.addEventListener("pagehide", flush);
     return () => window.removeEventListener("pagehide", flush);
   }, [key]);
+
+  // let the header drive undo / redo / resets
+  useEffect(() => {
+    if (!ready) return;
+    const apply = (json: string, exact: boolean) => {
+      applyingUntil.current = exact ? Date.now() + 1500 : 0;
+      void restoreRef.current(JSON.parse(json) as T);
+    };
+    const settle = () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+        timer.current = null;
+        void sSet(key, latest.current);
+      }
+      recordRef.current();
+    };
+    return registerHistory(key.split(":")[0], {
+      undo: () => { settle(); if (ptr.current > 0) { ptr.current--; apply(hist.current[ptr.current], true); } },
+      redo: () => { settle(); if (ptr.current < hist.current.length - 1) { ptr.current++; apply(hist.current[ptr.current], true); } },
+      resetChanges: () => { settle(); if (baseline.current) apply(baseline.current, false); },
+      resetSettings: () => { settle(); apply(settingsTarget(JSON.stringify(latest.current)), false); },
+      can: () => flags.current,
+    });
+  }, [ready, key]);
   return ready;
 }

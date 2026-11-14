@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { ToastProvider } from "@/components/linkdesk/ui";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -47,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SessionGuard />
         <DragOverlay />
         <SaveNotice />
-        {children}
+        <ToastProvider>{children}</ToastProvider>
         <Analytics />
         <SpeedInsights />
       </body>

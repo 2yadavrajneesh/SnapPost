@@ -184,6 +184,7 @@ export default function Unroller() {
       setThemeId(v.themeId ?? PAPER_THEMES[0].id);
       setMarkStyle(v.markStyle ?? "marker");
     },
+    { content: ["link", "thread", "manyText", "fileName", "fileLinks"] },
   );
   const linkInput = useRef<HTMLInputElement>(null);
   const flash = (m: string) => {

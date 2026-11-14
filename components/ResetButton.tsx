@@ -3,7 +3,8 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toolFor } from "@/lib/tools";
-import { clearApp, hasWork } from "@/lib/session";
+import { hasWork } from "@/lib/session";
+import ResetPageDialog from "@/components/ResetPageDialog";
 
 /** Start-over control that lives inside each tool. It always asks first, in a warning dialog. */
 export default function ResetButton({ className = "" }: { className?: string }) {
@@ -45,41 +46,7 @@ export default function ResetButton({ className = "" }: { className?: string }) 
         </svg>
         Reset everything
       </button>
-      {open && (
-        <div className="snap-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onMouseDown={(e) => e.target === e.currentTarget && !busy && setOpen(false)}>
-          <div role="alertdialog" aria-modal="true" aria-labelledby="rs-t" aria-describedby="rs-d" className="snap-scale w-full max-w-sm border-t-4 border-amber-500 bg-white p-5 shadow-2xl">
-            <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 flex-none items-center justify-center bg-amber-100 text-amber-700">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 3 2 20h20zM12 10v4M12 17.5v.01" />
-                </svg>
-              </span>
-              <div>
-                <h2 id="rs-t" className="text-sm font-bold text-stone-900">Clear everything in {tool.name}?</h2>
-                <p id="rs-d" className="mt-1 text-xs leading-relaxed text-stone-600">
-                  Your uploaded files, links, pictures and settings in this app will be deleted from this browser. This cannot be undone.
-                </p>
-              </div>
-            </div>
-            <div className="mt-5 flex justify-end gap-2">
-              <button ref={cancel} type="button" disabled={busy} onClick={() => setOpen(false)} className="h-9 border border-stone-300 bg-white px-4 text-xs font-semibold text-stone-800 hover:bg-stone-100">
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  setBusy(true);
-                  void clearApp(tool.id).then(() => window.location.reload());
-                }}
-                className="h-9 bg-red-600 px-4 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
-              >
-                {busy ? "Clearing…" : "Yes, clear everything"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ResetPageDialog open={open} onClose={() => setOpen(false)} app={tool.id} name={tool.name} />
     </>
   );
 }

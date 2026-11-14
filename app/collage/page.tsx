@@ -108,6 +108,7 @@ export default function CollageMaker() {
       setFormat(v.format ?? "png");
       setQuality(v.quality ?? 1);
     },
+    { content: ["entries", "text"] },
   );
   const [exporting, setExporting] = useState(false);
 

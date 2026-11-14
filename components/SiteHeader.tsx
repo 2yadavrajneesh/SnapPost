@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import HistoryBar from "@/components/HistoryBar";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { TOOLS, ToolIcon, toolFor } from "@/lib/tools";
@@ -73,6 +74,7 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
         </nav>
 
         <div className="flex flex-none items-center gap-2">
+          <HistoryBar />
           {actions}
           <button
             type="button"
