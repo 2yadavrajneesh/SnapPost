@@ -74,6 +74,11 @@ export function Open({ onFile, loading, error, title = "Drop a PDF here or click
   return (
     <Card title="Open a PDF">
       <DropZone accept="application/pdf,.pdf" title={loading ? "Reading the PDF…" : title} note={`Works on your device. Nothing is uploaded. Up to ${fmtSize(MAX_BYTES)}.`} onFile={onFile} disabled={loading} />
+      <ol className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+        <li><b className="text-slate-700">1</b> Choose a PDF</li>
+        <li><b className="text-slate-700">2</b> Make your changes</li>
+        <li><b className="text-slate-700">3</b> Download the result</li>
+      </ol>
       {error && <p role="alert" className="bg-red-50 px-3 py-2 text-xs font-semibold text-red-800">{error}</p>}
     </Card>
   );
