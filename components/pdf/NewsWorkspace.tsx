@@ -324,7 +324,7 @@ export default function NewsWorkspace() {
         <Card title={result ? "Your PDF is ready" : "Make the PDF"}>
           {cfg?.mode === "off" && <p className="mb-3 bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-900">File storage is not set up on this site yet.</p>}
           {!result && (
-            <button type="button" className={`${btnPrimary} w-full`} disabled={!ready} onClick={run}>
+            <button type="button" className={`${btnPrimary} w-full max-lg:hidden`} disabled={!ready} onClick={run}>
               {busy === "upload" ? `Uploading ${pct}%` : busy === "process" ? "Building the PDF…" : "Make PDF"}
             </button>
           )}
@@ -350,6 +350,11 @@ export default function NewsWorkspace() {
         </Card>
         <p className="px-1 text-[11px] leading-relaxed text-stone-500">Screenshots are processed on the server and removed right after. Hindi and English text are both supported in titles and captions.</p>
       </aside>
+      {!result && (
+        <button type="button" className={`${btnPrimary} sticky bottom-3 z-20 col-span-full h-12 w-full text-sm shadow-lg disabled:!bg-stone-400 disabled:!opacity-100 lg:hidden`} disabled={!ready} onClick={run}>
+          {busy === "upload" ? `Uploading ${pct}%` : busy === "process" ? "Building the PDF…" : "Make PDF"}
+        </button>
+      )}
       {big && (
         <div role="dialog" aria-modal="true" aria-label="Full PDF preview" className="fixed inset-0 z-50 flex flex-col bg-black/75" onClick={() => setBig(false)}>
           <div className="flex items-center justify-between px-4 py-2 text-white" onClick={(e) => e.stopPropagation()}>

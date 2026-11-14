@@ -576,7 +576,7 @@ export default function CollageMaker() {
               <Label>Size</Label>
               <Segmented value={String(quality)} onChange={(v) => setQuality(Number(v) as 1 | 2)} options={[{ value: "1", label: `Standard ${FRAME_W}px` }, { value: "2", label: `High ${FRAME_W * 2}px` }]} />
             </div>
-            <button type="button" className={`${btnPrimary} h-11 w-full text-sm`} disabled={!items.length || exporting || loading > 0} onClick={() => void download()}>
+            <button type="button" className={`${btnPrimary} sticky bottom-3 z-20 h-11 w-full text-sm shadow-lg disabled:!bg-stone-400 disabled:!opacity-100 lg:static lg:shadow-none`} disabled={!items.length || exporting || loading > 0} onClick={() => void download()}>
               {exporting ? "Creating…" : loading ? "Loading tweets…" : `Download ${format.toUpperCase()}`}
             </button>
             {!items.length && <p className="text-[11px] text-stone-500">Add at least one tweet to download a collage.</p>}
