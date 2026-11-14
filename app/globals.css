@@ -467,34 +467,35 @@ html[data-theme="dark"] .desk-stage::after {
 }
 html[data-theme="dark"] .collage-stage::after { background-image: radial-gradient(circle, rgba(244, 114, 182, 0.8) 1.9px, transparent 2.3px); }
 
-/* ClipBook: dots fall like sheets dropped on a desk, swaying side to side as they land */
+/* ClipBook: still small dots, with two offset layers of larger dots that twinkle in turn under a slow wave */
 .pdf-stage { animation: none; overflow: hidden; }
 .pdf-stage--clip {
   background-color: #f7efee;
-  background-image:
-    radial-gradient(circle, rgba(185, 28, 28, 0.22) 1.4px, transparent 1.8px),
-    radial-gradient(circle, rgba(185, 28, 28, 0.1) 3px, transparent 3.5px);
-  background-size: 28px 28px, 84px 84px;
-  animation: clip-fall 16s ease-in-out infinite;
+  background-image: radial-gradient(circle, rgba(185, 28, 28, 0.2) 1.2px, transparent 1.6px);
+  background-size: 28px 28px;
 }
-.pdf-stage--clip::before {
-  background:
-    radial-gradient(38% 38% at 20% 25%, rgba(220, 38, 38, 0.13), transparent 70%),
-    radial-gradient(36% 36% at 80% 75%, rgba(234, 88, 12, 0.1), transparent 70%);
+.pdf-stage--clip::before,
+.pdf-stage--clip::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: 0;
+  background-image: radial-gradient(circle, rgba(220, 38, 38, 0.75) 2.2px, transparent 2.7px);
+  background-size: 56px 56px;
+  -webkit-mask-image: linear-gradient(135deg, #000 0%, transparent 28%, transparent 55%, #000 100%);
+  mask-image: linear-gradient(135deg, #000 0%, transparent 28%, transparent 55%, #000 100%);
+  -webkit-mask-size: 260% 260%; mask-size: 260% 260%;
+  animation: clip-twinkle 6s ease-in-out infinite, clip-wave 26s ease-in-out infinite alternate;
 }
-@keyframes clip-fall {
-  0%   { background-position: 0 0, 14px 14px; }
-  25%  { background-position: 20px 42px, 34px 56px; }
-  50%  { background-position: 0 84px, 14px 98px; }
-  75%  { background-position: -20px 126px, -6px 140px; }
-  100% { background-position: 0 168px, 14px 182px; }
+.pdf-stage--clip::after { background-position: 28px 28px; animation-delay: -3s, 0s; }
+@keyframes clip-twinkle { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+@keyframes clip-wave {
+  from { -webkit-mask-position: 0% 0%; mask-position: 0% 0%; }
+  to   { -webkit-mask-position: 100% 100%; mask-position: 100% 100%; }
 }
 html[data-theme="dark"] .pdf-stage--clip {
   background-color: #1b1313;
-  background-image:
-    radial-gradient(circle, rgba(248, 113, 113, 0.26) 1.4px, transparent 1.8px),
-    radial-gradient(circle, rgba(248, 113, 113, 0.12) 3px, transparent 3.5px);
+  background-image: radial-gradient(circle, rgba(248, 113, 113, 0.24) 1.2px, transparent 1.6px);
 }
+html[data-theme="dark"] .pdf-stage--clip::before,
+html[data-theme="dark"] .pdf-stage--clip::after { background-image: radial-gradient(circle, rgba(252, 165, 165, 0.8) 2.2px, transparent 2.7px); }
 
 /* EditPDF: a huge dotted field turns slowly, like a page being rotated, with a green glow */
 .pdf-stage--edit {
@@ -546,7 +547,7 @@ button:not(:disabled):active { transform: scale(0.96); }
 .snap-fade:nth-child(5) { animation-delay: 0.16s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .snap-stage::after, .scroll-stage, .desk-stage::after, .collage-stage::after, .pdf-stage--clip, .pdf-stage--edit::after,
+  .snap-stage::after, .scroll-stage, .desk-stage::after, .collage-stage::after, .pdf-stage--clip::before, .pdf-stage--clip::after, .pdf-stage--edit::after,
   .snap-fade, .snap-pop, .snap-scale, .snap-backdrop, [role="tabpanel"]:not([hidden]) > * { animation: none; }
   button:not(:disabled):active, .tool-pill:hover, .tab-card:hover { transform: none; }
 }
