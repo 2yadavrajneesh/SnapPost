@@ -346,7 +346,7 @@ export default function BatchTool({ active }: { active: boolean }) {
           )}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-stone-600">{total ? <><b>{total}</b> links in <b>{nBatches}</b> {nBatches === 1 ? "batch" : "batches"}</> : "No links loaded yet."}</p>
-            <button type="button" onClick={loadSample} className="text-xs font-semibold text-accent hover:underline">Use sample list</button>
+            <button type="button" data-no-save-notice onClick={loadSample} className="text-xs font-semibold text-accent hover:underline">Use sample list</button>
           </div>
         </Card>
 
