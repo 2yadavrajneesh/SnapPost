@@ -856,12 +856,14 @@ export default function Home() {
             </button>
           </div>
 
-          <CollapsibleSection title="Output ratio">
+          <CollapsibleSection title="Output ratio & layout">
             <RatioTiles value={showThread ? "auto" : settings.ratio} onChange={(v) => set("ratio", v)} disabled={showThread} />
             {showThread && <p className="text-[11px] text-stone-500">A full thread always uses Auto size. Switch to Carousel to pick a ratio.</p>}
             {!showThread && settings.ratio !== "auto" && (
               <p className="text-[11px] text-stone-500">The full post stays visible; content scales to fit. Click the selected tile again for Auto.</p>
             )}
+            <Slider label="Text size" value={settings.textSize} min={24} max={64} step={4} suffix="px" lowLabel="Smaller" highLabel="Larger" ticks emphasizeHigh onChange={(v) => set("textSize", v)} />
+            <Slider label="Padding" value={settings.padding} min={50} max={150} step={5} suffix="%" lowLabel="Tighter" highLabel="Looser" onChange={(v) => set("padding", v)} />
           </CollapsibleSection>
 
           {!showThread && (
@@ -905,11 +907,6 @@ export default function Home() {
                 ))}
               </div>
             </div>
-          </CollapsibleSection>
-
-          <CollapsibleSection title="Layout">
-            <Slider label="Text size" value={settings.textSize} min={24} max={64} step={4} suffix="px" lowLabel="Smaller" highLabel="Larger" ticks emphasizeHigh onChange={(v) => set("textSize", v)} />
-            <Slider label="Padding" value={settings.padding} min={50} max={150} step={5} suffix="%" lowLabel="Tighter" highLabel="Looser" onChange={(v) => set("padding", v)} />
           </CollapsibleSection>
 
           <div className="border-t border-stone-300 p-4">
