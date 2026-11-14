@@ -2,6 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
+/* shadcn/ui tokens. Light is the warm paper look; the dark block follows the site's own theme switch.
+   --radius is 0 on purpose: the whole site uses sharp corners. */
+@layer base {
+  :root {
+    --background: 30 33% 97%;
+    --foreground: 24 14% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 24 14% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 24 14% 10%;
+    --primary: 24 14% 10%;
+    --primary-foreground: 30 33% 97%;
+    --secondary: 30 12% 92%;
+    --secondary-foreground: 24 14% 14%;
+    --muted: 30 12% 94%;
+    --muted-foreground: 25 8% 38%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 8% 80%;
+    --input: 30 8% 80%;
+    --ring: 221 83% 53%;
+    --radius: 0rem;
+  }
+  html[data-theme="dark"] {
+    --background: 24 12% 8%;
+    --foreground: 40 25% 90%;
+    --card: 24 10% 11%;
+    --card-foreground: 40 25% 90%;
+    --popover: 24 10% 11%;
+    --popover-foreground: 40 25% 90%;
+    --primary: 40 25% 90%;
+    --primary-foreground: 24 12% 8%;
+    --secondary: 24 8% 18%;
+    --secondary-foreground: 40 25% 90%;
+    --muted: 24 8% 16%;
+    --muted-foreground: 35 10% 65%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 24 6% 26%;
+    --input: 24 6% 26%;
+    --ring: 213 94% 78%;
+  }
+}
+
 html,
 body {
   background: #faf6f1;
