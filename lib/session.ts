@@ -77,6 +77,21 @@ export async function clearEverything() {
   resetting = false;
 }
 
+/** True when the person has done real work in this app (not just opened it), so Reset has something to clear. */
+export async function hasWork(app: ToolId): Promise<boolean> {
+  try {
+    if (localStorage.getItem(`${app}:dirty`)) return true;
+  } catch {}
+  return (await sList(`${app}:`)).some((e) => e.key.includes(":file"));
+}
+export function markWork(app: ToolId) {
+  try {
+    if (localStorage.getItem(`${app}:dirty`)) return;
+    localStorage.setItem(`${app}:dirty`, "1");
+  } catch {}
+  window.dispatchEvent(new Event("snap:dirty"));
+}
+
 /** Clears one app's saved session (files, links, settings). */
 export async function clearApp(app: ToolId) {
   resetting = true;

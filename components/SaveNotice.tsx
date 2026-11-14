@@ -2,6 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { markWork } from "@/lib/session";
+import { toolFor } from "@/lib/tools";
 
 /** A brief "saved" note after work is stored in the browser. Shown at most once every 30 seconds, for 5 seconds. */
 export default function SaveNotice() {
@@ -28,6 +30,7 @@ export default function SaveNotice() {
     const on = () => {
       const now = Date.now();
       if (now - touched > window_ || document.documentElement.hasAttribute("data-sample")) return;
+      markWork(toolFor(location.pathname).id);
       if (now - last.current < 30000) return;
       last.current = now;
       setShow(true);
