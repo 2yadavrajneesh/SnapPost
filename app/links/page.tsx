@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import ResetButton from "@/components/ResetButton";
 import ArchiveTool from "@/components/linkdesk/ArchiveTool";
 import CleanerTool from "@/components/linkdesk/CleanerTool";
 import ExtractTool from "@/components/linkdesk/ExtractTool";
@@ -147,7 +146,6 @@ export default function LinkDesk() {
                 </div>
               </ToastProvider>
             </LinkProvider>
-            <div className="mt-8 flex justify-end"><ResetButton /></div>
           </div>
         </div>
         <ScrollTop target={stage} />

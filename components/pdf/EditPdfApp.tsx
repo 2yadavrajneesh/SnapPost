@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ComponentType } from "react";
+import ResetButton from "@/components/ResetButton";
 import EditorWorkspace from "./EditorWorkspace";
 import Organize from "./toolkit/Organize";
 import Merge from "./toolkit/Merge";
@@ -57,6 +58,7 @@ export default function EditPdfApp() {
             {t.label}
           </button>
         ))}
+        <ResetButton className="h-auto flex-none self-stretch" />
       </div>
       <View key={tab.id} />
     </div>

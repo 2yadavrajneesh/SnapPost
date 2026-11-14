@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import StepHints from "@/components/StepHints";
-import ResetButton from "@/components/ResetButton";
 import SiteHeader from "@/components/SiteHeader";
 import { CollapsibleSection, Label, Section, Segmented, Slider } from "@/components/ui";
 import { downloadBlob } from "@/lib/export";
@@ -800,9 +799,6 @@ export default function Unroller() {
               {notice}
             </div>
           </Section>
-          <div className="border-t border-stone-300 p-4">
-            <ResetButton className="w-full" />
-          </div>
         </aside>
 
         <div className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import ResetButton from "@/components/ResetButton";
 import { Ico } from "@/components/Icons";
 import { sDel, sGet, sSet, useSessionSnapshot, useWork } from "@/lib/session";
 import { Card, btnPlain, btnPrimary, btnSm, field, useCopy, btnIcon, useToast } from "@/components/linkdesk/ui";
@@ -334,11 +335,14 @@ export default function NewsWorkspace() {
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
         <Card title={result ? "Your PDF is ready" : "Make the PDF"}>
           {cfg?.mode === "off" && <p className="mb-3 bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-900">File storage is not set up on this site yet.</p>}
-          {!result && (
-            <button type="button" className={`${btnPrimary} w-full max-lg:hidden`} disabled={!ready} onClick={run}>
-              {busy === "upload" ? `Uploading ${pct}%` : busy === "process" ? "Building the PDF…" : "Make PDF"}
-            </button>
-          )}
+          <div className="flex gap-2">
+            {!result && (
+              <button type="button" className={`${btnPrimary} flex-1 max-lg:hidden`} disabled={!ready} onClick={run}>
+                {busy === "upload" ? `Uploading ${pct}%` : busy === "process" ? "Building the PDF…" : "Make PDF"}
+              </button>
+            )}
+            <ResetButton className="h-auto max-lg:flex-1 lg:flex-none" />
+          </div>
           {!result && !items.length && <p className="mt-2 text-[11px] text-stone-500">Add at least one screenshot to continue.</p>}
           {error && <p role="alert" className="mt-3 bg-red-50 px-3 py-2 text-xs font-semibold text-red-800">{error}</p>}
           {result && (

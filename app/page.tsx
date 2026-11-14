@@ -1,7 +1,6 @@
 "use client";
 
 import SiteHeader from "@/components/SiteHeader";
-import ResetButton from "@/components/ResetButton";
 import { useSessionSnapshot, useWork } from "@/lib/session";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
@@ -917,9 +916,6 @@ export default function Home() {
             </div>
           </CollapsibleSection>
 
-          <div className="border-t border-stone-300 p-4">
-            <ResetButton className="w-full" />
-          </div>
         </aside>
 
         {/* Viewer */}
