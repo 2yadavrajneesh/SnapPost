@@ -46,8 +46,8 @@ export default function ResetButton({ className = "" }: { className?: string }) 
         Reset everything
       </button>
       {open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onMouseDown={(e) => e.target === e.currentTarget && !busy && setOpen(false)}>
-          <div role="alertdialog" aria-modal="true" aria-labelledby="rs-t" aria-describedby="rs-d" className="w-full max-w-sm border-t-4 border-amber-500 bg-white p-5 shadow-2xl">
+        <div className="snap-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onMouseDown={(e) => e.target === e.currentTarget && !busy && setOpen(false)}>
+          <div role="alertdialog" aria-modal="true" aria-labelledby="rs-t" aria-describedby="rs-d" className="snap-scale w-full max-w-sm border-t-4 border-amber-500 bg-white p-5 shadow-2xl">
             <div className="flex items-start gap-3">
               <span className="flex h-10 w-10 flex-none items-center justify-center bg-amber-100 text-amber-700">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

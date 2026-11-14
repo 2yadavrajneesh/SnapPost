@@ -387,3 +387,166 @@ html[data-theme="dark"] .tab-card[aria-selected="true"] { background: color-mix(
   button, [role="tab"], select { min-height: 40px; }
   button.h-8, button.h-7 { min-height: 40px; min-width: 40px; }
 }
+
+/* =====================================================================================
+   Motion. Every tool's dotted stage moves in its own way (none is a plain straight drift),
+   and common actions get a short, soft animation. All of it stops for "reduce motion".
+   ===================================================================================== */
+
+/* SnapPost: still dots with a soft spotlight that wanders around and lights the dots it passes */
+.snap-stage { animation: none; }
+.snap-stage::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(234, 88, 12, 0.8) 1.9px, transparent 2.3px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(closest-side, #000, transparent);
+  mask-image: radial-gradient(closest-side, #000, transparent);
+  -webkit-mask-size: 42% 62%; mask-size: 42% 62%;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  animation: snap-spot 20s ease-in-out infinite;
+}
+@keyframes snap-spot {
+  0%   { -webkit-mask-position: 5% 10%;   mask-position: 5% 10%; }
+  25%  { -webkit-mask-position: 95% 25%;  mask-position: 95% 25%; }
+  50%  { -webkit-mask-position: 70% 95%;  mask-position: 70% 95%; }
+  75%  { -webkit-mask-position: 10% 80%;  mask-position: 10% 80%; }
+  100% { -webkit-mask-position: 5% 10%;   mask-position: 5% 10%; }
+}
+
+/* ThreadScroll: dots climb the page in a snaking, swaying line, like a thread being read */
+.scroll-stage { animation: scroll-sway 18s ease-in-out infinite; }
+@keyframes scroll-sway {
+  0%   { background-position: 0 0, 13px 13px; }
+  25%  { background-position: 26px -39px, 39px -26px; }
+  50%  { background-position: 0 -78px, 13px -65px; }
+  75%  { background-position: -26px -117px, -13px -104px; }
+  100% { background-position: 0 -156px, 13px -143px; }
+}
+
+/* LinkDesk: still dots with rings pinging outwards from the middle, like a link being checked */
+.desk-stage { animation: none; }
+.desk-stage::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-repeat: no-repeat; background-position: center;
+  background-image:
+    radial-gradient(closest-side, transparent calc(100% - 3px), rgba(31, 95, 214, 0.4) calc(100% - 1.5px), transparent 100%),
+    radial-gradient(closest-side, transparent calc(100% - 3px), rgba(31, 95, 214, 0.4) calc(100% - 1.5px), transparent 100%),
+    radial-gradient(closest-side, transparent calc(100% - 3px), rgba(31, 95, 214, 0.4) calc(100% - 1.5px), transparent 100%);
+  background-size: 0 0, 0 0, 0 0;
+  animation: desk-ping 12s ease-out infinite;
+}
+@keyframes desk-ping {
+  0%   { background-size: 0 0, 0 0, 0 0; }
+  20%  { background-size: 640px 640px, 0 0, 0 0; }
+  40%  { background-size: 1280px 1280px, 640px 640px, 0 0; }
+  60%  { background-size: 1800px 1800px, 1280px 1280px, 640px 640px; }
+  80%  { background-size: 1800px 1800px, 1800px 1800px, 1280px 1280px; }
+  100% { background-size: 1800px 1800px, 1800px 1800px, 1800px 1800px; }
+}
+html[data-theme="dark"] .desk-stage::after {
+  background-image:
+    radial-gradient(closest-side, transparent calc(100% - 3px), rgba(107, 155, 255, 0.35) calc(100% - 1.5px), transparent 100%),
+    radial-gradient(closest-side, transparent calc(100% - 3px), rgba(107, 155, 255, 0.35) calc(100% - 1.5px), transparent 100%),
+    radial-gradient(closest-side, transparent calc(100% - 3px), rgba(107, 155, 255, 0.35) calc(100% - 1.5px), transparent 100%);
+}
+
+/* CollageMaker: still dots with a diagonal band of light sweeping across, like a shimmer over a mood board */
+.collage-stage { animation: none; }
+.collage-stage::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(190, 24, 93, 0.85) 1.9px, transparent 2.3px);
+  background-size: 28px 28px;
+  -webkit-mask-image: linear-gradient(115deg, transparent 40%, #000 50%, transparent 60%);
+  mask-image: linear-gradient(115deg, transparent 40%, #000 50%, transparent 60%);
+  -webkit-mask-size: 320% 100%; mask-size: 320% 100%;
+  animation: collage-sweep 8s ease-in-out infinite;
+}
+@keyframes collage-sweep {
+  from { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  to   { -webkit-mask-position: 0 0;    mask-position: 0 0; }
+}
+html[data-theme="dark"] .collage-stage::after { background-image: radial-gradient(circle, rgba(244, 114, 182, 0.8) 1.9px, transparent 2.3px); }
+
+/* ClipBook: dots fall like sheets dropped on a desk, swaying side to side as they land */
+.pdf-stage { animation: none; overflow: hidden; }
+.pdf-stage--clip {
+  background-color: #f7efee;
+  background-image:
+    radial-gradient(circle, rgba(185, 28, 28, 0.22) 1.4px, transparent 1.8px),
+    radial-gradient(circle, rgba(185, 28, 28, 0.1) 3px, transparent 3.5px);
+  background-size: 28px 28px, 84px 84px;
+  animation: clip-fall 16s ease-in-out infinite;
+}
+.pdf-stage--clip::before {
+  background:
+    radial-gradient(38% 38% at 20% 25%, rgba(220, 38, 38, 0.13), transparent 70%),
+    radial-gradient(36% 36% at 80% 75%, rgba(234, 88, 12, 0.1), transparent 70%);
+}
+@keyframes clip-fall {
+  0%   { background-position: 0 0, 14px 14px; }
+  25%  { background-position: 20px 42px, 34px 56px; }
+  50%  { background-position: 0 84px, 14px 98px; }
+  75%  { background-position: -20px 126px, -6px 140px; }
+  100% { background-position: 0 168px, 14px 182px; }
+}
+html[data-theme="dark"] .pdf-stage--clip {
+  background-color: #1b1313;
+  background-image:
+    radial-gradient(circle, rgba(248, 113, 113, 0.26) 1.4px, transparent 1.8px),
+    radial-gradient(circle, rgba(248, 113, 113, 0.12) 3px, transparent 3.5px);
+}
+
+/* EditPDF: a huge dotted field turns slowly, like a page being rotated, with a green glow */
+.pdf-stage--edit {
+  background-color: #eef4f0;
+  background-image: none;
+}
+.pdf-stage--edit::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 220%; aspect-ratio: 1; z-index: 0; pointer-events: none;
+  margin: -110% 0 0 -110%;
+  background-image:
+    radial-gradient(circle, rgba(4, 120, 87, 0.28) 1.4px, transparent 1.8px),
+    radial-gradient(circle, rgba(4, 120, 87, 0.12) 3px, transparent 3.5px);
+  background-size: 28px 28px, 84px 84px;
+  background-position: 0 0, 14px 14px;
+  animation: edit-turn 150s linear infinite;
+}
+.pdf-stage--edit::before {
+  background:
+    radial-gradient(38% 38% at 20% 25%, rgba(16, 185, 129, 0.15), transparent 70%),
+    radial-gradient(36% 36% at 80% 75%, rgba(59, 130, 246, 0.1), transparent 70%);
+}
+@keyframes edit-turn { to { transform: rotate(360deg); } }
+html[data-theme="dark"] .pdf-stage--edit { background-color: #101915; background-image: none; }
+html[data-theme="dark"] .pdf-stage--edit::after {
+  background-image:
+    radial-gradient(circle, rgba(110, 231, 183, 0.26) 1.4px, transparent 1.8px),
+    radial-gradient(circle, rgba(110, 231, 183, 0.12) 3px, transparent 3.5px);
+}
+
+/* ----- action animations ----- */
+@keyframes snap-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes snap-pop { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes snap-scale { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes snap-backdrop { from { opacity: 0; } to { opacity: 1; } }
+.snap-fade { animation: snap-fade 0.35s ease-out both; }
+.snap-pop { animation: snap-pop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+.snap-scale { animation: snap-scale 0.22s ease-out both; }
+.snap-backdrop { animation: snap-backdrop 0.2s ease-out both; }
+[role="tabpanel"]:not([hidden]) > * { animation: snap-fade 0.35s ease-out both; }
+/* buttons: a light press and a small lift on hover */
+button:not(:disabled), a[class*="btn"], .tool-pill, .tab-card { transition-property: transform, background-color, border-color, color, box-shadow, filter, opacity; transition-duration: 0.15s; }
+button:not(:disabled):active { transform: scale(0.96); }
+.tool-pill:hover, .tab-card:hover { transform: translateY(-1px); }
+.bg-accent:not(:disabled):hover { box-shadow: 0 4px 14px -4px var(--accent); }
+/* soft stagger when a list of cards or items appears */
+.snap-fade:nth-child(2) { animation-delay: 0.04s; }
+.snap-fade:nth-child(3) { animation-delay: 0.08s; }
+.snap-fade:nth-child(4) { animation-delay: 0.12s; }
+.snap-fade:nth-child(5) { animation-delay: 0.16s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .snap-stage::after, .scroll-stage, .desk-stage::after, .collage-stage::after, .pdf-stage--clip, .pdf-stage--edit::after,
+  .snap-fade, .snap-pop, .snap-scale, .snap-backdrop, [role="tabpanel"]:not([hidden]) > * { animation: none; }
+  button:not(:disabled):active, .tool-pill:hover, .tab-card:hover { transform: none; }
+}

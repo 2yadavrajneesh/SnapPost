@@ -37,7 +37,7 @@ export function CollapsibleSection({ title, children, defaultOpen = false }: { t
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {open && <div className="space-y-3 px-5 pb-5">{children}</div>}
+      {open && <div className="snap-fade space-y-3 px-5 pb-5">{children}</div>}
     </section>
   );
 }

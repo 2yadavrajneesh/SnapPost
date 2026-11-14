@@ -3,7 +3,7 @@ import PdfShell from "@/components/pdf/PdfShell";
 
 export default function EditPdf() {
   return (
-    <PdfShell accent="#047857">
+    <PdfShell accent="#047857" variant="edit">
       <EditPdfApp />
     </PdfShell>
   );

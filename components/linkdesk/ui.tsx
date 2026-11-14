@@ -12,7 +12,7 @@ export const field = "w-full border border-stone-300 bg-white px-2.5 py-2 text-x
 /** A numbered step card, like the original LinkDesk panels. */
 export function Card({ step, title, chip, children }: { step?: number; title: string; chip?: ReactNode; children: ReactNode }) {
   return (
-    <section className="border border-stone-300 bg-white p-5">
+    <section className="snap-fade border border-stone-300 bg-white p-5">
       <div className="mb-3 flex flex-wrap items-center gap-2.5">
         {step != null && <span className="flex h-6 w-6 items-center justify-center bg-accent text-xs font-bold text-white">{step}</span>}
         <h2 className="text-sm font-bold text-stone-900">{title}</h2>
@@ -89,7 +89,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div aria-live="polite" className="pointer-events-none fixed bottom-4 left-1/2 z-50 flex w-[min(92vw,420px)] -translate-x-1/2 flex-col gap-2">
         {list.map((t) => (
-          <div key={t.id} role="status" className={`pointer-events-auto px-4 py-2.5 text-xs font-semibold shadow-lg ${t.kind === "warn" ? "bg-amber-100 text-amber-900" : "bg-stone-900 text-white"}`}>
+          <div key={t.id} role="status" className={`snap-pop pointer-events-auto px-4 py-2.5 text-xs font-semibold shadow-lg ${t.kind === "warn" ? "bg-amber-100 text-amber-900" : "bg-stone-900 text-white"}`}>
             <span className="flex items-center justify-between gap-3">
               <span>{t.msg}</span>
               {t.action && (
