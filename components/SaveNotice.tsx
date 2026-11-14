@@ -11,8 +11,14 @@ export default function SaveNotice() {
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
     last.current = 0;
+    // only a save that follows something the person did counts; restoring data on load does not
+    let touched = 0;
+    const touch = () => { touched = Date.now(); };
+    const evs = ["keydown", "pointerdown", "input", "change", "drop", "paste"] as const;
+    evs.forEach((e) => window.addEventListener(e, touch, true));
     const on = () => {
       const now = Date.now();
+      if (now - touched > 4000) return;
       if (now - last.current < 30000) return;
       last.current = now;
       setShow(true);
@@ -22,6 +28,7 @@ export default function SaveNotice() {
     window.addEventListener("snap:saved", on);
     return () => {
       window.removeEventListener("snap:saved", on);
+      evs.forEach((e) => window.removeEventListener(e, touch, true));
       clearTimeout(timer.current);
     };
   }, [path]);
