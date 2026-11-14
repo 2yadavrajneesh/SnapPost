@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import StepHints from "@/components/StepHints";
 import ResetButton from "@/components/ResetButton";
 import SiteHeader from "@/components/SiteHeader";
 import { CollapsibleSection, Label, Section, Segmented, Slider } from "@/components/ui";
@@ -824,6 +825,7 @@ export default function Unroller() {
                   <div className="mx-auto max-w-[640px] border border-stone-300 bg-white p-8 text-center text-sm text-stone-600">
                     <div className="mb-1 text-base font-bold text-stone-900">Unroll a thread</div>
                     Paste a link to any post in a thread and it loads on its own. You get every post in order, ready to read, copy or download as a PDF.
+                    <StepHints steps={["Paste a post link", "Pick a look and pages", "Download the PDF"]} />
                   </div>
                 ) : view === "pages" ? (
                   <Pages posts={thread.posts} size={size} orientation={orientation} theme={theme} o={vo(false)} containerWidth={stageW} zoom={zoom} />

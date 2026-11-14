@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import StepHints from "@/components/StepHints";
 import ResetButton from "@/components/ResetButton";
 import { useSessionSnapshot } from "@/lib/session";
 import CollageFrame, { type FrameLook, type Item, type Picture } from "@/components/collage/CollageFrame";
@@ -593,6 +594,7 @@ export default function CollageMaker() {
                   <div className="border border-stone-300 bg-white p-8 text-center text-sm text-stone-600">
                     <div className="mb-1 text-base font-bold text-stone-900">{loading ? "Loading your tweets…" : "Make a collage"}</div>
                     {loading ? "They appear here as soon as they load." : `Paste tweet links or upload pictures on the left, up to ${MAX_TWEETS} in all. They are arranged into a clean, even grid you can download as a PNG or PDF.`}
+                    {!loading && <StepHints steps={["Add tweets or pictures", "Choose a layout", "Download the collage"]} />}
                   </div>
                 ) : (
                   <div style={{ width: FRAME_W * scale, height: frameH * scale }} className="mx-auto shadow-lg">
