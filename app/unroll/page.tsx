@@ -151,6 +151,8 @@ export default function Unroller() {
   const theme = PAPER_THEMES.find((t) => t.id === themeId) ?? PAPER_THEMES[0];
   const reqId = useRef(0);
   const lastFetched = useRef("");
+  // each mode keeps what it loaded, so switching tabs by accident never loses a fetched thread
+  const stash = useRef<{ one: typeof thread; many: typeof thread }>({ one: null, many: null });
 
   useSessionSnapshot(
     "threadscroll:state",
@@ -219,6 +221,7 @@ export default function Unroller() {
       if (id !== reqId.current) return;
       // not a thread: it belongs under Many links
       nonThread.current.add(url);
+      stash.current = { one: null, many: null };
       setMode("many");
       setManyText(url);
       setFileName("");
@@ -286,6 +289,7 @@ export default function Unroller() {
           lastFetched.current = url;
           setHl({});
           setEditIdx(0);
+          stash.current = { one: null, many: null };
           setMode("one");
           setLink(url);
           setManyText("");
@@ -457,7 +461,7 @@ export default function Unroller() {
       <main className="grid w-full flex-1 lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
         <aside className="order-2 min-w-0 border-t border-stone-300 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:border-r lg:border-t-0">
           <Section title="Source">
-            <Segmented value={mode} onChange={(m) => { setMode(m); setThread(null); setPending(null); setError(null); }} options={[{ value: "one", label: "One thread" }, { value: "many", label: "Many links" }]} />
+            <Segmented value={mode} onChange={(m) => { if (m === mode) return; stash.current[mode] = thread; setMode(m); setThread(stash.current[m]); setPending(null); setError(null); }} options={[{ value: "one", label: "One thread" }, { value: "many", label: "Many links" }]} />
             {mode === "many" && (
               <div className="mt-3 space-y-2">
                 <Label>Paste links (one per line) or upload a file that has them</Label>
