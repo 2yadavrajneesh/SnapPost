@@ -1,6 +1,7 @@
 "use client";
 
 import SiteHeader from "@/components/SiteHeader";
+import ResetButton from "@/components/ResetButton";
 import { useSessionSnapshot } from "@/lib/session";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
@@ -911,6 +912,9 @@ export default function Home() {
             <Slider label="Padding" value={settings.padding} min={50} max={150} step={5} suffix="%" lowLabel="Tighter" highLabel="Looser" onChange={(v) => set("padding", v)} />
           </CollapsibleSection>
 
+          <div className="border-t border-stone-300 p-4">
+            <ResetButton className="w-full" />
+          </div>
         </aside>
 
         {/* Viewer */}

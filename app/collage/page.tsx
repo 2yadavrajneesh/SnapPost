@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import ResetButton from "@/components/ResetButton";
 import { useSessionSnapshot } from "@/lib/session";
 import CollageFrame, { type FrameLook, type Item, type Picture } from "@/components/collage/CollageFrame";
 import { BORDERS, type BorderKind, type CardStyle } from "@/components/collage/CollageCard";
@@ -579,6 +580,9 @@ export default function CollageMaker() {
             </button>
             {!items.length && <p className="text-[11px] text-stone-500">Add at least one tweet to download a collage.</p>}
           </Section>
+          <div className="border-t border-stone-300 p-4">
+            <ResetButton className="w-full" />
+          </div>
         </aside>
 
         <div className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">

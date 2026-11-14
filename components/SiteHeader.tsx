@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { TOOLS, ToolIcon, toolFor } from "@/lib/tools";
 import { useSiteTheme } from "@/lib/useSiteTheme";
-import { clearApp } from "@/lib/session";
 
 /**
  * Top bar shared by every tool. On wide screens the five tools sit in the bar; on tablets and phones they
@@ -16,7 +15,6 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
   const [theme, setTheme] = useSiteTheme();
   const tool = toolFor(path);
   const [open, setOpen] = useState(false);
-  const [armed, setArmed] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   useEffect(() => {
     setSavedAt(null);
@@ -83,31 +81,12 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
 
         <div className="flex flex-none items-center gap-2">
           {actions}
-          {savedAt && !armed && (
+          {savedAt && (
             <span className="hidden items-center gap-1 text-[11px] font-semibold text-emerald-700 lg:flex" role="status" title="Your work is kept in this browser until you press Reset, or after 7 days without use">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>
               Saved {savedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </span>
           )}
-          <button
-            type="button"
-            onClick={() => {
-              if (!armed) {
-                setArmed(true);
-                setTimeout(() => setArmed(false), 4000);
-                return;
-              }
-              void clearApp(tool.id).then(() => window.location.reload());
-            }}
-            title={`Clear everything ${tool.name} has saved (files, links, settings) and start fresh`}
-            aria-label={armed ? "Click again to clear all saved data" : `Reset ${tool.name}`}
-            className={`flex h-9 items-center gap-1.5 border px-3 text-xs font-semibold transition ${armed ? "border-red-600 bg-red-600 text-white" : "border-stone-300 bg-white text-stone-800 hover:bg-stone-100"}`}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6" />
-            </svg>
-            <span className={armed ? "" : "hidden sm:inline"}>{armed ? "Click again to clear" : "Reset"}</span>
-          </button>
           <button
             type="button"
             aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
