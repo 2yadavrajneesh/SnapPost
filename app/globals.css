@@ -423,32 +423,28 @@ html[data-theme="dark"] .tab-card[aria-selected="true"] { background: color-mix(
   100% { background-position: 0 -156px, 13px -143px; }
 }
 
-/* LinkDesk: still dots with rings pinging outwards from the middle, like a link being checked */
+/* LinkDesk: still dots; a wave of larger, brighter dots spreads outwards from the middle, ring after ring */
 .desk-stage { animation: none; }
 .desk-stage::after {
   content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background-repeat: no-repeat; background-position: center;
-  background-image:
-    radial-gradient(closest-side, transparent calc(100% - 3px), rgba(31, 95, 214, 0.4) calc(100% - 1.5px), transparent 100%),
-    radial-gradient(closest-side, transparent calc(100% - 3px), rgba(31, 95, 214, 0.4) calc(100% - 1.5px), transparent 100%),
-    radial-gradient(closest-side, transparent calc(100% - 3px), rgba(31, 95, 214, 0.4) calc(100% - 1.5px), transparent 100%);
-  background-size: 0 0, 0 0, 0 0;
+  background-image: radial-gradient(circle, rgba(31, 95, 214, 0.85) 2.4px, transparent 2.9px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(closest-side, transparent calc(100% - 90px), #000 calc(100% - 40px), transparent 100%), radial-gradient(closest-side, transparent calc(100% - 90px), #000 calc(100% - 40px), transparent 100%), radial-gradient(closest-side, transparent calc(100% - 90px), #000 calc(100% - 40px), transparent 100%);
+  mask-image: radial-gradient(closest-side, transparent calc(100% - 90px), #000 calc(100% - 40px), transparent 100%), radial-gradient(closest-side, transparent calc(100% - 90px), #000 calc(100% - 40px), transparent 100%), radial-gradient(closest-side, transparent calc(100% - 90px), #000 calc(100% - 40px), transparent 100%);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center; mask-position: center;
+  -webkit-mask-size: 0 0, 0 0, 0 0; mask-size: 0 0, 0 0, 0 0;
   animation: desk-ping 12s ease-out infinite;
 }
 @keyframes desk-ping {
-  0%   { background-size: 0 0, 0 0, 0 0; }
-  20%  { background-size: 640px 640px, 0 0, 0 0; }
-  40%  { background-size: 1280px 1280px, 640px 640px, 0 0; }
-  60%  { background-size: 1800px 1800px, 1280px 1280px, 640px 640px; }
-  80%  { background-size: 1800px 1800px, 1800px 1800px, 1280px 1280px; }
-  100% { background-size: 1800px 1800px, 1800px 1800px, 1800px 1800px; }
+  0%   { -webkit-mask-size: 0 0, 0 0, 0 0; mask-size: 0 0, 0 0, 0 0; }
+  20%  { -webkit-mask-size: 640px 640px, 0 0, 0 0; mask-size: 640px 640px, 0 0, 0 0; }
+  40%  { -webkit-mask-size: 1280px 1280px, 640px 640px, 0 0; mask-size: 1280px 1280px, 640px 640px, 0 0; }
+  60%  { -webkit-mask-size: 1800px 1800px, 1280px 1280px, 640px 640px; mask-size: 1800px 1800px, 1280px 1280px, 640px 640px; }
+  80%  { -webkit-mask-size: 1800px 1800px, 1800px 1800px, 1280px 1280px; mask-size: 1800px 1800px, 1800px 1800px, 1280px 1280px; }
+  100% { -webkit-mask-size: 1800px 1800px, 1800px 1800px, 1800px 1800px; mask-size: 1800px 1800px, 1800px 1800px, 1800px 1800px; }
 }
-html[data-theme="dark"] .desk-stage::after {
-  background-image:
-    radial-gradient(closest-side, transparent calc(100% - 3px), rgba(107, 155, 255, 0.35) calc(100% - 1.5px), transparent 100%),
-    radial-gradient(closest-side, transparent calc(100% - 3px), rgba(107, 155, 255, 0.35) calc(100% - 1.5px), transparent 100%),
-    radial-gradient(closest-side, transparent calc(100% - 3px), rgba(107, 155, 255, 0.35) calc(100% - 1.5px), transparent 100%);
-}
+html[data-theme="dark"] .desk-stage::after { background-image: radial-gradient(circle, rgba(147, 187, 255, 0.9) 2.4px, transparent 2.9px); }
 
 /* CollageMaker: still dots with a diagonal band of light sweeping across, like a shimmer over a mood board */
 .collage-stage { animation: none; }
