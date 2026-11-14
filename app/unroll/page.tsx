@@ -9,7 +9,7 @@ import { downloadBlob } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
 import { DEFAULT_LABEL_STRENGTH, LABEL_COLORS, LABEL_PRESETS, NUM_FORMATS, PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type NumFormat, type NumPos, type Orientation, type PageLabel, type PageSizeId } from "@/lib/paper";
 import NumPosPicker from "@/components/NumPosPicker";
-import { useSessionSnapshot } from "@/lib/session";
+import { useSessionSnapshot, useWork } from "@/lib/session";
 import PageModePicker, { type PageMode } from "@/components/PageModePicker";
 import ScrollTop from "@/components/ScrollTop";
 import HighlightEditor from "@/components/HighlightEditor";
@@ -235,6 +235,7 @@ export default function Unroller() {
 
   const typedLinks = Array.from(new Set((manyText.match(/https?:\/\/(?:www\.|mobile\.)?(?:x|twitter)\.com\/[^\s"'<>)]+/gi) ?? []).filter((u) => parseTweetUrl(u))));
   const manyLinks = fileName ? fileLinks : typedLinks;
+  useWork("threadscroll", !!thread || link.trim() !== "" || manyLinks.length > 0);
 
   async function loadMany() {
     if (!manyLinks.length) return;

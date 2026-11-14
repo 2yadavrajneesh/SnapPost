@@ -77,8 +77,22 @@ export async function clearEverything() {
   resetting = false;
 }
 
+/** Apps report here whether they currently hold the person's own content (not a sample, not emptied out). */
+const live: Partial<Record<ToolId, boolean>> = {};
+export const liveWork = (app: ToolId) => live[app];
+export function useWork(app: ToolId, has: boolean) {
+  useEffect(() => {
+    live[app] = has;
+    window.dispatchEvent(new Event("snap:dirty"));
+    return () => {
+      delete live[app];
+    };
+  }, [app, has]);
+}
+
 /** True when the person has done real work in this app (not just opened it), so Reset has something to clear. */
 export async function hasWork(app: ToolId): Promise<boolean> {
+  if (live[app] !== undefined) return live[app]!;
   try {
     if (localStorage.getItem(`${app}:dirty`)) return true;
   } catch {}

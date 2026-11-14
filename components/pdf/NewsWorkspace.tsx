@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Ico } from "@/components/Icons";
-import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
+import { sDel, sGet, sSet, useSessionSnapshot, useWork } from "@/lib/session";
 import { Card, btnPlain, btnPrimary, btnSm, field, useCopy, btnIcon, useToast } from "@/components/linkdesk/ui";
 import NewsPreview from "./NewsPreview";
 import { TITLE_STYLES } from "@/lib/pdf/newsLayout";
@@ -60,6 +60,7 @@ export default function NewsWorkspace() {
   // The pictures themselves are kept as files (one entry each); the rest is a small list of notes about them.
   const stored = useRef(new Set<number>());
   const meta = items.map((i) => ({ id: i.id, name: i.file.name, type: i.file.type, mod: i.file.lastModified, caption: i.caption, source: i.source, dx: i.dx, dy: i.dy, page: i.page, nw: i.nw, nh: i.nh }));
+  useWork("clipbook", items.length > 0 || !!result);
   const restored = useSessionSnapshot("clipbook:state", { meta, date: "" }, async (v) => {
     const out: Item[] = [];
     for (const m of v.meta ?? []) {

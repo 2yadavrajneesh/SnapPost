@@ -2,7 +2,7 @@
 
 import SiteHeader from "@/components/SiteHeader";
 import ResetButton from "@/components/ResetButton";
-import { useSessionSnapshot } from "@/lib/session";
+import { useSessionSnapshot, useWork } from "@/lib/session";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import AppearanceTiles, { FONT_LABELS } from "@/components/AppearanceTiles";
@@ -123,6 +123,7 @@ export default function Home() {
   const [zoom, setZoom] = useState<number | null>(null); // null = fit to window
 
   // everything the person has set up is kept in this browser until Reset or a long idle spell
+  useWork("snappost", hasTweet);
   const saved = useSessionSnapshot("snappost:state", { tweet, settings, link, hasTweet, showEdit, showQuote, displayInfo, showMedia, showParents, showParentMedia, thread, threadState: threadState === "found" ? "found" : threadState === "none" ? "none" : "idle", shot, slide, highlights, redact, format, pdfSize, pdfOrient }, (v) => {
     lastFetched.current = v.link; // already loaded: do not fetch it again
     setTweet(v.tweet);
