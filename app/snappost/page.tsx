@@ -13,7 +13,7 @@ import MediaDownload from "@/components/MediaDownload";
 import type { Highlight } from "@/lib/highlight";
 import RatioTiles from "@/components/RatioTiles";
 import TweetCard, { ALL_INFO, FONT_STACKS, type DisplayInfo, type Redact } from "@/components/TweetCard";
-import { Check, CollapsibleSection, Label, Section, Segmented, Slider, TextField, Toggle } from "@/components/ui";
+import { Check, CollapsibleSection, Label, Section, Segmented, Slider, SwitchRow, TextField, Toggle } from "@/components/ui";
 import { formatDate, formatTime } from "@/lib/format";
 import { copyPngToClipboard, downloadBlob, downloadUrl, renderPdf, renderPdfPages, renderPng, renderVideo, zipFiles } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
@@ -698,17 +698,11 @@ export default function Home() {
             )}
 
             {hasMedia && (
-              <label className="flex cursor-pointer items-center gap-2 border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700">
-                <input type="checkbox" checked={showMedia} onChange={(e) => setShowMedia(e.target.checked)} className="h-4 w-4 accent-stone-900" />
-                Include media
-              </label>
+              <SwitchRow label="Include media" checked={showMedia} onChange={setShowMedia} />
             )}
 
             {hasQuote && (
-              <label className="flex cursor-pointer items-center gap-2 border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700">
-                <input type="checkbox" checked={showQuote} onChange={(e) => setShowQuote(e.target.checked)} className="h-4 w-4 accent-stone-900" />
-                Include quoted post <span className="text-stone-400">(detected)</span>
-              </label>
+              <SwitchRow label={<>Include quoted post <span className="text-stone-400">(detected)</span></>} checked={showQuote} onChange={setShowQuote} />
             )}
 
             <MediaDownload key={`${tweet.username}|${tweet.photos[0] ?? ""}|${tweet.video?.sources[0] ?? ""}`} tweet={tweet} />
@@ -784,13 +778,13 @@ export default function Home() {
                     Upload avatar
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => onAvatarFile(e.target.files?.[0])} />
                   </label>
-                  <div className="flex gap-3 text-xs">
+                  <div className="flex gap-2 text-xs">
                     {tweet.avatar && (
-                      <button type="button" onClick={() => setT("avatar", "")} className="text-stone-500 underline hover:text-stone-900">
+                      <button type="button" onClick={() => setT("avatar", "")} className="cursor-pointer border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50">
                         Remove avatar
                       </button>
                     )}
-                    <label className="cursor-pointer text-stone-500 underline hover:text-stone-900">
+                    <label className="cursor-pointer border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50">
                       Upload media
                       <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => onMediaFiles(e.target.files)} />
                     </label>

@@ -6,7 +6,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Slider as UiSlider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -180,25 +179,21 @@ export function TextField({
   );
 }
 
-export function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+/** A bordered row with the label on the left and a switch on the right: the site's one on/off control. */
+export function SwitchRow({ label, checked, onChange, className = "" }: { label: ReactNode; checked: boolean; onChange: (v: boolean) => void; className?: string }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between text-xs font-medium text-stone-600">
-      {label}
-      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
+    <label className={`flex cursor-pointer items-center justify-between gap-3 border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700 transition hover:bg-stone-50 ${className}`}>
+      <span className="min-w-0">{label}</span>
+      <Switch checked={checked} onCheckedChange={onChange} aria-label={typeof label === "string" ? label : undefined} />
     </label>
   );
 }
 
-/** Checkbox row used for the "Post details" options. */
+export function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return <SwitchRow label={label} checked={checked} onChange={onChange} />;
+}
+
+/** Row used for the "Post details" options. */
 export function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <label
-      className={`flex cursor-pointer items-center gap-2 border px-2.5 py-2 text-xs font-medium transition ${
-        checked ? "border-stone-300 bg-white text-stone-800" : "border-stone-200 bg-stone-50 text-stone-400"
-      }`}
-    >
-      <Checkbox checked={checked} onCheckedChange={(v) => onChange(v === true)} aria-label={label} />
-      {label}
-    </label>
-  );
+  return <SwitchRow label={label} checked={checked} onChange={onChange} />;
 }

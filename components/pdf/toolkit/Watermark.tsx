@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { NativeSelect } from "@/components/ui/native-select";
+import { SwitchRow } from "@/components/ui";
 import { Card, btnPlain } from "@/components/linkdesk/ui";
 import { addWatermark, textMark } from "@/lib/pdf/browser";
 import { Field, Finish, Open, PosGrid, Seg, Thumb, sel, stem, useSource, type Made } from "./shared";

@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import ResetButton from "@/components/ResetButton";
 import { Ico } from "@/components/Icons";
 import { sDel, sGet, sList, sSet, useSessionSnapshot, useWork } from "@/lib/session";
+import { SwitchRow } from "@/components/ui";
 import { Card, btnPlain, btnPrimary, btnSm, field, useCopy, btnIcon, useToast } from "@/components/linkdesk/ui";
 import NewsPreview from "./NewsPreview";
 import { TITLE_STYLES } from "@/lib/pdf/newsLayout";
@@ -351,11 +352,11 @@ export default function NewsWorkspace() {
               <input className={`${sel} mt-1`} value={s.footer} maxLength={90} placeholder="Compiled by the media desk" onChange={(e) => set("footer", e.target.value)} />
             </label>
           </div>
-          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-stone-700">
-            <label className="flex items-center gap-2"><input type="checkbox" checked={s.showDate} onChange={(e) => set("showDate", e.target.checked)} />Show the date</label>
-            <label className="flex items-center gap-2"><input type="checkbox" checked={s.numbers} onChange={(e) => set("numbers", e.target.checked)} />Number the clippings</label>
-            <label className="flex items-center gap-2"><input type="checkbox" checked={s.trim} onChange={(e) => set("trim", e.target.checked)} />Trim blank borders</label>
-            <label className="flex items-center gap-2"><input type="checkbox" checked={s.splitTall} onChange={(e) => set("splitTall", e.target.checked)} />Split very long screenshots</label>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <SwitchRow label="Show the date" checked={s.showDate} onChange={(v) => set("showDate", v)} />
+            <SwitchRow label="Number the clippings" checked={s.numbers} onChange={(v) => set("numbers", v)} />
+            <SwitchRow label="Trim blank borders" checked={s.trim} onChange={(v) => set("trim", v)} />
+            <SwitchRow label="Split very long screenshots" checked={s.splitTall} onChange={(v) => set("splitTall", v)} />
           </div>
           <p className="mt-2 text-[11px] text-stone-500">Your settings are remembered on this device, so tomorrow only the pictures and date need changing.</p>
         </Card>

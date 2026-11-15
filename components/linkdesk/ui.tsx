@@ -1,5 +1,6 @@
 "use client";
 
+import { SwitchRow } from "@/components/ui";
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -27,12 +28,7 @@ export function Card({ step, title, chip, children }: { step?: number; title: st
 export const Chip = ({ children }: { children: ReactNode }) => <span className="max-w-[16rem] truncate bg-stone-100 px-2 py-0.5 text-[11px] font-semibold text-stone-600">{children}</span>;
 
 export function Check({ checked, onChange, children }: { checked: boolean; onChange: (v: boolean) => void; children: ReactNode }) {
-  return (
-    <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-stone-700">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 accent-stone-900" />
-      <span>{children}</span>
-    </label>
-  );
+  return <SwitchRow label={children} checked={checked} onChange={onChange} />;
 }
 
 /** A drop zone that also opens the file picker. */

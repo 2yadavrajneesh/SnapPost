@@ -5,7 +5,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import StepHints from "@/components/StepHints";
 import SiteHeader from "@/components/SiteHeader";
-import { CollapsibleSection, Label, Section, Segmented, Slider } from "@/components/ui";
+import { CollapsibleSection, Label, Section, Segmented, Slider, SwitchRow } from "@/components/ui";
 import { downloadBlob } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
 import { DEFAULT_LABEL_STRENGTH, LABEL_COLORS, LABEL_PRESETS, NUM_FORMATS, PAGE_SIZES, PAPER_THEMES, renderPagesPdf, type NumFormat, type NumPos, type Orientation, type PageLabel, type PageSizeId } from "@/lib/paper";
@@ -486,9 +486,7 @@ export default function Unroller() {
                     <button type="button" aria-label="Remove the file" title="Remove the file" onClick={() => { setFileName(""); setFileLinks([]); }} className="flex-none px-1 font-bold text-stone-600 hover:text-stone-900">✕</button>
                   </div>
                 )}
-                <label className="flex items-center gap-2 text-xs text-stone-700">
-                  <input type="checkbox" checked={expand} onChange={(e) => setExpand(e.target.checked)} /> Include the whole thread for each link
-                </label>
+                <SwitchRow label="Include the whole thread for each link" checked={expand} onChange={setExpand} />
                 <div className="flex flex-wrap items-center gap-2">
                   <button type="button" disabled={busy || !manyLinks.length} onClick={() => void loadMany()} className="bg-accent px-3 py-2 text-xs font-semibold text-white transition hover:brightness-110 disabled:opacity-50">
                     {busy ? "Loading…" : `Load ${manyLinks.length} link${manyLinks.length === 1 ? "" : "s"}`}
@@ -576,10 +574,7 @@ export default function Unroller() {
               ["Show photos and videos", media, setMedia],
               ["Show likes, reposts and views", stats, setStats],
             ].map(([label, val, setter]) => (
-              <label key={label as string} className="flex cursor-pointer items-center gap-2 border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700">
-                <input type="checkbox" checked={val as boolean} onChange={(e) => (setter as (v: boolean) => void)(e.target.checked)} className="h-4 w-4 accent-stone-900" />
-                {label as string}
-              </label>
+              <SwitchRow key={label as string} label={label as string} checked={val as boolean} onChange={setter as (v: boolean) => void} />
             ))}
             <Slider label="Text size" value={fontSize} min={12} max={28} step={1} suffix="px" lowLabel="Smaller" highLabel="Larger" onChange={setFontSize} />
           </CollapsibleSection>
@@ -711,10 +706,7 @@ export default function Unroller() {
                           ["media", "Photos and videos"],
                         ] as const
                       ).map(([k, text]) => (
-                        <label key={k} className="flex cursor-pointer items-center gap-2 border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-700">
-                          <input type="checkbox" checked={redact[k]} onChange={(e) => setRedact((r) => ({ ...r, [k]: e.target.checked }))} className="h-4 w-4 accent-stone-900" />
-                          {text}
-                        </label>
+                        <SwitchRow key={k} label={text} checked={redact[k]} onChange={(v) => setRedact((r) => ({ ...r, [k]: v }))} />
                       ))}
                       <p className="text-[11px] leading-snug text-stone-500">Hidden names, handles and bars are also removed from the copied and downloaded text.</p>
                     </div>

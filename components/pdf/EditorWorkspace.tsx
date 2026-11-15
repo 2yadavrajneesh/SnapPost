@@ -1,5 +1,6 @@
 "use client";
 
+import { Switch } from "@/components/ui/switch";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Ico } from "@/components/Icons";
 import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
@@ -602,7 +603,7 @@ export default function EditorWorkspace() {
                 <input type="range" min={8} max={60} value={isText ? (selAnn as { size: number }).size : textSize} onChange={(e) => { const v = +e.target.value; setTextSize(v); if (isText) change(selAnn!.id, { size: v } as Partial<Ann>); }} />
                 <span className="w-6">{isText ? (selAnn as { size: number }).size : textSize}</span>
               </label>
-              <label className="flex items-center gap-1.5"><input type="checkbox" checked={isText ? (selAnn as { bold: boolean }).bold : bold} onChange={(e) => { setBold(e.target.checked); if (isText) apply({ bold: e.target.checked } as Partial<Ann>); }} />Bold</label>
+              <label className="flex cursor-pointer items-center gap-1.5">Bold<Switch checked={isText ? (selAnn as { bold: boolean }).bold : bold} onCheckedChange={(v) => { setBold(v); if (isText) apply({ bold: v } as Partial<Ann>); }} aria-label="Bold" /></label>
             </>
           )}
           {(tool === "rect" || tool === "ellipse" || tool === "ink" || (selAnn && ["rect", "ellipse", "ink"].includes(selAnn.k))) && (
