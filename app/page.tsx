@@ -30,7 +30,7 @@ export default function Home() {
           <div className="mx-auto max-w-6xl px-4 py-14 text-center sm:px-6 sm:py-20">
             <p className="mx-auto inline-block border border-stone-300 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-stone-600">Free · Runs in your browser</p>
             <h1 className="mx-auto mt-5 max-w-3xl text-balance text-4xl font-extrabold leading-[1.1] tracking-tight text-stone-900 sm:text-6xl">{SITE_TAGLINE}.</h1>
-            <p className="mx-auto mt-4 max-w-xl text-base text-stone-600 sm:text-lg">Six small, focused apps that do one job well. Pick one and start in seconds. No sign-up.</p>
+            <p className="mx-auto mt-4 max-w-xl text-base text-stone-600 sm:text-lg">Six focused tools for researching posts, links and documents. Pick one and start in seconds. No sign-up.</p>
             <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
               <Button asChild size="lg" className="home-cta font-semibold">
                 <a href="#tools">Choose a tool <ArrowRight /></a>

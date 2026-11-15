@@ -1,6 +1,6 @@
-# Pressroom
+# OpenLens
 
-**Pressroom** is a set of six small tools for posts, links and PDFs that run right in your browser. The home page (`/`) lists them all; each tool also has its own page and name. Your work is saved on your device for 7 days, every tool has Undo, Redo and a Reset menu, and nothing is uploaded unless a tool says so.
+**OpenLens** is a set of six small open-source-research tools for posts, links and PDFs that run right in your browser. The home page (`/`) lists them all; each tool also has its own page and name. Your work is saved on your device for 7 days, every tool has Undo, Redo and a Reset menu, and nothing is uploaded unless a tool says so.
 
 | Tool | Page | What it does |
 |---|---|---|
@@ -13,7 +13,7 @@
 
 Paste a link, tweak the look, and download or copy the result. Built with Next.js and Tailwind CSS. No environment variables are needed to run it.
 
-> Pressroom and its tools are independent and not affiliated with X Corp. Posts belong to their authors, so only capture content you have the right to share.
+> OpenLens and its tools are independent and not affiliated with X Corp. Posts belong to their authors, so only capture content you have the right to share.
 
 ## Across all tools
 
