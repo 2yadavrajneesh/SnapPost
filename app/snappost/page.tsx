@@ -5,14 +5,14 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { useSessionSnapshot, useWork } from "@/lib/session";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import AppearanceTiles, { FONT_LABELS } from "@/components/AppearanceTiles";
+import AppearanceTiles from "@/components/AppearanceTiles";
 import Lightbox from "@/components/Lightbox";
 import ScrollTop from "@/components/ScrollTop";
 import HighlightEditor from "@/components/HighlightEditor";
 import MediaDownload from "@/components/MediaDownload";
 import type { Highlight } from "@/lib/highlight";
 import RatioTiles from "@/components/RatioTiles";
-import TweetCard, { ALL_INFO, FONT_STACKS, type DisplayInfo, type Redact } from "@/components/TweetCard";
+import TweetCard, { ALL_INFO, type DisplayInfo, type Redact } from "@/components/TweetCard";
 import { Check, CollapsibleSection, Label, Section, Segmented, Slider, SwitchRow, TextField, Toggle } from "@/components/ui";
 import { formatDate, formatTime } from "@/lib/format";
 import { copyPngToClipboard, downloadBlob, downloadUrl, renderPdf, renderPdfPages, renderPng, renderVideo, zipFiles } from "@/lib/export";
@@ -898,16 +898,6 @@ export default function Home() {
               <Label>Shadow</Label>
               <Segmented value={settings.shadow} onChange={(v) => set("shadow", v)} options={[{ value: "none", label: "None" }, { value: "soft", label: "Soft" }, { value: "lifted", label: "Lifted" }]} />
               {settings.shadow !== "none" && settings.margin !== null && settings.margin < 40 && <p className="mt-1 text-[11px] text-stone-500">Give the shadow room: raise the margin so it is not cut off.</p>}
-            </div>
-            <div>
-              <Label>Font</Label>
-              <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Font">
-                {(Object.keys(FONT_LABELS) as Settings["font"][]).map((f) => (
-                  <button key={f} type="button" role="radio" aria-checked={settings.font === f} onClick={() => set("font", f)} style={{ fontFamily: FONT_STACKS[f] }} className={`border px-2 py-3 text-sm font-semibold transition ${settings.font === f ? "border-[#1b2420] bg-[#1b2420] text-white" : "border-stone-200 bg-[#f4efe8] text-stone-700 hover:bg-[#ece6dc]"}`}>
-                    {FONT_LABELS[f]}
-                  </button>
-                ))}
-              </div>
             </div>
           </CollapsibleSection>
 
