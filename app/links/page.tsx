@@ -7,6 +7,7 @@ import ExtractTool from "@/components/linkdesk/ExtractTool";
 import MakerTool from "@/components/linkdesk/MakerTool";
 import BatchTool from "@/components/linkdesk/BatchTool";
 import { ToastProvider, useToast } from "@/components/linkdesk/ui";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ScrollTop from "@/components/ScrollTop";
 import { setHistoryScope } from "@/lib/history";
 import SiteHeader from "@/components/SiteHeader";
@@ -48,7 +49,7 @@ function SessionNotices() {
 
 function TabBar({ tab, go }: { tab: TabId; go: (t: TabId) => void }) {
   const { items } = useLinks();
-  const bar = useRef<HTMLElement>(null);
+  const bar = useRef<HTMLDivElement>(null);
   // Keep the chosen tab in view by moving only the tab bar itself. scrollIntoView also scrolls the whole page
   // sideways on narrow screens, which made the page jump left and drift back.
   useEffect(() => {
@@ -58,20 +59,17 @@ function TabBar({ tab, go }: { tab: TabId; go: (t: TabId) => void }) {
     nav.scrollLeft = el.offsetLeft - (nav.clientWidth - el.offsetWidth) / 2;
   }, [tab]);
   return (
-    <nav ref={bar} role="tablist" aria-label="LinkDesk tools" className="relative mb-5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <Tabs value={tab} onValueChange={(v) => go(v as TabId)} className="mb-5 gap-0">
+    <TabsList ref={bar} aria-label="LinkDesk tools" className="relative h-auto w-full justify-start gap-2 overflow-x-auto rounded-none bg-transparent p-0 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {TABS.map((t) => {
         const on = tab === t.id;
         return (
-          <button
+          <TabsTrigger
             key={t.id}
-            type="button"
-            role="tab"
+            value={t.id}
             id={`tab-${t.id}`}
-            aria-selected={on}
-            aria-controls={`view-${t.id}`}
-            onClick={() => go(t.id)}
             style={{ ["--tc" as string]: COLORS[t.id] }}
-            className="tab-card group relative flex min-w-[148px] flex-1 items-center gap-2.5 border px-3 py-2.5 text-left transition"
+            className="tab-card group relative h-auto min-w-[148px] flex-1 justify-start gap-2.5 rounded-none border px-3 py-2.5 text-left shadow-none data-[state=active]:shadow-none"
           >
             <span className="flex h-9 w-9 flex-none items-center justify-center text-white transition" style={{ background: COLORS[t.id] }}>
               <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -87,10 +85,11 @@ function TabBar({ tab, go }: { tab: TabId; go: (t: TabId) => void }) {
                 {items.length > 999 ? "999+" : items.length}
               </span>
             )}
-          </button>
+          </TabsTrigger>
         );
       })}
-    </nav>
+    </TabsList>
+    </Tabs>
   );
 }
 

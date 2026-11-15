@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
 import HistoryBar from "@/components/HistoryBar";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -43,21 +44,24 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
         </Link>
 
         {/* wide screens: the tools in the bar */}
-        <nav aria-label="Tools" className="hidden items-center gap-1 xl:flex">
-          {TOOLS.map((n) => (
-            <Link
-              key={n.id}
-              href={n.href}
-              title={n.hint}
-              aria-current={n.id === tool.id ? "page" : undefined}
-              style={{ ["--tc" as string]: n.accent }}
-              className="tool-pill flex items-center gap-2 whitespace-nowrap py-1 pl-1 pr-3 text-xs font-semibold transition"
-            >
-              <ToolIcon id={n.id} size={24} />
-              {n.name}
-            </Link>
-          ))}
-        </nav>
+        <NavigationMenu viewport={false} aria-label="Tools" className="hidden flex-none xl:flex">
+          <NavigationMenuList>
+            {TOOLS.map((n) => (
+              <NavigationMenuItem key={n.id}>
+                <NavigationMenuLink
+                  asChild
+                  active={n.id === tool.id}
+                  className="tool-pill flex-row items-center gap-2 whitespace-nowrap rounded-none py-1 pl-1 pr-3 text-xs font-semibold"
+                >
+                  <Link href={n.href} title={n.hint} aria-current={n.id === tool.id ? "page" : undefined} style={{ ["--tc" as string]: n.accent }}>
+                    <ToolIcon id={n.id} size={24} />
+                    {n.name}
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+            ))}
+          </NavigationMenuList>
+        </NavigationMenu>
 
         <div className="flex flex-none items-center gap-2">
           <HistoryBar />

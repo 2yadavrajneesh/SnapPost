@@ -1,61 +1,56 @@
+"use client"
+
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { ChevronDownIcon } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-function NativeSelect({
-  className,
-  size = "default",
-  ...props
-}: Omit<React.ComponentProps<"select">, "size"> & { size?: "sm" | "default" }) {
+type Opt = { value: string; label: React.ReactNode; disabled?: boolean }
+const EMPTY = "__empty__"
+
+/** Reads <option> children so existing call sites keep their markup. */
+function collect(children: React.ReactNode, out: Opt[] = []): Opt[] {
+  React.Children.forEach(children, (c) => {
+    if (!React.isValidElement(c)) return
+    const p = c.props as { value?: string | number; children?: React.ReactNode; disabled?: boolean }
+    if (c.type === React.Fragment || c.type === "optgroup") return void collect(p.children, out)
+    if (c.type === "option") {
+      const text = React.Children.toArray(p.children).map((x) => (typeof x === "string" || typeof x === "number" ? String(x) : "")).join("")
+      out.push({ value: String(p.value ?? text), label: p.children, disabled: p.disabled })
+    }
+  })
+  return out
+}
+
+type Props = Omit<React.ComponentProps<"select">, "size" | "onChange" | "value"> & {
+  size?: "sm" | "default"
+  value?: string | number
+  onChange?: (e: { target: { value: string } }) => void
+}
+
+/** The site's drop-down list (shadcn Select). Accepts <option> children and an onChange that reads e.target.value. */
+function NativeSelect({ className, size = "default", value, onChange, children, disabled, id, title, ...props }: Props) {
+  const opts = collect(children)
+  const v = value === undefined ? undefined : String(value)
   return (
-    <div
-      className="group/native-select relative w-full has-[select:disabled]:opacity-50"
-      data-slot="native-select-wrapper"
-    >
-      <select
-        data-slot="native-select"
-        data-size={size}
-        className={cn(
-          "h-9 w-full min-w-0 appearance-none rounded-md border border-input bg-transparent px-3 py-2 pr-9 text-sm shadow-sm transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed data-[size=sm]:h-8 data-[size=sm]:py-1 dark:bg-input/30 dark:hover:bg-input/50",
-          "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
-          "aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
-          className
-        )}
-        {...props}
-      />
-      <ChevronDownIcon
-        className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-muted-foreground opacity-50 select-none"
-        aria-hidden="true"
-        data-slot="native-select-icon"
-      />
-    </div>
+    <Select value={v === "" ? EMPTY : v} onValueChange={(x) => onChange?.({ target: { value: x === EMPTY ? "" : x } })} disabled={disabled}>
+      <SelectTrigger
+        id={id}
+        title={title}
+        size={size}
+        aria-label={props["aria-label"]}
+        className={cn("w-full rounded-none text-left", className)}
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent position="popper" className="rounded-none">
+        {opts.map((o) => (
+          <SelectItem key={o.value} value={o.value === "" ? EMPTY : o.value} disabled={o.disabled} className="rounded-none text-xs">
+            {o.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }
 
-function NativeSelectOption({
-  className,
-  ...props
-}: React.ComponentProps<"option">) {
-  return (
-    <option
-      data-slot="native-select-option"
-      className={cn("bg-[Canvas] text-[CanvasText]", className)}
-      {...props}
-    />
-  )
-}
-
-function NativeSelectOptGroup({
-  className,
-  ...props
-}: React.ComponentProps<"optgroup">) {
-  return (
-    <optgroup
-      data-slot="native-select-optgroup"
-      className={cn("bg-[Canvas] text-[CanvasText]", className)}
-      {...props}
-    />
-  )
-}
-
-export { NativeSelect, NativeSelectOptGroup, NativeSelectOption }
+export { NativeSelect }

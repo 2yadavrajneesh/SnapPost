@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Ico } from "@/components/Icons";
 import { host, LIMITS, checkFileSize, looksLikeUrl, plural, type RawLink } from "@/lib/linkdesk/core";
@@ -482,17 +483,18 @@ export default function BatchTool({ active }: { active: boolean }) {
       <section className="border border-stone-300 bg-white">
         <div className="flex flex-wrap items-center gap-2 border-b border-stone-200 p-3">
           <h2 className="mr-auto text-sm font-bold text-stone-900">Links</h2>
-          <div role="group" aria-label="Filter by status" className="flex items-center gap-1 bg-stone-100 p-1">
-            {(["all", "pending", "opened"] as const).map((f) => (
-              <button key={f} type="button" aria-pressed={status === f} onClick={() => (setStatus(f), setLimit(PAGE))} className={`h-7 min-w-[4.25rem] px-3 text-xs font-semibold capitalize transition ${status === f ? "bg-white text-stone-900 shadow-sm ring-1 ring-stone-300" : "text-stone-500 hover:bg-white/60 hover:text-stone-800"}`}>{f}</button>
-            ))}
-          </div>
+          <Tabs value={status} onValueChange={(f) => (setStatus(f as typeof status), setLimit(PAGE))}>
+            <TabsList aria-label="Filter by status" className="h-auto gap-1 rounded-none bg-stone-100 p-1">
+              {(["all", "pending", "opened"] as const).map((f) => (
+                <TabsTrigger key={f} value={f} className="h-7 min-w-[4.25rem] flex-none rounded-none px-3 text-xs font-semibold capitalize text-stone-500 hover:text-stone-800 data-[state=active]:bg-white data-[state=active]:text-stone-900 data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-stone-300">{f}</TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
           <div className="relative">
-            <NativeSelect aria-label="Filter by batch" value={bf} onChange={(e) => (setBatchFilter(e.target.value), setLimit(PAGE))} className={`${field} h-9 !w-auto cursor-pointer appearance-none !py-0 !pl-3 !pr-8`}>
+            <NativeSelect aria-label="Filter by batch" value={bf} onChange={(e) => (setBatchFilter(e.target.value), setLimit(PAGE))} className={`${field} h-9 !w-auto cursor-pointer !py-0`}>
               <option value="all">All batches</option>
               {Array.from({ length: nBatches }, (_, k) => k + 1).map((b) => <option key={b} value={b}>Batch {b} ({start(b) + 1} to {Math.min(b * size, total)})</option>)}
             </NativeSelect>
-            <svg className="pointer-events-none absolute right-2.5 top-1/2 -mt-[5px] text-stone-500" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
           </div>
           <button type="button" className={`${btnSm} !h-9`} disabled={!total} onClick={resetAll}><Ico n="reset" />Reset status</button>
           <button

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import { sList, useWork } from "@/lib/session";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ResetButton from "@/components/ResetButton";
 import EditorWorkspace from "./EditorWorkspace";
 import Organize from "./toolkit/Organize";
@@ -55,23 +56,22 @@ export default function EditPdfApp() {
     <div style={{ ["--accent" as string]: tab.color }}>
       <h1 className="text-2xl font-bold text-stone-900">EditPDF</h1>
       <p className="mb-4 mt-1 max-w-2xl text-sm text-stone-600">{tab.blurb}</p>
-      <div ref={nav} role="tablist" aria-label="PDF tools" className="relative mb-5 flex gap-1.5 overflow-x-auto pb-1">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={t.id === id}
-            onClick={() => pick(t.id)}
-            className={`flex flex-none items-center gap-2 border px-3.5 py-2 text-xs font-bold transition ${t.id === id ? "text-white" : "bg-white text-stone-800 hover:bg-stone-100"}`}
-            style={t.id === id ? { background: t.color, borderColor: t.color } : { borderColor: "#d6d3d1" }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.id === id ? "#fff" : t.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={t.icon} /></svg>
-            {t.label}
-          </button>
-        ))}
-        <ResetButton className="h-auto flex-none self-stretch" />
-      </div>
+      <Tabs value={id} onValueChange={pick} className="mb-5 gap-0">
+        <TabsList ref={nav} aria-label="PDF tools" className="relative h-auto w-full justify-start gap-1.5 overflow-x-auto rounded-none bg-transparent p-0 pb-1">
+          {TABS.map((t) => (
+            <TabsTrigger
+              key={t.id}
+              value={t.id}
+              className={`h-auto flex-none gap-2 rounded-none border px-3.5 py-2 text-xs font-bold shadow-none transition ${t.id === id ? "text-white" : "bg-white text-stone-800 hover:bg-stone-100 hover:text-stone-800"}`}
+              style={t.id === id ? { background: t.color, borderColor: t.color, color: "#fff" } : { borderColor: "#d6d3d1" }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.id === id ? "#fff" : t.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={t.icon} /></svg>
+              {t.label}
+            </TabsTrigger>
+          ))}
+          <ResetButton className="h-auto flex-none self-stretch" />
+        </TabsList>
+      </Tabs>
       <View key={tab.id} />
     </div>
   );
