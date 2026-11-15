@@ -92,9 +92,17 @@ export function PostBody({ p, i, n, theme, o }: { p: PostData; i: number; n: num
         </div>
       )}
       {o.multi && (
-        <div className="mb-0.5 text-xs font-bold" style={{ color: theme.fg }}>
-          {o.redact.name ? "[hidden]" : p.name}
-          {!o.redact.name && <span className="ml-1 font-normal" style={{ color: theme.muted }}>{handle(p)}</span>}
+        <div className="mb-2 flex items-center gap-2.5">
+          {o.redact.avatar || !p.avatar ? (
+            <div className="h-9 w-9 flex-none rounded-full" style={{ background: o.redact.avatar ? GRAY : theme.line }} />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={proxied(p.avatar)} alt="" className="h-9 w-9 flex-none rounded-full object-cover" />
+          )}
+          <div className="min-w-0">
+            <div className="truncate text-sm font-bold" style={{ color: theme.fg }}>{o.redact.name ? bar(110, 12) : p.name}</div>
+            <div className="truncate text-xs" style={{ color: theme.muted }}>{o.redact.name ? bar(70, 9) : handle(p)}</div>
+          </div>
         </div>
       )}
       <p data-post={o.pick ? i : undefined} style={{ fontSize: o.fontSize ?? 16 }} className={`whitespace-pre-wrap break-words leading-relaxed${o.pick ? " select-text" : ""}`}>{renderHighlighted(p.text, o.hl[i], !!o.pick)}</p>

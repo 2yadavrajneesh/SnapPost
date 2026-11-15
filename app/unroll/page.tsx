@@ -452,7 +452,7 @@ export default function Unroller() {
       setPrinting(false);
     }
   }
-  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, numFormat, label, hl, redact, pick: !printing, fontSize, leftMarks, margins, multi: thread?.sources ? { sources: thread.sources } : undefined, mediaOnly: content === "media" ? mediaLayout : undefined, facing: pageMode === "facing", poster: pageMode === "poster", sizes });
+  const vo = (printing: boolean) => ({ numbers, media, stats, printing, numPos, numFormat, label, hl, redact, pick: !printing, fontSize, leftMarks, margins, multi: thread?.sources && new Set(thread.posts.map((x) => x.username.toLowerCase())).size > 1 ? { sources: thread.sources } : undefined, mediaOnly: content === "media" ? mediaLayout : undefined, facing: pageMode === "facing", poster: pageMode === "poster", sizes });
   const a = thread?.posts[0];
   const base = thread?.sources ? `compiled-${thread.sources}-links` : a && !redact.name ? `thread-${a.username}-${a.id}` : "thread-redacted";
 
