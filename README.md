@@ -1,10 +1,10 @@
-# SnapPost
+# Pressroom
 
-Four small tools, right in your browser. Switch between them with the buttons at the top of the page.
+**Pressroom** is a set of six small tools for posts, links and PDFs that run right in your browser. The home page (`/`) lists them all; each tool also has its own page and name. Your work is saved on your device for 7 days, every tool has Undo, Redo and a Reset menu, and nothing is uploaded unless a tool says so.
 
 | Tool | Page | What it does |
 |---|---|---|
-| **SnapPost** | `/` | Turn a post link into a polished, shareable image, PDF or short video. |
+| **SnapPost** | `/snappost` | Turn a post link into a polished, shareable image, PDF or short video. |
 | **ThreadScroll** | `/unroll` | Unroll a whole thread to read, print or save it as text, Markdown or a paged PDF. |
 | **CollageMaker** | `/collage` | Paste several tweet links and/or upload pictures (drop files or paste with Ctrl+V) and make one clean, aligned collage as a PNG or PDF. |
 | **ClipBook** | `/clipbook` | Bulk news screenshots to one tidy daily-update PDF (captions, sources, page numbers; English and Hindi). Runs on the server and needs a Vercel Blob store (`BLOB_READ_WRITE_TOKEN`); files are deleted after 30 minutes. |
@@ -13,7 +13,14 @@ Four small tools, right in your browser. Switch between them with the buttons at
 
 Paste a link, tweak the look, and download or copy the result. Built with Next.js and Tailwind CSS. No environment variables are needed to run it.
 
-> SnapPost is an independent tool and is not affiliated with X Corp. Posts belong to their authors, so only capture content you have the right to share.
+> Pressroom and its tools are independent and not affiliated with X Corp. Posts belong to their authors, so only capture content you have the right to share.
+
+## Across all tools
+
+- **Home page:** `/` shows every tool with a short description and a link.
+- **Saved on your device:** work is kept in the browser (IndexedDB) so a reload brings it back; it is cleared by *Reset* or after 7 days without use. A small "Your progress is saved" note confirms it.
+- **Undo, Redo and Reset:** the header has Undo and Redo (Ctrl+Z, Ctrl+Shift+Z) and a Reset menu with *Reset changes* (back to how your content first loaded), *Reset settings* (options back to default, content kept) and *Reset page* (clear everything, with a warning).
+- **UI kit:** [shadcn/ui](https://ui.shadcn.com/) components (drop-downs, tabs, navigation, dialogs, switches, sliders, toasts) on Tailwind CSS, in light and dark themes.
 
 ## SnapPost features
 
@@ -52,7 +59,7 @@ Paste a link, tweak the look, and download or copy the result. Built with Next.j
 - **Rising-dot stage:** the viewer has its own teal dotted animation, different from SnapPost's.
 - **PDF download:** the PDF is built from the same pages as the preview, so every language and emoji carry over. Pages are images, so the text in the PDF cannot be selected or searched.
 
-- **Top bar:** on wide screens (1280 px and up) the five tools sit in the bar; on laptops, tablets and phones they fold into a *Tools* menu button, which closes after you pick a tool, on Escape or when you tap outside it.
+- **Top bar:** on wide screens (1280 px and up) the tools sit in the bar (built with shadcn/ui); on laptops, tablets and phones they fold into a tool-switcher button, which closes after you pick a tool, on Escape or when you tap outside it.
 
 ## CollageMaker features
 
@@ -87,7 +94,7 @@ Requires Node.js 20.9 or newer.
 
 ```bash
 git clone https://github.com/2yadavrajneesh/SnapPost.git
-cd SnapPost
+cd SnapPost   # the repository keeps its original name
 npm install
 npm run dev
 ```
@@ -116,14 +123,15 @@ Copy `.env.example` to `.env.local` to change these. None are needed to run.
 
 | Piece | File |
 |---|---|
-| SnapPost page: controls, auto fetch, thread switch, preview, zoom and export buttons | `app/page.tsx` |
+| Home page (the list of tools) | `app/page.tsx`, `components/HomeHeader.tsx`, `lib/site.ts` (site name) |
+| SnapPost page: controls, auto fetch, thread switch, preview, zoom and export buttons | `app/snappost/page.tsx` |
 | CollageMaker page, layout rules and card | `app/collage/page.tsx`, `lib/collage.ts`, `components/collage/*` |
-| PaperNest tools, storage and API | `app/pdf/*`, `app/api/pdf/*`, `lib/pdf/*`, `components/pdf/*` |
+| ClipBook and EditPDF pages, storage and API | `app/clipbook/*`, `app/editpdf/*`, `app/api/pdf/*`, `lib/pdf/*`, `components/pdf/*` |
 | LinkDesk page, its four tools and shared list | `app/links/page.tsx`, `components/linkdesk/*`, `lib/linkdesk/*` |
 | Archive tab and its save/lookup route | `components/linkdesk/ArchiveTool.tsx`, `app/api/archive/route.ts`, `lib/archive.ts` |
 | ThreadScroll page: link box, display options, page size, orientation, text and PDF export | `app/unroll/page.tsx` |
 | ThreadScroll views: reading view and the one-post-per-page layout | `components/ThreadView.tsx` |
-| Top bar shared by both tools (names, icons, tool buttons, theme switch) | `components/SiteHeader.tsx`, `lib/tools.tsx`, `lib/useSiteTheme.ts` |
+| Top bar shared by every tool (names, icons, tool buttons, theme switch) | `components/SiteHeader.tsx`, `lib/tools.tsx`, `lib/useSiteTheme.ts` |
 | Page sizes and the PDF builder | `lib/paper.ts` |
 | Per-IP rate limiting and the video size limit | `lib/ratelimit.ts`, `lib/limits.ts` |
 | Media size lookup for the download picker | `app/api/media-size/route.ts` |
@@ -151,4 +159,4 @@ The tweet route asks FxEmbed for the post (the v2 API, falling back to v1), norm
 
 ## Tech stack
 
-[Next.js](https://nextjs.org/) (App Router) · React · TypeScript · [Tailwind CSS](https://tailwindcss.com/) · [html-to-image](https://github.com/bubkoo/html-to-image) · [jsPDF](https://github.com/parallax/jsPDF) · [fflate](https://github.com/101arrowz/fflate) · [FxEmbed](https://github.com/FxEmbed/FxEmbed)
+[Next.js](https://nextjs.org/) (App Router) · React · TypeScript · [Tailwind CSS](https://tailwindcss.com/) · [shadcn/ui](https://ui.shadcn.com/) (Radix) · [html-to-image](https://github.com/bubkoo/html-to-image) · [jsPDF](https://github.com/parallax/jsPDF) · [fflate](https://github.com/101arrowz/fflate) · [FxEmbed](https://github.com/FxEmbed/FxEmbed)

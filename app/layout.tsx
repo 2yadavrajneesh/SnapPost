@@ -1,3 +1,4 @@
+import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 import type { Metadata, Viewport } from "next";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,11 +11,11 @@ import DragOverlay from "@/components/DragOverlay";
 import SaveNotice from "@/components/SaveNotice";
 
 export const metadata: Metadata = {
-  title: "SnapPost — Tools for posts, links and PDFs",
+  title: `${SITE_NAME} — ${SITE_TAGLINE}`,
   description: "Six free tools that run in your browser: turn posts into images, unroll threads, work with links, make collages, compile news PDFs and edit PDFs.",
-  applicationName: "SnapPost",
+  applicationName: SITE_NAME,
   other: { "color-scheme": "only light", "supported-color-schemes": "light", "darkreader-lock": "" },
-  openGraph: { title: "SnapPost — Tools for posts, links and PDFs", description: "Six free tools that run in your browser. Nothing is uploaded.", type: "website", siteName: "SnapPost" },
+  openGraph: { title: `${SITE_NAME} — ${SITE_TAGLINE}`, description: "Six free tools that run in your browser. Nothing is uploaded.", type: "website", siteName: "SnapPost" },
 };
 
 export const viewport: Viewport = {
