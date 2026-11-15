@@ -852,7 +852,7 @@ export default function Unroller() {
               </div>
             </div>
             {thread && (pageSel || markHist.length > 0) && (
-              <div className="pointer-events-none absolute inset-x-3 bottom-3 z-10 sm:inset-x-16 flex justify-center">
+              <div className="pointer-events-none absolute inset-x-3 bottom-16 z-10 flex justify-center sm:inset-x-16">
                 <div className="pointer-events-auto flex max-w-full flex-wrap items-center gap-x-2 gap-y-1.5 border border-stone-300 bg-white/95 px-2.5 py-2 shadow-lg backdrop-blur" role="toolbar" aria-label="Mark text on the pages">
                   {pageSel && (
                     <>
