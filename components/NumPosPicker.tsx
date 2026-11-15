@@ -18,7 +18,7 @@ const GRID: { value: NumPos; label: string }[] = [
 export default function NumPosPicker({ value, onChange }: { value: NumPos; onChange: (v: NumPos) => void }) {
   return (
     <div className="flex items-stretch gap-3">
-      <div role="radiogroup" aria-label="Page number position" className="grid h-28 w-20 flex-none grid-cols-3 grid-rows-3 gap-1 border border-stone-400 bg-white p-1">
+      <div role="radiogroup" aria-label="Page number position" className="grid h-32 w-24 flex-none grid-cols-3 grid-rows-3 gap-1 overflow-hidden border border-stone-400 bg-white p-1">
         {GRID.map((g) => {
           const on = value === g.value;
           return (
@@ -30,7 +30,7 @@ export default function NumPosPicker({ value, onChange }: { value: NumPos; onCha
               aria-label={g.label}
               title={g.label}
               onClick={() => onChange(g.value)}
-              className={`flex items-center justify-center border transition ${on ? "border-accent bg-accent" : "border-stone-200 bg-stone-50 hover:bg-stone-200"}`}
+              className={`flex !min-h-0 !min-w-0 items-center justify-center border transition ${on ? "border-accent bg-accent" : "border-stone-200 bg-stone-50 hover:bg-stone-200"}`}
             >
               <span className={`block h-1.5 w-1.5 rounded-full ${on ? "bg-white" : "bg-stone-400"}`} />
             </button>

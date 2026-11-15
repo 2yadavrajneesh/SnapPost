@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ComponentType } from "react";
+import { sList, useWork } from "@/lib/session";
 import ResetButton from "@/components/ResetButton";
 import EditorWorkspace from "./EditorWorkspace";
 import Organize from "./toolkit/Organize";
@@ -24,6 +25,17 @@ const TABS: { id: string; label: string; blurb: string; color: string; icon: str
 export default function EditPdfApp() {
   const [id, setId] = useState("edit");
   const nav = useRef<HTMLDivElement>(null);
+  // "Reset everything" stays off until a PDF has actually been opened
+  const [has, setHas] = useState(false);
+  useWork("editpdf", has);
+  useEffect(() => {
+    let live = true;
+    const check = () => void sList("editpdf:").then((l) => live && setHas(l.some((e) => /^editpdf:(edit:file|tool:)/.test(e.key))));
+    check();
+    const t = setTimeout(check, 1500);
+    window.addEventListener("snap:saved", check);
+    return () => { live = false; clearTimeout(t); window.removeEventListener("snap:saved", check); };
+  }, [id]);
   useEffect(() => {
     const sync = () => {
       const h = window.location.hash.slice(1);

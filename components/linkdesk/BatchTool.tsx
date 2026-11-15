@@ -482,9 +482,9 @@ export default function BatchTool({ active }: { active: boolean }) {
       <section className="border border-stone-300 bg-white">
         <div className="flex flex-wrap items-center gap-2 border-b border-stone-200 p-3">
           <h2 className="mr-auto text-sm font-bold text-stone-900">Links</h2>
-          <div role="group" aria-label="Filter by status" className="flex h-9 items-stretch gap-1 bg-stone-100 p-1">
+          <div role="group" aria-label="Filter by status" className="flex items-center gap-1 bg-stone-100 p-1">
             {(["all", "pending", "opened"] as const).map((f) => (
-              <button key={f} type="button" aria-pressed={status === f} onClick={() => (setStatus(f), setLimit(PAGE))} className={`px-2.5 py-1 text-xs font-medium capitalize ${status === f ? "bg-white text-stone-900" : "text-stone-500 hover:text-stone-800"}`}>{f}</button>
+              <button key={f} type="button" aria-pressed={status === f} onClick={() => (setStatus(f), setLimit(PAGE))} className={`h-7 min-w-[4.25rem] px-3 text-xs font-semibold capitalize transition ${status === f ? "bg-white text-stone-900 shadow-sm ring-1 ring-stone-300" : "text-stone-500 hover:bg-white/60 hover:text-stone-800"}`}>{f}</button>
             ))}
           </div>
           <div className="relative">
