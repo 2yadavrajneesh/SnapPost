@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import { sList, useWork } from "@/lib/session";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { NativeSelect } from "@/components/ui/native-select";
 import ResetButton from "@/components/ResetButton";
 import EditorWorkspace from "./EditorWorkspace";
 import Organize from "./toolkit/Organize";
@@ -57,7 +58,13 @@ export default function EditPdfApp() {
       <h1 className="text-2xl font-bold text-stone-900">EditPDF</h1>
       <p className="mb-4 mt-1 max-w-2xl text-sm text-stone-600">{tab.blurb}</p>
       <Tabs value={id} onValueChange={pick} className="mb-5 gap-0">
-        <TabsList ref={nav} aria-label="PDF tools" className="relative !h-auto w-full flex-wrap justify-start gap-1.5 rounded-none bg-transparent p-0 pb-1">
+        <div className="flex items-stretch gap-2 sm:hidden">
+          <NativeSelect aria-label="PDF tool" value={id} onChange={(e) => pick(e.target.value)} className="h-11 flex-1 font-bold">
+            {TABS.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+          </NativeSelect>
+          <ResetButton className="h-11 flex-none" />
+        </div>
+        <TabsList ref={nav} aria-label="PDF tools" className="relative hidden !h-auto w-full flex-wrap sm:flex justify-start gap-1.5 rounded-none bg-transparent p-0 pb-1">
           {TABS.map((t) => (
             <TabsTrigger
               key={t.id}

@@ -8,6 +8,7 @@ import MakerTool from "@/components/linkdesk/MakerTool";
 import BatchTool from "@/components/linkdesk/BatchTool";
 import { ToastProvider, useToast } from "@/components/linkdesk/ui";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { NativeSelect } from "@/components/ui/native-select";
 import ScrollTop from "@/components/ScrollTop";
 import { setHistoryScope } from "@/lib/history";
 import SiteHeader from "@/components/SiteHeader";
@@ -60,7 +61,10 @@ function TabBar({ tab, go }: { tab: TabId; go: (t: TabId) => void }) {
   }, [tab]);
   return (
     <Tabs value={tab} onValueChange={(v) => go(v as TabId)} className="mb-5 gap-0">
-    <TabsList ref={bar} aria-label="LinkDesk tools" className="relative grid !h-auto w-full grid-cols-2 justify-start gap-2 rounded-none bg-transparent p-0 pb-1 sm:flex sm:overflow-x-auto sm:[scrollbar-width:none] sm:[&::-webkit-scrollbar]:hidden">
+    <NativeSelect aria-label="LinkDesk tool" value={tab} onChange={(e) => go(e.target.value as TabId)} className="h-11 font-bold sm:hidden">
+      {TABS.map((t) => <option key={t.id} value={t.id}>{t.label}{t.id === "batch" && items.length > 0 ? ` (${items.length})` : ""}</option>)}
+    </NativeSelect>
+    <TabsList ref={bar} aria-label="LinkDesk tools" className="relative hidden !h-auto w-full justify-start gap-2 rounded-none bg-transparent p-0 pb-1 sm:flex sm:overflow-x-auto sm:[scrollbar-width:none] sm:[&::-webkit-scrollbar]:hidden">
       {TABS.map((t) => {
         const on = tab === t.id;
         return (
