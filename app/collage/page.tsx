@@ -149,7 +149,18 @@ export default function CollageMaker() {
       });
   }, [entries]);
 
+  // One source at a time: tweet links or your own pictures, never both in the same collage
+  const hasPics = entries.some((e) => !!e.image);
+  const hasLinks = entries.some((e) => !e.image) || text.trim().length > 0;
+  const linksOff = hasPics;
+  const filesOff = hasLinks;
+  const lockNote = hasPics ? "Pictures are added, so links are off. Remove the pictures to use links." : hasLinks ? "Links are added, so uploads are off. Remove the links to upload files." : "";
+
   function addLinks(raw: string) {
+    if (linksOff) {
+      flash("Links are off while pictures are in the collage. Remove the pictures first.");
+      return false;
+    }
     // find tweet links anywhere in the text, so notes, CSV rows or whole web pages work too
     const tokens = findTweetLinks(raw);
     const stray = tokens.length === 0 && raw.trim().length > 0;
@@ -183,10 +194,19 @@ export default function CollageMaker() {
   }
 
   async function addFiles(list: FileList | File[]) {
+    if (filesOff) {
+      flash("Uploads are off while links are in the collage. Remove the links first.");
+      return;
+    }
     const all = Array.from(list);
     const pics = all.filter((f) => f.type.startsWith("image/") || /\.(png|jpe?g|webp|gif)$/i.test(f.name));
-    const docs = all.filter((f) => !pics.includes(f));
+    let docs = all.filter((f) => !pics.includes(f));
     const bits: string[] = [];
+    // files with links would mix links into a picture collage, so they are skipped there
+    if (docs.length && (hasPics || pics.length)) {
+      bits.push(`${docs.length === 1 ? "A file" : "Files"} with links ${docs.length === 1 ? "was" : "were"} skipped: pictures and links cannot be mixed`);
+      docs = [];
+    }
     // files with links inside: find the tweet links automatically and load them
     const found: string[] = [];
     for (const f of docs) {
@@ -391,11 +411,12 @@ export default function CollageMaker() {
                 }}
                 placeholder={"https://x.com/user/status/123…\nhttps://x.com/user/status/456…"}
                 aria-label="Tweet links"
-                className="h-28 w-full resize-y border border-stone-200 bg-white p-2.5 font-mono text-xs outline-none focus:border-[color:var(--accent)]"
+                disabled={linksOff}
+                className="h-28 disabled:cursor-not-allowed disabled:opacity-50 w-full resize-y border border-stone-200 bg-white p-2.5 font-mono text-xs outline-none focus:border-[color:var(--accent)]"
               />
               <div className="mt-2 flex gap-2">
-                <button type="button" className={`${btnPrimary} flex-1`} disabled={!text.trim() || entries.length >= MAX_TWEETS} onClick={submit}>Add links</button>
-                <button type="button" onClick={() => void pasteClipboard()} aria-label="Paste links from clipboard" title="Paste from clipboard" className={`${btnPlain} w-10 px-0`}>
+                <button type="button" className={`${btnPrimary} flex-1`} disabled={linksOff || !text.trim() || entries.length >= MAX_TWEETS} onClick={submit}>Add links</button>
+                <button type="button" disabled={linksOff} onClick={() => void pasteClipboard()} aria-label="Paste links from clipboard" title="Paste from clipboard" className={`${btnPlain} w-10 px-0`}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></svg>
                 </button>
                 <button type="button" onClick={() => (setEntries([]), setNatural({}))} disabled={!entries.length} aria-label="Remove everything" title="Start over" className={`${btnPlain} w-10 px-0`}>
@@ -412,14 +433,15 @@ export default function CollageMaker() {
                   else addLinks(e.dataTransfer.getData("text/uri-list") || e.dataTransfer.getData("text"));
                   setOverDrop(false);
                 }}
-                className={`mt-2 flex flex-col items-center gap-1 border-2 border-dashed px-3 py-3 text-center transition ${overDrop ? "border-accent bg-pink-50" : "border-stone-300 bg-white"}`}
+                className={`mt-2 flex flex-col items-center gap-1 border-2 border-dashed px-3 py-3 text-center transition ${filesOff ? "opacity-50" : overDrop ? "border-accent bg-pink-50" : "border-stone-300 bg-white"}`}
               >
-                <button type="button" className={`${btnPlain} w-full`} disabled={entries.length >= MAX_TWEETS} onClick={() => fileInput.current?.click()}>
+                <button type="button" className={`${btnPlain} w-full`} disabled={filesOff || entries.length >= MAX_TWEETS} onClick={() => fileInput.current?.click()}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>
                   Upload files
                 </button>
-                <span className="text-[11px] text-stone-500">Pictures, or a Word, PDF, text, CSV, HTML or Excel file with links: tweet links inside are found for you. Drop files here or paste with Ctrl+V.</span>
+                <span className="text-[11px] text-stone-500">Pictures, or one Word, PDF, text, CSV, HTML or Excel file with tweet links inside (found for you). Pictures and links cannot be mixed. Drop files here or paste with Ctrl+V.</span>
               </div>
+              {lockNote && <p role="status" className="mt-1.5 bg-stone-100 px-2.5 py-1.5 text-[11px] font-semibold text-stone-700">{lockNote}</p>}
               <p className="mt-1.5 text-[11px] text-stone-500">{entries.length} of {MAX_TWEETS} items{loading ? ` · loading ${loading}…` : ""}{failed ? ` · ${failed} failed` : ""}</p>
             </div>
 
