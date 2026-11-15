@@ -88,7 +88,7 @@ export type Settings = {
   logo: LogoKey;
   font: "sans" | "rounded" | "inter" | "geist" | "serif" | "mono";
   style: "standard" | "minimal";
-  textSize: number; // logical px, 24-64
+  textSize: number; // logical px, 24-80
   padding: number; // percent, 50-150
   /** Colour behind the card ("none" = transparent). */
   bg: string;

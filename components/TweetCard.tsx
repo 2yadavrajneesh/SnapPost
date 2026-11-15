@@ -690,7 +690,7 @@ type Props = {
   showParents?: boolean;
   showParentMedia?: boolean;
   displayInfo?: DisplayInfo;
-  /** Largest scale a fixed-ratio frame may enlarge the content to (1 keeps short posts at natural size). */
+  /** Largest scale a fixed-ratio frame may enlarge the content to (1: the text size you pick is the size you get). */
   maxFit?: number;
   /** Highlighted ranges of the main tweet's text. */
   highlights?: Highlight[];
@@ -711,7 +711,7 @@ export type Redact = { name: boolean; avatar: boolean; media: boolean };
 const hidden = (color: string): React.CSSProperties => ({ color: "transparent", backgroundColor: color, borderRadius: "0.12em", userSelect: "none" });
 
 const MIN_FIT = 0.2;
-const MAX_FIT = 3;
+const MAX_FIT = 1; // text size is literal: a fixed-ratio frame only shrinks the post when it does not fit
 /** Share of a fixed-ratio frame's inner height that attached media may occupy. */
 const MEDIA_BUDGET = 0.55;
 
