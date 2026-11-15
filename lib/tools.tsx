@@ -13,7 +13,7 @@ export type Tool = {
 };
 
 export const TOOLS: Tool[] = [
-  { id: "snappost", name: "SnapPost", href: "/", tagline: "Screenshot, upgraded. Posts to PNG, PDF & MP4.", hint: "Turn a post into a polished image, PDF or video", accent: "#c2410c" },
+  { id: "snappost", name: "SnapPost", href: "/snappost", tagline: "Screenshot, upgraded. Posts to PNG, PDF & MP4.", hint: "Turn a post into a polished image, PDF or video", accent: "#c2410c" },
   { id: "threadscroll", name: "ThreadScroll", href: "/unroll", tagline: "Unroll any thread into pages, text & PDF.", hint: "Unroll a whole thread to read, print or save", accent: "#0f766e" },
   { id: "linkdesk", name: "LinkDesk", href: "/links", tagline: "Open, make, extract, clean and archive links.", hint: "Work with links: batches, spreadsheets, cleaning, archiving", accent: "#1f5fd6" },
   { id: "collage", name: "CollageMaker", href: "/collage", tagline: "Turn several tweets into one neat collage.", hint: "Upload tweet links and make a grid collage", accent: "#be185d" },
@@ -21,7 +21,7 @@ export const TOOLS: Tool[] = [
   { id: "editpdf", name: "EditPDF", href: "/editpdf", tagline: "Type, highlight, draw and sign on a PDF.", hint: "Edit a PDF right on the page", accent: "#047857" },
 ];
 
-const ROUTES: [string, ToolId][] = [["/unroll", "threadscroll"], ["/links", "linkdesk"], ["/collage", "collage"], ["/clipbook", "clipbook"], ["/editpdf", "editpdf"]];
+const ROUTES: [string, ToolId][] = [["/snappost", "snappost"], ["/unroll", "threadscroll"], ["/links", "linkdesk"], ["/collage", "collage"], ["/clipbook", "clipbook"], ["/editpdf", "editpdf"]];
 export const toolFor = (path: string): Tool => TOOLS.find((t) => t.id === (ROUTES.find(([r]) => path.startsWith(r))?.[1] ?? "snappost")) ?? TOOLS[0];
 
 /** The icon of each tool: a tile in the tool's own colour with a white glyph. */

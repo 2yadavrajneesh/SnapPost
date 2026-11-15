@@ -591,3 +591,17 @@ button:not(:disabled):active { transform: scale(0.96); }
   .snap-fade, .snap-pop, .snap-scale, .snap-backdrop, [role="tabpanel"]:not([hidden]) > * { animation: none; }
   button:not(:disabled):active, .tool-pill:hover, .tab-card:hover { transform: none; }
 }
+
+/* ---- home page ---- */
+.home-hero { background-image: radial-gradient(circle, rgba(27, 36, 32, 0.16) 1.4px, transparent 1.6px); background-size: 22px 22px; }
+.home-hero::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 40%, hsl(var(--background)) 30%, transparent 75%); }
+.home-hero > * { position: relative; z-index: 1; }
+html[data-theme="dark"] .home-hero { background-image: radial-gradient(circle, rgba(255, 255, 255, 0.12) 1.4px, transparent 1.6px); }
+.home-card:hover { border-color: var(--tc); }
+.home-cta { background: #1b2420; color: #fff; }
+.home-cta:hover { background: #2c3a33; }
+html[data-theme="dark"] .home-cta { background: #f3eee7 !important; color: #1b2420 !important; }
+html[data-theme="dark"] .home-cta:hover { background: #fff; }
+html[data-theme="dark"] .home-card { background: #211c18 !important; border-color: #3a332d !important; }
+html[data-theme="dark"] .home-card:hover { border-color: var(--tc) !important; }
+html[data-theme="dark"] .home-card:hover { border-color: var(--tc); }

@@ -10,24 +10,11 @@ import DragOverlay from "@/components/DragOverlay";
 import SaveNotice from "@/components/SaveNotice";
 
 export const metadata: Metadata = {
-  title: "SnapPost — Turn posts into polished images",
-  description: "Turn X (Twitter) posts into polished, high-resolution images. Customize the layout, preserve photos and video previews, and export as PNG, PDF, or video.",
-  keywords: ["tweet to image", "X post screenshot", "tweet screenshot", "twitter screenshot", "post to PNG", "tweet to PDF"],
+  title: "SnapPost — Tools for posts, links and PDFs",
+  description: "Six free tools that run in your browser: turn posts into images, unroll threads, work with links, make collages, compile news PDFs and edit PDFs.",
   applicationName: "SnapPost",
-  // The site draws both of its themes itself. These tell browsers and dark-mode extensions not to
-  // recolour it (which is what turned the light theme dark on some tablets and phones).
   other: { "color-scheme": "only light", "supported-color-schemes": "light", "darkreader-lock": "" },
-  openGraph: {
-    title: "SnapPost — Turn posts into polished images",
-    description: "Paste an X (Twitter) link and export a polished PNG, PDF or video of the post.",
-    type: "website",
-    siteName: "SnapPost",
-  },
-  twitter: {
-    card: "summary",
-    title: "SnapPost — Turn posts into polished images",
-    description: "Paste an X (Twitter) link and export a polished PNG, PDF or video of the post.",
-  },
+  openGraph: { title: "SnapPost — Tools for posts, links and PDFs", description: "Six free tools that run in your browser. Nothing is uploaded.", type: "website", siteName: "SnapPost" },
 };
 
 export const viewport: Viewport = {

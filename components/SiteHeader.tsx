@@ -46,6 +46,14 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
         {/* wide screens: the tools in the bar */}
         <NavigationMenu viewport={false} aria-label="Tools" className="hidden flex-none xl:flex">
           <NavigationMenuList>
+            <NavigationMenuItem>
+              <NavigationMenuLink asChild className="flex-row items-center gap-1.5 rounded-none px-2.5 py-1.5 text-xs font-semibold">
+                <Link href="/" title="All tools">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10" /></svg>
+                  Home
+                </Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
             {TOOLS.map((n) => (
               <NavigationMenuItem key={n.id}>
                 <NavigationMenuLink
@@ -106,6 +114,10 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
             <SheetTitle className="text-sm">Switch tool</SheetTitle>
             <SheetDescription className="sr-only">Choose which tool to open</SheetDescription>
           </SheetHeader>
+          <Link href="/" className="mx-3 mt-3 flex items-center gap-2 border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10" /></svg>
+            All tools
+          </Link>
           <nav aria-label="Tools" className="grid grid-cols-2 gap-2 p-3">
             {TOOLS.map((n) => {
               const here = n.id === tool.id;
