@@ -855,7 +855,7 @@ export default function Unroller() {
               </div>
             </div>
             {thread && (pageSel || markHist.length > 0) && (
-              <div className="pointer-events-none fixed inset-x-3 bottom-4 z-40 flex justify-center lg:left-[540px] lg:right-4">
+              <div className="pointer-events-none fixed inset-x-3 bottom-16 z-40 flex justify-center lg:bottom-4 lg:left-[540px] lg:right-4">
                 <div
                   role="toolbar"
                   aria-label="Mark text on the pages"
@@ -894,7 +894,7 @@ export default function Unroller() {
               </div>
             )}
             {thread && (
-              <div className="pointer-events-none absolute bottom-3 left-3 z-10">
+              <div className="pointer-events-none fixed bottom-4 left-3 z-30 lg:left-[392px]">
                 <div className="pointer-events-auto flex items-center gap-1 border border-stone-300 bg-white/95 px-1 py-0.5 text-xs shadow-sm">
                   <button type="button" onClick={() => setZoom((z) => Math.max(0.3, Math.round((z / 1.15) * 100) / 100))} disabled={zoom <= 0.31} aria-label="Zoom out" className="flex h-8 w-8 items-center justify-center text-base font-semibold text-stone-700 hover:bg-stone-100 disabled:opacity-40">−</button>
                   <button type="button" onClick={() => setZoom(1)} title="Reset to fit" aria-live="polite" className="w-12 py-1.5 text-center font-semibold tabular-nums text-stone-700 hover:bg-stone-100">{Math.round(zoom * 100)}%</button>
