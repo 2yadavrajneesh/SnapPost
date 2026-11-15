@@ -7,6 +7,7 @@ import CollageFrame, { type FrameLook, type Item, type Picture } from "@/compone
 import { BORDERS, type BorderKind, type CardStyle } from "@/components/collage/CollageCard";
 import { Maximize2, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CollageTiles } from "@/components/AppearanceTiles";
 import ScrollTop from "@/components/ScrollTop";
 import SiteHeader from "@/components/SiteHeader";
 import { CollapsibleSection, Label, Section, Segmented, Slider, Toggle } from "@/components/ui";
@@ -569,14 +570,7 @@ export default function CollageMaker() {
                 </label>
               </div>
             </div>
-            <div>
-              <Label>Tweet cards</Label>
-              <Segmented value={card.theme} onChange={(v) => setCard({ ...card, theme: v })} options={[{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }]} />
-            </div>
-            <div>
-              <Label>Corners</Label>
-              <Segmented value={card.corners} onChange={(v) => setCard({ ...card, corners: v })} options={[{ value: "sharp", label: "Sharp" }, { value: "soft", label: "Soft" }, { value: "round", label: "Round" }]} />
-            </div>
+            <CollageTiles theme={card.theme} corners={card.corners} logo={card.logo} onChange={(patch) => setCard({ ...card, ...patch })} />
             <div>
               <Label>Card border</Label>
               <Segmented value={card.border} onChange={(v) => setCard({ ...card, border: v })} wrap options={(Object.keys(BORDERS) as BorderKind[]).map((k) => ({ value: k, label: BORDERS[k].label }))} />
@@ -592,10 +586,6 @@ export default function CollageMaker() {
                   </label>
                 </div>
               )}
-            </div>
-            <div>
-              <Label>Logo</Label>
-              <Segmented value={card.logo} onChange={(v) => setCard({ ...card, logo: v })} options={[{ value: "x", label: "X" }, { value: "bird", label: "Bird" }, { value: "none", label: "None" }]} />
             </div>
             <Slider label="Text size" value={card.textSize} min={18} max={32} step={2} suffix="px" lowLabel="Smaller" highLabel="Larger" onChange={(v) => setCard({ ...card, textSize: v })} />
             <div className="space-y-2">
