@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useSessionSnapshot } from "@/lib/session";
 import { buildItems, nowStr, type Item, type RawLink, type Source } from "./core";
 
 const KEY = "linkdesk:batch:v1";
@@ -53,6 +54,8 @@ export function LinkProvider({ children }: { children: ReactNode }) {
   const [saveFailed, setSaveFailed] = useState(false);
   const latest = useRef(state);
   latest.current = state;
+  // undo / redo / reset for the batch list (the list itself is saved by this provider)
+  useSessionSnapshot("linkdesk:batch", state, (v) => setState({ ...EMPTY, ...v }), { content: ["raw", "items"], scope: "batch", local: true });
   const lastActive = useRef(Date.now());
   const lastWritten = useRef(0);
 

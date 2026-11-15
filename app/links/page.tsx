@@ -8,6 +8,7 @@ import MakerTool from "@/components/linkdesk/MakerTool";
 import BatchTool from "@/components/linkdesk/BatchTool";
 import { ToastProvider, useToast } from "@/components/linkdesk/ui";
 import ScrollTop from "@/components/ScrollTop";
+import { setHistoryScope } from "@/lib/history";
 import SiteHeader from "@/components/SiteHeader";
 import { LinkProvider, useLinks } from "@/lib/linkdesk/store";
 
@@ -108,6 +109,10 @@ export default function LinkDesk() {
     window.addEventListener("hashchange", read);
     return () => window.removeEventListener("hashchange", read);
   }, []);
+  // the header's undo / redo follows the tool that is on screen
+  useEffect(() => {
+    setHistoryScope("linkdesk", tab);
+  }, [tab]);
   const go = (t: TabId) => {
     setTab(t);
     history.replaceState(null, "", `#${t}`);

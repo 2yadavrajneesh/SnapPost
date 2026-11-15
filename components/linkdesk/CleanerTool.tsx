@@ -55,7 +55,7 @@ export default function CleanerTool({ inbox, onSent }: { inbox: Inbox; onSent: (
     setDups(v.dups ?? 0);
     setName(v.name ?? "");
     setFileTitle(v.fileTitle ?? "");
-  });
+  }, { content: ["text", "items", "rejected", "dups", "name", "fileTitle"], scope: "clean" });
   const fileText = useRef<{ text: string; name: string } | null>(null);
   const token = useRef(0);
 

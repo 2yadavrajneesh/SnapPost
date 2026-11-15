@@ -44,7 +44,7 @@ export default function ArchiveTool() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [fresh, setFresh] = useState<Snapshot | null>(null);
   const [history, setHistory] = useState<Saved[]>([]);
-  useSessionSnapshot("linkdesk:archive", { link }, (v) => setLink(v.link ?? ""));
+  useSessionSnapshot("linkdesk:archive", { link }, (v) => setLink(v.link ?? ""), { content: ["link"], scope: "archive" });
   const input = useRef<HTMLInputElement>(null);
   const reqId = useRef(0);
 

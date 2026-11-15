@@ -313,13 +313,31 @@ export default function EditorWorkspace() {
   const [over, setOver] = useState(false);
 
   // the PDF and everything drawn on it stay after a reload
-  const restoredEdit = useSessionSnapshot("editpdf:edit:state", { name: file?.name ?? "", annots, zoom }, async (v) => {
-    const blob = v.name ? await sGet<Blob>("editpdf:edit:file") : undefined;
-    if (!blob) return;
-    await open(new File([blob], v.name, { type: "application/pdf" }));
-    setAnnots(v.annots ?? []);
-    setZoom(v.zoom ?? 1);
-  });
+  const fileName = useRef("");
+  fileName.current = file?.name ?? "";
+  const restoredEdit = useSessionSnapshot(
+    "editpdf:edit:state",
+    { name: file?.name ?? "", annots, zoom },
+    async (v) => {
+      if (!v.name) {
+        // back to "no PDF open"
+        setDoc(null);
+        setFile(null);
+        setAnnots([]);
+        setPast([]);
+        setResult(null);
+        return;
+      }
+      if (fileName.current !== v.name) {
+        const blob = await sGet<Blob>("editpdf:edit:file");
+        if (!blob) return;
+        await open(new File([blob], v.name, { type: "application/pdf" }));
+      }
+      setAnnots(v.annots ?? []);
+      setZoom(v.zoom ?? 1);
+    },
+    { content: ["name", "annots"] },
+  );
   useEffect(() => {
     if (!restoredEdit) return;
     if (file) void sSet("editpdf:edit:file", file);

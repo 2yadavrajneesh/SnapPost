@@ -180,6 +180,10 @@ export async function sList<T>(prefix: string): Promise<{ key: string; value: T 
 export type SnapshotOptions = {
   /** Snapshot fields that hold the person's own content (files, lists, links). "Reset settings" keeps these. */
   content?: string[];
+  /** For apps with several tools mounted at once: which tool this history belongs to (see setHistoryScope). */
+  scope?: string;
+  /** The app already saves this state itself: keep only the history and the starting point, not a second copy. */
+  local?: boolean;
 };
 
 const hasValue = (v: unknown) => (Array.isArray(v) ? v.length > 0 : typeof v === "string" ? v.trim() !== "" : !!v);
@@ -252,10 +256,10 @@ export function useSessionSnapshot<T>(key: string, snapshot: T, restore: (saved:
   useEffect(() => {
     let dead = false;
     (async () => {
-      const saved = await sGet<T>(key);
+      const saved = options.local ? undefined : await sGet<T>(key);
       const base = await sGet<string>(`${key}:baseline`);
       if (base !== undefined) baseline.current = base;
-      if (saved !== undefined && !dead) await restoreRef.current(saved);
+      if (saved !== undefined && !dead && !options.local) await restoreRef.current(saved);
       if (!dead) setReady(true);
     })();
     return () => {
@@ -268,7 +272,7 @@ export function useSessionSnapshot<T>(key: string, snapshot: T, restore: (saved:
     if (!ready || timer.current) return;
     timer.current = setTimeout(() => {
       timer.current = null;
-      void sSet(key, latest.current);
+      if (!options.local) void sSet(key, latest.current);
       recordRef.current();
     }, 700);
   });
@@ -277,7 +281,7 @@ export function useSessionSnapshot<T>(key: string, snapshot: T, restore: (saved:
       if (timer.current) {
         clearTimeout(timer.current);
         timer.current = null;
-        void sSet(key, latest.current);
+        if (!options.local) void sSet(key, latest.current);
       }
     };
     window.addEventListener("pagehide", flush);
@@ -295,7 +299,7 @@ export function useSessionSnapshot<T>(key: string, snapshot: T, restore: (saved:
       if (timer.current) {
         clearTimeout(timer.current);
         timer.current = null;
-        void sSet(key, latest.current);
+        if (!options.local) void sSet(key, latest.current);
       }
       recordRef.current();
     };
@@ -305,7 +309,7 @@ export function useSessionSnapshot<T>(key: string, snapshot: T, restore: (saved:
       resetChanges: () => { settle(); if (baseline.current) apply(baseline.current, false); },
       resetSettings: () => { settle(); apply(settingsTarget(JSON.stringify(latest.current)), false); },
       can: () => flags.current,
-    });
+    }, options.scope ?? "");
   }, [ready, key]);
   return ready;
 }

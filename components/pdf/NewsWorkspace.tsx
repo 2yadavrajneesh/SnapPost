@@ -5,7 +5,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Progress } from "@/components/ui/progress";
 import ResetButton from "@/components/ResetButton";
 import { Ico } from "@/components/Icons";
-import { sDel, sGet, sSet, useSessionSnapshot, useWork } from "@/lib/session";
+import { sDel, sGet, sList, sSet, useSessionSnapshot, useWork } from "@/lib/session";
 import { Card, btnPlain, btnPrimary, btnSm, field, useCopy, btnIcon, useToast } from "@/components/linkdesk/ui";
 import NewsPreview from "./NewsPreview";
 import { TITLE_STYLES } from "@/lib/pdf/newsLayout";
@@ -49,7 +49,7 @@ export default function NewsWorkspace() {
       const saved = localStorage.getItem(KEY);
       if (saved) setS({ ...DEFAULTS, ...JSON.parse(saved) });
     } catch {}
-    return () => itemsRef.current.forEach((i) => URL.revokeObjectURL(i.url));
+    return () => [...itemsRef.current, ...gone.current].forEach((i) => URL.revokeObjectURL(i.url));
   }, []);
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) =>
     setS((cur) => {
@@ -62,36 +62,63 @@ export default function NewsWorkspace() {
 
   // The pictures themselves are kept as files (one entry each); the rest is a small list of notes about them.
   const stored = useRef(new Set<number>());
+  const gone = useRef<Item[]>([]);
   const meta = items.map((i) => ({ id: i.id, name: i.file.name, type: i.file.type, mod: i.file.lastModified, caption: i.caption, source: i.source, dx: i.dx, dy: i.dy, page: i.page, nw: i.nw, nh: i.nh }));
   useWork("clipbook", items.length > 0 || !!result);
-  const restored = useSessionSnapshot("clipbook:state", { meta, date: "" }, async (v) => {
-    const out: Item[] = [];
-    for (const m of v.meta ?? []) {
-      const blob = await sGet<Blob>(`clipbook:file:${m.id}`);
-      if (!blob) continue;
-      const f = new File([blob], m.name, { type: m.type, lastModified: m.mod });
-      stored.current.add(m.id);
-      seq = Math.max(seq, m.id);
-      out.push({ id: m.id, file: f, url: URL.createObjectURL(f), caption: m.caption, source: m.source, nw: m.nw, nh: m.nh, dx: m.dx, dy: m.dy, page: m.page });
-    }
-    setItems(out);
-  });
+  const restored = useSessionSnapshot(
+    "clipbook:state",
+    { meta, s, date: "" },
+    async (v) => {
+      const out: Item[] = [];
+      for (const m of v.meta ?? []) {
+        const have = itemsRef.current.find((i) => i.id === m.id);
+        if (have) {
+          out.push({ ...have, caption: m.caption, source: m.source, nw: m.nw, nh: m.nh, dx: m.dx, dy: m.dy, page: m.page });
+          continue;
+        }
+        const blob = await sGet<Blob>(`clipbook:file:${m.id}`);
+        if (!blob) continue;
+        const f = new File([blob], m.name, { type: m.type, lastModified: m.mod });
+        stored.current.add(m.id);
+        seq = Math.max(seq, m.id);
+        out.push({ id: m.id, file: f, url: URL.createObjectURL(f), caption: m.caption, source: m.source, nw: m.nw, nh: m.nh, dx: m.dx, dy: m.dy, page: m.page });
+      }
+      // pictures that left the list are only released when the page is closed, so undo can bring them back
+      const keep = new Set(out.map((i) => i.id));
+      itemsRef.current.forEach((i) => !keep.has(i.id) && gone.current.push(i));
+      setItems(out);
+      if (v.s) {
+        const next = { ...DEFAULTS, ...v.s };
+        setS(next);
+        try {
+          localStorage.setItem(KEY, JSON.stringify(next));
+        } catch {}
+      }
+    },
+    { content: ["meta"] },
+  );
+  // pictures removed from the list stay saved (so Undo works); the ones nothing refers to are cleaned up on the next visit
   useEffect(() => {
     if (!restored) return;
-    const now = new Set(items.map((i) => i.id));
     items.forEach((i) => {
       if (!stored.current.has(i.id)) {
         stored.current.add(i.id);
         void sSet(`clipbook:file:${i.id}`, i.file);
       }
     });
-    [...stored.current].forEach((id) => {
-      if (!now.has(id)) {
-        stored.current.delete(id);
-        void sDel(`clipbook:file:${id}`);
-      }
-    });
   }, [items, restored]);
+  useEffect(() => {
+    if (!restored) return;
+    void (async () => {
+      const keep = new Set(itemsRef.current.map((i) => i.id));
+      const base = await sGet<string>("clipbook:state:baseline");
+      try {
+        (JSON.parse(base ?? "{}").meta ?? []).forEach((m: { id: number }) => keep.add(m.id));
+      } catch {}
+      for (const e of await sList<unknown>("clipbook:file:")) if (!keep.has(Number(e.key.split(":").pop()))) void sDel(e.key);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restored]);
 
   const maxImg = cfg?.maxImageBytes ?? 25 * 1048576;
   const limit = cfg?.maxFiles ?? 60;

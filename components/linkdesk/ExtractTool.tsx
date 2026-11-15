@@ -34,7 +34,7 @@ export default function ExtractTool({ onSent, onClean }: { onSent: () => void; o
       const blob = await sGet<Blob>("linkdesk:extract:file");
       if (blob) file.current = new File([blob], v.fileName);
     }
-  });
+  }, { content: ["text", "items", "name", "fileName"], scope: "extract" });
   const savedFile = useRef<File | null>(null);
   useEffect(() => {
     if (!restoredX || savedFile.current === file.current) return;

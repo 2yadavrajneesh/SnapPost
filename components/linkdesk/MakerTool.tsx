@@ -26,11 +26,31 @@ export default function MakerTool({ onSent }: { onSent: () => void }) {
   const [msg, setMsg] = useState<{ text: string; kind: "" | "warn" | "ok" }>({ text: "", kind: "" });
 
   // the spreadsheet you opened comes back after a reload
-  const restoredM = useSessionSnapshot("linkdesk:maker", { name, bare }, async (v) => {
-    setBare(!!v.bare);
-    const saved = v.name ? await sGet<{ name: string; bytes: ArrayBuffer }>("linkdesk:maker:file") : undefined;
-    if (saved) await loadFile(new File([saved.bytes], saved.name));
-  });
+  const restoredM = useSessionSnapshot(
+    "linkdesk:maker",
+    { name, bare },
+    async (v) => {
+      const b = !!v.bare;
+      setBare(b);
+      if (!v.name) {
+        // back to "no file yet"
+        buf.current = null;
+        setRes(null);
+        setName("");
+        setSheet(0);
+        return;
+      }
+      if (buf.current && v.name === name) {
+        try {
+          build(b); // same file, only the option changed
+        } catch {}
+        return;
+      }
+      const saved = await sGet<{ name: string; bytes: ArrayBuffer }>("linkdesk:maker:file");
+      if (saved) await loadFile(new File([saved.bytes], saved.name), b);
+    },
+    { content: ["name"], scope: "maker" },
+  );
   void restoredM;
 
   /** Reads the saved file again and converts it (needed whenever "also link bare domains" changes). */
@@ -55,7 +75,7 @@ export default function MakerTool({ onSent }: { onSent: () => void }) {
     );
   }
 
-  async function loadFile(file: File) {
+  async function loadFile(file: File, withBare = bare) {
     const tooBig = checkFileSize(file);
     if (tooBig) return setMsg({ text: tooBig, kind: "warn" });
     try {
@@ -69,7 +89,7 @@ export default function MakerTool({ onSent }: { onSent: () => void }) {
       void sSet("linkdesk:maker:file", { name: file.name, bytes: buf.current });
       setName(file.name);
       setSheet(0);
-      build(bare);
+      build(withBare);
     } catch (e) {
       buf.current = previous;
       setMsg({ text: e instanceof Error && e.message === "big" ? "That spreadsheet is too large. The limit is 1,000,000 cells." : "That file could not be read. Check that it is a real Excel or CSV file.", kind: "warn" });
