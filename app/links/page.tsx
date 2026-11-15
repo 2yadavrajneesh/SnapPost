@@ -61,8 +61,15 @@ function TabBar({ tab, go }: { tab: TabId; go: (t: TabId) => void }) {
   }, [tab]);
   return (
     <Tabs value={tab} onValueChange={(v) => go(v as TabId)} className="mb-5 gap-0">
-    <NativeSelect aria-label="LinkDesk tool" value={tab} onChange={(e) => go(e.target.value as TabId)} className="h-11 font-bold sm:hidden">
-      {TABS.map((t) => <option key={t.id} value={t.id}>{t.label}{t.id === "batch" && items.length > 0 ? ` (${items.length})` : ""}</option>)}
+    <NativeSelect aria-label="LinkDesk tool" value={tab} onChange={(e) => go(e.target.value as TabId)} className="mb-1 h-12 border-stone-300 bg-white px-2 text-xs shadow-sm sm:hidden">
+      {TABS.map((t) => <option key={t.id} value={t.id}>
+        <span className="flex items-center gap-2.5">
+          <span className="flex size-7 flex-none items-center justify-center text-white" style={{ background: COLORS[t.id] }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICONS[t.id]} /></svg>
+          </span>
+          <span className="font-bold">{t.label}{t.id === "batch" && items.length > 0 ? ` (${items.length})` : ""}</span>
+        </span>
+      </option>)}
     </NativeSelect>
     <TabsList ref={bar} aria-label="LinkDesk tools" className="relative hidden !h-auto w-full justify-start gap-2 rounded-none bg-transparent p-0 pb-1 sm:flex sm:overflow-x-auto sm:[scrollbar-width:none] sm:[&::-webkit-scrollbar]:hidden">
       {TABS.map((t) => {

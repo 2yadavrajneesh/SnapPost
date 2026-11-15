@@ -42,9 +42,9 @@ function NativeSelect({ className, size = "default", value, onChange, children, 
       >
         <SelectValue />
       </SelectTrigger>
-      <SelectContent position="popper" className="rounded-none">
+      <SelectContent position="popper" className="rounded-none border-stone-300 bg-white p-1 shadow-lg">
         {opts.map((o) => (
-          <SelectItem key={o.value} value={o.value === "" ? EMPTY : o.value} disabled={o.disabled} className="rounded-none text-xs">
+          <SelectItem key={o.value} value={o.value === "" ? EMPTY : o.value} disabled={o.disabled} className="rounded-none py-2 text-xs">
             {o.label}
           </SelectItem>
         ))}

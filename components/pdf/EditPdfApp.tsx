@@ -59,10 +59,17 @@ export default function EditPdfApp() {
       <p className="mb-4 mt-1 max-w-2xl text-sm text-stone-600">{tab.blurb}</p>
       <Tabs value={id} onValueChange={pick} className="mb-5 gap-0">
         <div className="flex items-stretch gap-2 sm:hidden">
-          <NativeSelect aria-label="PDF tool" value={id} onChange={(e) => pick(e.target.value)} className="h-11 flex-1 font-bold">
-            {TABS.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+          <NativeSelect aria-label="PDF tool" value={id} onChange={(e) => pick(e.target.value)} className="h-12 flex-1 border-stone-300 bg-white px-2 text-xs shadow-sm">
+            {TABS.map((t) => <option key={t.id} value={t.id}>
+                <span className="flex items-center gap-2.5">
+                  <span className="flex size-7 flex-none items-center justify-center bg-white ring-1 ring-stone-200">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={t.icon} /></svg>
+                  </span>
+                  <span className="font-bold">{t.label}</span>
+                </span>
+              </option>)}
           </NativeSelect>
-          <ResetButton className="h-11 flex-none" />
+          <ResetButton className="h-12 flex-none" />
         </div>
         <TabsList ref={nav} aria-label="PDF tools" className="relative hidden !h-auto w-full flex-wrap sm:flex justify-start gap-1.5 rounded-none bg-transparent p-0 pb-1">
           {TABS.map((t) => (
