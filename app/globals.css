@@ -430,6 +430,7 @@ html[data-theme="dark"] .tab-card[aria-selected="true"] { background: color-mix(
 @media (pointer: coarse) {
   button:not([role="switch"]):not([role="checkbox"]):not([role="radio"]), [role="tab"], select { min-height: 40px; }
   button.h-8, button.h-7 { min-height: 40px; min-width: 40px; }
+  button.size-9, button.h-9.w-9, button.size-8 { min-height: 40px; min-width: 40px; } /* square icon buttons stay round */
 }
 
 /* =====================================================================================
