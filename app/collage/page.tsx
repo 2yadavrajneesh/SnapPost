@@ -5,6 +5,8 @@ import StepHints from "@/components/StepHints";
 import { useSessionSnapshot, useWork } from "@/lib/session";
 import CollageFrame, { type FrameLook, type Item, type Picture } from "@/components/collage/CollageFrame";
 import { BORDERS, type BorderKind, type CardStyle } from "@/components/collage/CollageCard";
+import { Maximize2, Minus, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import ScrollTop from "@/components/ScrollTop";
 import SiteHeader from "@/components/SiteHeader";
 import { CollapsibleSection, Label, Section, Segmented, Slider, Toggle } from "@/components/ui";
@@ -352,7 +354,10 @@ export default function CollageMaker() {
     setAreaW(el.clientWidth);
     return () => ro.disconnect();
   }, []);
-  const scale = Math.min(1, Math.max(0.1, areaW / FRAME_W));
+  const fitScale = Math.min(1, Math.max(0.1, areaW / FRAME_W));
+  const [zoom, setZoom] = useState<number | null>(null); // null = fit to the window
+  const scale = zoom ?? fitScale;
+  const zoomBy = (f: number) => setZoom(Math.min(2, Math.max(0.1, Math.round(scale * f * 100) / 100)));
   const [frameH, setFrameH] = useState(900);
   useEffect(() => {
     const el = frame.current;
@@ -637,6 +642,16 @@ export default function CollageMaker() {
               </div>
             </div>
             <ScrollTop target={stage} />
+            {items.length > 0 && (
+              <div className="pointer-events-none fixed bottom-4 left-3 z-30 lg:left-[392px]">
+                <div className="pointer-events-auto flex items-center border border-stone-300 bg-white/95 px-1 py-0.5 text-xs shadow-sm" role="group" aria-label="Zoom">
+                  <Button type="button" variant="ghost" size="icon" className="size-8" onClick={() => zoomBy(1 / 1.15)} disabled={scale <= 0.101} aria-label="Zoom out"><Minus /></Button>
+                  <button type="button" onClick={() => setZoom(null)} title="Fit to window" aria-live="polite" className="w-14 py-1.5 text-center font-semibold tabular-nums text-stone-700 hover:bg-stone-100">{Math.round(scale * 100)}%</button>
+                  <Button type="button" variant="ghost" size="icon" className="size-8" onClick={() => zoomBy(1.15)} disabled={scale >= 1.999} aria-label="Zoom in"><Plus /></Button>
+                  <Button type="button" variant="ghost" size="icon" className="size-8" onClick={() => setZoom(null)} disabled={zoom === null} aria-label="Fit to window" title="Fit to window"><Maximize2 /></Button>
+                </div>
+              </div>
+            )}
             {notice && (
               <div role="status" className="absolute bottom-4 left-1/2 z-[6] max-w-[90%] -translate-x-1/2 bg-stone-900 px-4 py-2 text-xs font-semibold text-white shadow">{notice}</div>
             )}
