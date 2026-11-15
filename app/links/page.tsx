@@ -60,7 +60,7 @@ function TabBar({ tab, go }: { tab: TabId; go: (t: TabId) => void }) {
   }, [tab]);
   return (
     <Tabs value={tab} onValueChange={(v) => go(v as TabId)} className="mb-5 gap-0">
-    <TabsList ref={bar} aria-label="LinkDesk tools" className="relative h-auto w-full justify-start gap-2 overflow-x-auto rounded-none bg-transparent p-0 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <TabsList ref={bar} aria-label="LinkDesk tools" className="relative grid !h-auto w-full grid-cols-2 justify-start gap-2 rounded-none bg-transparent p-0 pb-1 sm:flex sm:overflow-x-auto sm:[scrollbar-width:none] sm:[&::-webkit-scrollbar]:hidden">
       {TABS.map((t) => {
         const on = tab === t.id;
         return (
@@ -69,7 +69,7 @@ function TabBar({ tab, go }: { tab: TabId; go: (t: TabId) => void }) {
             value={t.id}
             id={`tab-${t.id}`}
             style={{ ["--tc" as string]: COLORS[t.id] }}
-            className="tab-card group relative h-auto min-w-[148px] flex-1 justify-start gap-2.5 rounded-none border px-3 py-2.5 text-left shadow-none data-[state=active]:shadow-none"
+            className="tab-card group relative !h-auto min-w-0 flex-1 justify-start last:col-span-2 sm:min-w-[148px] sm:last:col-span-1 gap-2.5 rounded-none border px-3 py-2.5 text-left shadow-none data-[state=active]:shadow-none"
           >
             <span className="flex h-9 w-9 flex-none items-center justify-center text-white transition" style={{ background: COLORS[t.id] }}>
               <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
