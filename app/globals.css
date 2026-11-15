@@ -428,7 +428,7 @@ html[data-theme="dark"] .tab-card[aria-selected="true"] { background: color-mix(
   outline-color: #93c5fd;
 }
 @media (pointer: coarse) {
-  button, [role="tab"], select { min-height: 40px; }
+  button:not([role="switch"]):not([role="checkbox"]):not([role="radio"]), [role="tab"], select { min-height: 40px; }
   button.h-8, button.h-7 { min-height: 40px; min-width: 40px; }
 }
 
