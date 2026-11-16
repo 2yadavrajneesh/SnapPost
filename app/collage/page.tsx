@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { CollageTiles } from "@/components/AppearanceTiles";
 import ScrollTop from "@/components/ScrollTop";
 import SiteHeader from "@/components/SiteHeader";
-import { CollapsibleSection, Label, Section, Segmented, Slider, Toggle } from "@/components/ui";
+import { CollapsibleSection, Label, Section, Segmented, Slider, SwitchRow, Toggle } from "@/components/ui";
 import { BACKGROUNDS, CANVASES, FRAME_W, MAX_TWEETS, type CanvasKey, type LastRow, type LayoutMode } from "@/lib/collage";
 import { downloadBlob, renderPdf, renderPng } from "@/lib/export";
 import { findTweetLinks, parseTweetUrl } from "@/lib/parse";
@@ -520,10 +520,19 @@ export default function CollageMaker() {
                 </div>
               </>
             )}
-            <button type="button" role="switch" aria-checked={classic} className={`${btnPlain} w-full ${classic ? "!border-[#1b2420] !bg-[#1b2420] !text-white" : ""}`} onClick={classicLook}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
-              {classic ? "Classic grid look (title + 3 columns): ON. Click to deselect" : "Use the classic grid look (title + 3 columns)"}
-            </button>
+            <SwitchRow
+              checked={classic}
+              onChange={() => classicLook()}
+              label={
+                <span className="flex items-center gap-2.5">
+                  <span className="flex size-8 flex-none items-center justify-center bg-stone-100 text-stone-700"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg></span>
+                  <span className="min-w-0">
+                    <span className="block font-semibold">Classic grid look</span>
+                    <span className="block text-[11px] font-normal text-stone-500">Title + 3 columns</span>
+                  </span>
+                </span>
+              }
+            />
           </Section>
 
           <CollapsibleSection title="Layout">
