@@ -77,7 +77,7 @@ export function Badge({ size, kind = "blue" }: { size: number; kind?: VerifiedTy
   );
 }
 
-export function Icon({ name, size }: { name: "reply" | "repost" | "like" | "views"; size: number }) {
+export function Icon({ name, size }: { name: "reply" | "repost" | "like" | "views"; size: number | string }) {
   const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, style: { flex: "none" as const } };
   switch (name) {
     case "reply":
@@ -112,13 +112,15 @@ export function Icon({ name, size }: { name: "reply" | "repost" | "like" | "view
   }
 }
 
-function Stats({ items, size, gap, nowrap }: { items: StatItem[]; size: number; gap: number; nowrap?: boolean }) {
+function Stats({ items, size, gap, nowrap, k }: { items: StatItem[]; size: number; gap: number; nowrap?: boolean; k?: string }) {
   if (!items.length) return null;
+  // k: a CSS divisor that keeps the row at its normal size while the rest of the post is enlarged
+  const px = (n: number) => (k ? `calc(${n}px / ${k})` : n);
   return (
-    <div style={{ display: "flex", flexWrap: nowrap ? "nowrap" : "wrap", flexShrink: nowrap ? 0 : undefined, alignItems: "center", columnGap: gap, rowGap: gap / 2 }}>
+    <div style={{ display: "flex", flexWrap: nowrap ? "nowrap" : "wrap", flexShrink: nowrap ? 0 : undefined, alignItems: "center", columnGap: px(gap), rowGap: gap / 2 }}>
       {items.map(([name, n]) => (
-        <span key={name} style={{ display: "inline-flex", alignItems: "center", gap: size * 0.4 }}>
-          <Icon name={name} size={size * 1.25} />
+        <span key={name} style={{ display: "inline-flex", alignItems: "center", gap: px(size * 0.4) }}>
+          <Icon name={name} size={px(size * 1.25)} />
           {compact(n)}
         </span>
       ))}
@@ -710,6 +712,13 @@ export type Redact = { name: boolean; avatar: boolean; media: boolean };
 /** Text hidden behind a solid bar (the glyphs themselves are not painted). */
 const hidden = (color: string): React.CSSProperties => ({ color: "transparent", backgroundColor: color, borderRadius: "0.12em", userSelect: "none" });
 
+/** True when an element's text is wider than the element itself (so it is cut off or shown with "…"). */
+function clipped(n: HTMLElement) {
+  const r = document.createRange();
+  r.selectNodeContents(n);
+  return r.getBoundingClientRect().width > n.getBoundingClientRect().width + 0.01;
+}
+
 const MIN_FIT = 0.2;
 const MAX_FIT = 1; // text size is literal: a fixed-ratio frame only shrinks the post when it does not fit
 const FILL_FIT = 4; // "Fit text to the frame": the post may be enlarged up to this much to fill the frame
@@ -756,10 +765,11 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
     const apply = (sc: number) => {
       el.style.width = `${availW / sc}px`;
       el.style.transform = `scale(${sc})`;
+      el.style.setProperty("--snap-fit", String(Math.max(1, sc))); // the footer keeps its normal size when the rest is enlarged
       mediaN.current = Math.max(1, el.querySelectorAll("[data-media]").length);
       el.style.setProperty("--snap-media-max", `${(availH * MEDIA_BUDGET) / mediaN.current / sc}px`);
       // The footer stays on one row (stats left, time/views right), so a scale that would push it past the width is too big.
-      const overflow = el.scrollWidth > el.clientWidth + 1;
+      const overflow = el.scrollWidth > el.clientWidth + 1 || [...el.querySelectorAll<HTMLElement>("[data-nofit]")].some(clipped);
       return overflow ? Infinity : el.offsetHeight * sc;
     };
     const run = () => {
@@ -779,9 +789,11 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
       setFit((prev) => (prev !== null && Math.abs(prev - lo) < 0.002 ? prev : lo));
     };
     run();
+    let live = true;
+    void document.fonts?.ready.then(() => live && run()); // text widths change once the web font is in
     const ro = new ResizeObserver(run); // images and fonts finishing loading change the height
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => { live = false; ro.disconnect(); };
   }, [ratio, maxFit, highlights, redact, availW, availH, fs, tweet, thread, showQuote, showMedia, showParents, showParentMedia, displayInfo, settings.font, settings.logo, minimal]);
 
   return (
@@ -822,7 +834,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
             ? "none"
             : `${settings.shadow === "soft" ? "0 10px 30px rgba(0,0,0,0.22), " : settings.shadow === "lifted" ? "0 26px 60px rgba(0,0,0,0.34), " : ""}${settings.theme === "light" ? "0 0 0 1px rgba(0,0,0,0.06)" : "0 0 0 1px rgba(255,255,255,0.08)"}`,
           transform: ratio && fit ? `scale(${fit})` : undefined,
-          ...(ratio && fit ? ({ "--snap-media-max": `${(availH * MEDIA_BUDGET) / mediaN.current / fit}px` } as React.CSSProperties) : {}),
+          ...(ratio && fit ? ({ "--snap-fit": Math.max(1, fit), "--snap-media-max": `${(availH * MEDIA_BUDGET) / mediaN.current / fit}px` } as React.CSSProperties) : {}),
           transformOrigin: "center center",
         }}
       >
@@ -840,12 +852,12 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
               <Avatar src={tweet.avatar} name={tweet.name || tweet.username} size={Math.round(fs * 1.5)} blank={redact?.avatar} blankColor={t.border} />
               <div style={{ minWidth: 0, flex: 1, lineHeight: 1.25 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: Math.round(fs * 0.2) }}>
-                  <span style={{ fontSize: nameSize, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...(redact?.name ? hidden(t.border === "#2f3336" ? "#536471" : "#8b98a5") : null) }}>
+                  <span data-nofit="" style={{ fontSize: nameSize, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...(redact?.name ? hidden(t.border === "#2f3336" ? "#536471" : "#8b98a5") : null) }}>
                     {tweet.name || "Display name"}
                   </span>
                   {tweet.verified && <Badge size={Math.round(nameSize * 1.05)} kind={tweet.verifiedType} />}
                 </div>
-                <div style={{ fontSize: nameSize, color: t.muted }}>
+                <div data-nofit="" style={{ fontSize: nameSize, color: t.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   <span style={redact?.name ? hidden(t.border === "#2f3336" ? "#536471" : "#8b98a5") : undefined}>@{tweet.username || "username"}</span>
                 </div>
               </div>
@@ -895,13 +907,13 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
                   flexWrap: ratio ? "nowrap" : "wrap",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  columnGap: gap,
+                  columnGap: ratio ? `calc(${gap}px / var(--snap-fit, 1))` : gap,
                   rowGap: Math.round(fs * 0.3),
                   color: t.muted,
-                  fontSize: Math.round(fs * 0.58),
+                  fontSize: ratio ? `calc(${Math.round(fs * 0.58)}px / var(--snap-fit, 1))` : Math.round(fs * 0.58),
                 }}
               >
-                <Stats size={Math.round(fs * 0.58)} gap={Math.round(fs * 1.0)} items={footerStats} nowrap={!!ratio} />
+                <Stats size={Math.round(fs * 0.58)} gap={Math.round(fs * 1.0)} items={footerStats} nowrap={!!ratio} k={ratio ? "var(--snap-fit, 1)" : undefined} />
                 {(showTime || showViews) && (
                   <span style={{ marginLeft: "auto", whiteSpace: ratio ? "nowrap" : undefined, flexShrink: ratio ? 0 : undefined }}>
                     {showTime ? `${tweet.time} · ${tweet.date}` : ""}
