@@ -10,7 +10,7 @@ export function formatTime(ts: number): string {
 }
 
 export function formatDate(ts: number): string {
-  return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
 }
 
 /** Short relative time used in quoted-post headers: 12s, 5m, 16h, then "Nov 2" or "Nov 2, 2025". */

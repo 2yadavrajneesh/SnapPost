@@ -151,7 +151,7 @@ export const DEFAULT_TWEET: TweetData = {
   verified: true,
   text: "Turn any tweet into a polished image in seconds. Paste a link, then download it.",
   time: "10:00 AM",
-  date: "2 January 1996",
+  date: "Jan 02, 2026",
   replies: 128,
   reposts: 1400,
   likes: 12000,
