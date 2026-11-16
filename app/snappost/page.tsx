@@ -112,6 +112,16 @@ export default function Home() {
 
   const frameRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  // The viewer pins itself under the site bar on phones; tell it how tall the bar is.
+  useEffect(() => {
+    const bar = document.querySelector<HTMLElement>("header.site-bar");
+    if (!bar) return;
+    const set = () => document.documentElement.style.setProperty("--bar-h", `${bar.offsetHeight}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(bar);
+    return () => ro.disconnect();
+  }, []);
   const lastFetched = useRef("");
   const reqId = useRef(0);
   const linkInput = useRef<HTMLInputElement>(null);
@@ -211,13 +221,13 @@ export default function Home() {
   const widthFit = Math.min(1, (stageW - padX * 2) / FRAME_W);
   const availH = isDesktop
     ? stageH
-    : Math.max(210, Math.min(Math.round(viewportH * (showThread ? 0.8 : 0.72)), Math.ceil(frameH * widthFit + padY * 2)));
+    : Math.max(180, Math.min(Math.round(viewportH * 0.4), Math.ceil(frameH * widthFit + padY * 2))); // phones: a compact viewer that stays pinned while the settings scroll
   // Desktop fits a whole post in the viewer. Phones, and full threads, fit the width so text stays
   // readable, and a tall post scrolls inside the viewer.
   const fitScale = Math.max(
     MIN_ZOOM,
     // A thread is long: fit its width so it stays readable and scroll down; + / − then enlarge or shrink it.
-    isDesktop && !showThread ? Math.min(widthFit, (availH - padY * 2) / frameH) : widthFit,
+    !showThread ? Math.min(widthFit, (availH - padY * 2) / frameH) : widthFit,
   );
   const scale = zoom ?? fitScale;
   const zoomIn = () => setZoom(Math.min(MAX_ZOOM, scale * ZOOM_STEP));
@@ -453,8 +463,10 @@ export default function Home() {
     linkInput.current?.focus();
   }
 
+  // Best fit works with the ratio you picked: it resets padding and zoom, and in a fixed ratio it also
+  // enlarges the text so the post fills the frame.
   function bestFit() {
-    setSettings((s) => ({ ...s, ratio: "auto", padding: DEFAULT_SETTINGS.padding }));
+    setSettings((s) => ({ ...s, padding: DEFAULT_SETTINGS.padding, ...(s.ratio !== "auto" && !showThread && !carousel ? { fitText: true } : null) }));
     setZoom(null);
   }
 
@@ -606,7 +618,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
       <SiteHeader />
 
-      <main className="grid w-full flex-1 lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
+      <main className="flex w-full flex-1 flex-col lg:grid lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
         {/* Controls (scroll on their own on desktop, so the preview never moves) */}
         <aside className="order-2 min-w-0 border-t border-stone-300 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:border-r lg:border-t-0">
           <Section title="Source">
@@ -907,7 +919,7 @@ export default function Home() {
         </aside>
 
         {/* Viewer */}
-        <div id="canvas" className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">
+        <div id="canvas" className="sticky top-[var(--bar-h,53px)] z-20 order-1 flex shrink-0 min-w-0 flex-col snap-pin shadow-sm lg:static lg:z-auto lg:order-2 lg:min-h-0 lg:shadow-none">
           <div
             className="snap-stage relative flex flex-1 overflow-hidden lg:min-h-0"
             style={isDesktop ? undefined : { height: availH, flex: "none" }}

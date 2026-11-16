@@ -606,3 +606,9 @@ html[data-theme="dark"] .home-cta:hover { background: #fff; }
 html[data-theme="dark"] .home-card { background: #211c18 !important; border-color: #3a332d !important; }
 html[data-theme="dark"] .home-card:hover { border-color: var(--tc) !important; }
 html[data-theme="dark"] .home-card:hover { border-color: var(--tc); }
+
+/* SnapPost on phones: the viewer stays pinned under the bar while the settings scroll. */
+@media (max-width: 1023px) {
+  .snap-pin { background: #faf6f1; }
+  html[data-theme="dark"] .snap-pin { background: #14110f; }
+}
