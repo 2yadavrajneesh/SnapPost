@@ -712,10 +712,12 @@ const hidden = (color: string): React.CSSProperties => ({ color: "transparent", 
 
 const MIN_FIT = 0.2;
 const MAX_FIT = 1; // text size is literal: a fixed-ratio frame only shrinks the post when it does not fit
+const FILL_FIT = 4; // "Fit text to the frame": the post may be enlarged up to this much to fill the frame
 /** Share of a fixed-ratio frame's inner height that attached media may occupy. */
 const MEDIA_BUDGET = 0.55;
 
-const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, showMedia = true, showParents = true, showParentMedia = true, displayInfo = ALL_INFO, maxFit = MAX_FIT, highlights, redact }, ref) {
+const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, settings, thread, onOpenMedia, showQuote = true, showMedia = true, showParents = true, showParentMedia = true, displayInfo = ALL_INFO, maxFit: maxFitProp, highlights, redact }, ref) {
+  const maxFit = maxFitProp ?? (settings.fitText ? FILL_FIT : MAX_FIT);
   const t = THEMES[settings.theme];
   const fs = settings.textSize;
   const p = settings.padding / 100;

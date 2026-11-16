@@ -89,6 +89,8 @@ export type Settings = {
   font: "sans" | "rounded" | "inter" | "geist" | "serif" | "mono";
   style: "standard" | "minimal";
   textSize: number; // logical px, 24-80
+  /** Fixed ratios only: enlarge the text so the post fills the frame (otherwise the text size is literal). */
+  fitText?: boolean;
   padding: number; // percent, 50-150
   /** Colour behind the card ("none" = transparent). */
   bg: string;
@@ -168,6 +170,7 @@ export const DEFAULT_SETTINGS: Settings = {
   font: "sans",
   style: "minimal",
   textSize: 40,
+  fitText: false,
   padding: 60,
   bg: "none",
   margin: null,

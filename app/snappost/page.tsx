@@ -864,7 +864,10 @@ export default function Home() {
             {!showThread && settings.ratio !== "auto" && (
               <p className="text-[11px] text-stone-500">The full post stays visible; if it is too big for the shape, it shrinks to fit. Click the selected tile again for Auto.</p>
             )}
-            <Slider label="Text size" value={settings.textSize} min={24} max={80} step={4} suffix="px" lowLabel="Smaller" highLabel="Larger" ticks emphasizeHigh onChange={(v) => set("textSize", v)} />
+            {!showThread && settings.ratio !== "auto" && !carousel && (
+              <SwitchRow label="Fit text to the frame" checked={!!settings.fitText} onChange={(v) => set("fitText", v)} />
+            )}
+            {!(settings.fitText && !showThread && settings.ratio !== "auto" && !carousel) && <Slider label="Text size" value={settings.textSize} min={24} max={80} step={4} suffix="px" lowLabel="Smaller" highLabel="Larger" ticks emphasizeHigh onChange={(v) => set("textSize", v)} />}
             <Slider label="Padding" value={settings.padding} min={50} max={150} step={5} suffix="%" lowLabel="Tighter" highLabel="Looser" onChange={(v) => set("padding", v)} />
           </CollapsibleSection>
 
