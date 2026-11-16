@@ -112,6 +112,7 @@ export default function Home() {
 
   const frameRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const [bigView, setBigView] = useState(false); // phones: a taller viewer
   // The viewer pins itself under the site bar on phones; tell it how tall the bar is.
   useEffect(() => {
     const bar = document.querySelector<HTMLElement>("header.site-bar");
@@ -221,7 +222,7 @@ export default function Home() {
   const widthFit = Math.min(1, (stageW - padX * 2) / FRAME_W);
   const availH = isDesktop
     ? stageH
-    : Math.max(180, Math.min(Math.round(viewportH * 0.4), Math.ceil(frameH * widthFit + padY * 2))); // phones: a compact viewer that stays pinned while the settings scroll
+    : Math.max(180, Math.min(Math.round(viewportH * (bigView ? 0.68 : 0.4)), Math.ceil(frameH * widthFit + padY * 2))); // phones: a compact viewer that stays pinned while the settings scroll
   // Desktop fits a whole post in the viewer. Phones, and full threads, fit the width so text stays
   // readable, and a tall post scrolls inside the viewer.
   const fitScale = Math.max(
@@ -970,7 +971,19 @@ export default function Home() {
             </div>
 
             {/* Output size + hints */}
-            <div className="pointer-events-none absolute right-3 top-3 z-[2] max-w-[50%] text-right text-[11px] tabular-nums text-stone-500">
+            <button
+              type="button"
+              onClick={() => { setBigView((v) => !v); setZoom(null); }}
+              aria-pressed={bigView}
+              aria-label={bigView ? "Make the preview smaller" : "Make the preview larger"}
+              title={bigView ? "Smaller preview" : "Larger preview"}
+              className="absolute right-3 top-3 z-[3] flex size-11 items-center justify-center border border-stone-300 bg-[#fffdf8] text-stone-800 shadow-sm transition hover:bg-white lg:hidden"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                {bigView ? <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" /> : <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />}
+              </svg>
+            </button>
+            <div className="pointer-events-none absolute right-3 top-3 z-[2] hidden max-w-[50%] text-right text-[11px] tabular-nums text-stone-500 lg:block">
               {outW} × {outH} px
               {hasPhotos && showMedia && <span className="hidden font-sans sm:block">Click an image to enlarge</span>}
             </div>
@@ -990,10 +1003,11 @@ export default function Home() {
           </div>
 
           {/* Phones and tablets: slide and zoom controls sit right under the viewer */}
-          <div className="flex items-center justify-between gap-2 border-b border-stone-300 px-3 py-2 lg:hidden">
-            {carousel ? slideNav : <span />}
-            {zoomPill}
-          </div>
+          {carousel ? (
+            <div className="flex items-center justify-center gap-2 border-b border-stone-300 px-3 py-2 lg:hidden">{slideNav}</div>
+          ) : (
+            <div className="border-b border-stone-300 lg:hidden" />
+          )}
         </div>
       </main>
 
