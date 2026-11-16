@@ -509,7 +509,7 @@ export default function CollageMaker() {
             </button>
             {showHead && (<div>
               <Label>Title text</Label>
-              <input value={headText} onChange={(e) => setHeadText(e.target.value)} maxLength={120} placeholder="e.g. Sonia Gandhi - Belonging: A Journey of Love" aria-label="Collage title" className="h-9 w-full border border-stone-200 bg-white px-2.5 text-xs outline-none focus:border-[color:var(--accent)]" />
+              <input value={headText} onChange={(e) => setHeadText(e.target.value)} maxLength={120} placeholder="e.g. Top posts of the week" aria-label="Collage title" className="h-9 w-full border border-stone-200 bg-white px-2.5 text-xs outline-none focus:border-[color:var(--accent)]" />
             </div>)}
             {showHead && headText.trim() && (
               <>
