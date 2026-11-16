@@ -222,7 +222,7 @@ export default function Home() {
   const widthFit = Math.min(1, (stageW - padX * 2) / FRAME_W);
   const availH = isDesktop
     ? stageH
-    : Math.max(180, Math.min(Math.round(viewportH * (bigView ? 0.68 : 0.4)), Math.ceil(frameH * widthFit + padY * 2))); // phones: a compact viewer that stays pinned while the settings scroll
+    : Math.max(180, bigView ? Math.round(viewportH * 0.68) : Math.min(Math.round(viewportH * 0.4), Math.ceil(frameH * widthFit + padY * 2))); // phones: a compact viewer that stays pinned while the settings scroll
   // Desktop fits a whole post in the viewer. Phones, and full threads, fit the width so text stays
   // readable, and a tall post scrolls inside the viewer.
   const fitScale = Math.max(
