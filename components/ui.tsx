@@ -197,3 +197,19 @@ export function Toggle({ label, checked, onChange }: { label: string; checked: b
 export function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return <SwitchRow label={label} checked={checked} onChange={onChange} />;
 }
+
+/** A big on/off button: dark and filled when on, light when off. */
+export function ToggleTile({ label, pressed, onChange }: { label: string; pressed: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      onClick={() => onChange(!pressed)}
+      className={`flex min-h-12 items-center justify-center gap-1.5 border px-2 py-3 text-sm font-semibold transition ${
+        pressed ? "border-[#1b2420] bg-[#1b2420] text-white" : "border-stone-200 bg-[#f4efe8] text-stone-500 hover:bg-[#ece6dc]"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}

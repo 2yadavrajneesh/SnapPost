@@ -13,7 +13,7 @@ import MediaDownload from "@/components/MediaDownload";
 import type { Highlight } from "@/lib/highlight";
 import RatioTiles from "@/components/RatioTiles";
 import TweetCard, { ALL_INFO, type DisplayInfo, type Redact } from "@/components/TweetCard";
-import { Check, CollapsibleSection, Label, Section, Segmented, Slider, SwitchRow, TextField, Toggle } from "@/components/ui";
+import { Check, CollapsibleSection, Label, Section, Segmented, Slider, SwitchRow, TextField, Toggle, ToggleTile } from "@/components/ui";
 import { formatDate, formatTime } from "@/lib/format";
 import { copyPngToClipboard, downloadBlob, downloadUrl, renderPdf, renderPdfPages, renderPng, renderVideo, zipFiles } from "@/lib/export";
 import { parseTweetUrl } from "@/lib/parse";
@@ -750,7 +750,17 @@ export default function Home() {
                   <TextField label="Time" value={tweet.time} onChange={(v) => setT("time", v)} />
                   <TextField label="Date" value={tweet.date} onChange={(v) => setT("date", v)} />
                 </div>
-                <Toggle label="Verified badge" checked={tweet.verified} onChange={(v) => setT("verified", v)} />
+                                <div className="space-y-2">
+                  <Label>Show</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <ToggleTile label="Likes" pressed={displayInfo.likes} onChange={(v) => setInfo("likes", v)} />
+                    <ToggleTile label="Reposts" pressed={displayInfo.reposts} onChange={(v) => setInfo("reposts", v)} />
+                    <ToggleTile label="Comments" pressed={displayInfo.replies} onChange={(v) => setInfo("replies", v)} />
+                    <ToggleTile label="Views" pressed={displayInfo.views} onChange={(v) => setInfo("views", v)} />
+                    <ToggleTile label="Date & time" pressed={displayInfo.dateTime} onChange={(v) => setInfo("dateTime", v)} />
+                    <ToggleTile label="Verified" pressed={tweet.verified} onChange={(v) => setT("verified", v)} />
+                  </div>
+                </div>
                 {tweet.verified && (
                   <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Badge colour">
                     {BADGE_CHOICES.map((c) => {
@@ -763,16 +773,6 @@ export default function Home() {
                     })}
                   </div>
                 )}
-                <div className="space-y-2">
-                  <Label>Post details</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Check label="Likes" checked={displayInfo.likes} onChange={(v) => setInfo("likes", v)} />
-                    <Check label="Reposts" checked={displayInfo.reposts} onChange={(v) => setInfo("reposts", v)} />
-                    <Check label="Comments" checked={displayInfo.replies} onChange={(v) => setInfo("replies", v)} />
-                    <Check label="Views" checked={displayInfo.views} onChange={(v) => setInfo("views", v)} />
-                    <Check label="Date & time" checked={displayInfo.dateTime} onChange={(v) => setInfo("dateTime", v)} />
-                  </div>
-                </div>
                 <div className="flex items-center justify-between gap-3">
                   <label className="cursor-pointer border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50">
                     Upload avatar
