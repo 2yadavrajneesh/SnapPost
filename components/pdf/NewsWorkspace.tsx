@@ -210,8 +210,6 @@ export default function NewsWorkspace() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [big]);
-  const moveBy = (id: number, dx: number, dy: number) => update(id, { dx, dy });
-  const sendTo = (id: number, page: number) => update(id, { page, dx: 0, dy: 0 });
   const clearAll = () => {
     const prevItems = items;
     const prevResult = result;
@@ -390,9 +388,9 @@ export default function NewsWorkspace() {
         </Card></div>
         <div className="max-lg:order-2"><Card title="Live PDF preview" chip={<button type="button" onClick={() => setBig(true)} disabled={!items.length} aria-label="Enlarge the preview" title="Enlarge to see the whole PDF" className="ml-auto flex h-7 w-7 items-center justify-center border border-stone-300 bg-white text-stone-700 hover:bg-stone-100 disabled:opacity-40"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg></button>}>
           <div className="max-h-[62vh] overflow-y-auto bg-stone-200 p-2.5">
-            <NewsPreview items={items} s={s} date={s.showDate ? date : ""} onMove={moveBy} onSend={sendTo} />
+            <NewsPreview items={items} s={s} date={s.showDate ? date : ""} />
           </div>
-          <p className="mt-2 text-[11px] leading-snug text-stone-500">Drag a picture to place it anywhere, or drop it on another page to send it there. Same page layout as the final file. The PDF also trims blank borders if that option is on, so spacing can differ slightly.</p>
+          <p className="mt-2 text-[11px] leading-snug text-stone-500">Same page layout as the final file. The PDF also trims blank borders if that option is on, so spacing can differ slightly.</p>
         </Card></div>
         <p className="px-1 text-[11px] leading-relaxed text-stone-500 max-lg:order-5">Screenshots are processed on the server and removed right after. Hindi and English text are both supported in titles and captions.</p>
       </aside>
@@ -409,7 +407,7 @@ export default function NewsWorkspace() {
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6" onClick={(e) => e.stopPropagation()}>
             <div className="mx-auto max-w-[860px]">
-              <NewsPreview items={items} s={s} date={s.showDate ? date : ""} onMove={moveBy} onSend={sendTo} />
+              <NewsPreview items={items} s={s} date={s.showDate ? date : ""} />
             </div>
           </div>
         </div>
