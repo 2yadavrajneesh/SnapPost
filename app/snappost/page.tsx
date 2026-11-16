@@ -222,7 +222,7 @@ export default function Home() {
   const widthFit = Math.min(1, (stageW - padX * 2) / FRAME_W);
   const availH = isDesktop
     ? stageH
-    : Math.max(180, bigView ? Math.round(viewportH * 0.68) : Math.min(Math.round(viewportH * 0.4), Math.ceil(frameH * widthFit + padY * 2))); // phones: a compact viewer that stays pinned while the settings scroll
+    : Math.max(180, Math.min(Math.round(viewportH * 0.4), Math.ceil(frameH * widthFit + padY * 2))); // phones: a compact viewer that stays pinned while the settings scroll
   // Desktop fits a whole post in the viewer. Phones, and full threads, fit the width so text stays
   // readable, and a tall post scrolls inside the viewer.
   const fitScale = Math.max(
@@ -230,7 +230,8 @@ export default function Home() {
     // A thread is long: fit its width so it stays readable and scroll down; + / − then enlarge or shrink it.
     !showThread ? Math.min(widthFit, (availH - padY * 2) / frameH) : widthFit,
   );
-  const scale = zoom ?? fitScale;
+  // Phones: the expand button zooms the post in (the viewer keeps its height and scrolls).
+  const scale = zoom ?? (bigView && !isDesktop ? Math.min(MAX_ZOOM, fitScale * 1.3) : fitScale);
   const zoomIn = () => setZoom(Math.min(MAX_ZOOM, scale * ZOOM_STEP));
   const zoomOut = () => setZoom(Math.max(MIN_ZOOM, scale / ZOOM_STEP));
   const outW = MAX_EXPORT_WIDTH;
@@ -973,10 +974,10 @@ export default function Home() {
             {/* Output size + hints */}
             <button
               type="button"
-              onClick={() => { setBigView((v) => !v); setZoom(null); }}
+              onClick={() => setBigView((v) => !v)}
               aria-pressed={bigView}
-              aria-label={bigView ? "Make the preview smaller" : "Make the preview larger"}
-              title={bigView ? "Smaller preview" : "Larger preview"}
+              aria-label={bigView ? "Zoom out" : "Zoom in"}
+              title={bigView ? "Zoom out" : "Zoom in"}
               className="absolute right-3 top-3 z-[3] flex size-11 items-center justify-center border border-stone-300 bg-[#fffdf8] text-stone-800 shadow-sm transition hover:bg-white lg:hidden"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
