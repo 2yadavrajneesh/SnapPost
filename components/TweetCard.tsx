@@ -112,10 +112,10 @@ export function Icon({ name, size }: { name: "reply" | "repost" | "like" | "view
   }
 }
 
-function Stats({ items, size, gap }: { items: StatItem[]; size: number; gap: number }) {
+function Stats({ items, size, gap, nowrap }: { items: StatItem[]; size: number; gap: number; nowrap?: boolean }) {
   if (!items.length) return null;
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: gap, rowGap: gap / 2 }}>
+    <div style={{ display: "flex", flexWrap: nowrap ? "nowrap" : "wrap", flexShrink: nowrap ? 0 : undefined, alignItems: "center", columnGap: gap, rowGap: gap / 2 }}>
       {items.map(([name, n]) => (
         <span key={name} style={{ display: "inline-flex", alignItems: "center", gap: size * 0.4 }}>
           <Icon name={name} size={size * 1.25} />
@@ -758,7 +758,9 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
       el.style.transform = `scale(${sc})`;
       mediaN.current = Math.max(1, el.querySelectorAll("[data-media]").length);
       el.style.setProperty("--snap-media-max", `${(availH * MEDIA_BUDGET) / mediaN.current / sc}px`);
-      return el.offsetHeight * sc;
+      // The footer stays on one row (stats left, time/views right), so a scale that would push it past the width is too big.
+      const overflow = el.scrollWidth > el.clientWidth + 1;
+      return overflow ? Infinity : el.offsetHeight * sc;
     };
     const run = () => {
       let lo = MIN_FIT;
@@ -890,7 +892,7 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
                 style={{
                   marginTop: gap,
                   display: "flex",
-                  flexWrap: "wrap",
+                  flexWrap: ratio ? "nowrap" : "wrap",
                   alignItems: "center",
                   justifyContent: "space-between",
                   columnGap: gap,
@@ -899,9 +901,9 @@ const TweetCard = forwardRef<HTMLDivElement, Props>(function TweetCard({ tweet, 
                   fontSize: Math.round(fs * 0.58),
                 }}
               >
-                <Stats size={Math.round(fs * 0.58)} gap={Math.round(fs * 1.0)} items={footerStats} />
+                <Stats size={Math.round(fs * 0.58)} gap={Math.round(fs * 1.0)} items={footerStats} nowrap={!!ratio} />
                 {(showTime || showViews) && (
-                  <span style={{ marginLeft: "auto" }}>
+                  <span style={{ marginLeft: "auto", whiteSpace: ratio ? "nowrap" : undefined, flexShrink: ratio ? 0 : undefined }}>
                     {showTime ? `${tweet.time} · ${tweet.date}` : ""}
                     {showViews && (
                       <>
