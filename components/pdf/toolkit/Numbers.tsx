@@ -35,7 +35,7 @@ export default function Numbers() {
 
   // preview: page 1 (single) or a two-page spread (facing) and where the number lands on each page
   const [pw, ph] = src.sizes[0];
-  const W = o.facing ? 150 : 200;
+  const W = o.facing ? 250 : 330;
   const k = W / pw;
   const m = MARGINS[o.margin] * k;
   const fs = o.size * k;
@@ -69,7 +69,7 @@ export default function Numbers() {
   const sub = "text-[11px] font-bold uppercase tracking-wide text-stone-500";
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,430px)_minmax(0,1fr)]">
       <Card title="Page number options" chip={<span className="text-[11px] font-semibold text-stone-600">{src.name} · {src.count} pages</span>}>
         <div className="space-y-2">
           <div className={sub}>Page mode</div>
@@ -120,7 +120,7 @@ export default function Numbers() {
 
         <div className="space-y-3 border-t border-stone-200 pt-4">
           <div className={sub}>Look</div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Font"><NativeSelect className={sel} value={o.font} onChange={(e) => set("font", e.target.value as NumberOpts["font"])}><option>Helvetica</option><option>Times</option><option>Courier</option></NativeSelect></Field>
             <Field label="Size"><input type="number" min={6} max={72} className={sel} value={o.size} onChange={(e) => set("size", Math.min(72, Math.max(6, Number(e.target.value) || 12)))} /></Field>
             <Field label="Colour"><input type="color" className="h-8 w-full border border-stone-300 bg-white" value={o.color} onChange={(e) => set("color", e.target.value)} /></Field>
@@ -135,7 +135,7 @@ export default function Numbers() {
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
         <Card title={o.facing ? "Preview, first spread" : "Preview, page 1"}>
-          <div className="flex justify-center bg-stone-100 p-4">
+          <div className="flex justify-center overflow-x-auto bg-stone-100 p-6">
             {o.facing ? (
               <div className="flex">{spread.map((ix) => <div key={ix}>{PreviewPage({ index: ix })}</div>)}</div>
             ) : (
