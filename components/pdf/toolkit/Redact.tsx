@@ -9,9 +9,13 @@ import { Field, Finish, Open, sel, stem, useSource, type Made, type PdfDocProxy,
 
 type Box = { id: number; page: number; u: number; v: number; w: number; h: number };
 let uid = 0;
+const HANDLES: [string, number, number, string][] = [
+  ["nw", 0, 0, "nwse-resize"], ["n", 0.5, 0, "ns-resize"], ["ne", 1, 0, "nesw-resize"], ["e", 1, 0.5, "ew-resize"],
+  ["se", 1, 1, "nwse-resize"], ["s", 0.5, 1, "ns-resize"], ["sw", 0, 1, "nesw-resize"], ["w", 0, 0.5, "ew-resize"],
+];
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
 
-function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSelect }: { doc: PdfDocProxy; index: number; size: [number, number]; width: number; boxes: Box[]; sel: number | null; onAdd: (b: Omit<Box, "id">) => void; onSelect: (id: number | null) => void }) {
+function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSelect, onChange }: { doc: PdfDocProxy; index: number; size: [number, number]; width: number; boxes: Box[]; sel: number | null; onAdd: (b: Omit<Box, "id">) => void; onSelect: (id: number | null) => void ; onChange: (id: number, patch: Partial<Omit<Box, "id" | "page">>) => void}) {
   const wrap = useRef<HTMLDivElement>(null);
   const cv = useRef<HTMLCanvasElement>(null);
   const [near, setNear] = useState(index < 2);
@@ -39,6 +43,31 @@ function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSe
     })();
     return () => { dead = true; task?.cancel(); };
   }, [near, doc, index, width, size]);
+
+  /** Drag a box to move it, or one of its handles to resize it. */
+  const grab = (e: React.PointerEvent, b: Box, mode: string) => {
+    const r = wrap.current!.getBoundingClientRect();
+    const sx = e.clientX, sy = e.clientY;
+    const o = { u: b.u, v: b.v, w: b.w, h: b.h };
+    const MIN = 0.01;
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    const mv = (ev: PointerEvent) => {
+      const dx = (ev.clientX - sx) / r.width, dy = (ev.clientY - sy) / r.height;
+      if (mode === "move") {
+        onChange(b.id, { u: Math.min(1 - o.w, Math.max(0, o.u + dx)), v: Math.min(1 - o.h, Math.max(0, o.v + dy)) });
+        return;
+      }
+      let l = o.u, t = o.v, rt = o.u + o.w, bt = o.v + o.h;
+      if (mode.includes("w")) l = Math.min(rt - MIN, Math.max(0, o.u + dx));
+      if (mode.includes("e")) rt = Math.max(l + MIN, Math.min(1, rt + dx));
+      if (mode.includes("n")) t = Math.min(bt - MIN, Math.max(0, o.v + dy));
+      if (mode.includes("s")) bt = Math.max(t + MIN, Math.min(1, bt + dy));
+      onChange(b.id, { u: l, v: t, w: rt - l, h: bt - t });
+    };
+    const up = () => { window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); };
+    window.addEventListener("pointermove", mv);
+    window.addEventListener("pointerup", up);
+  };
 
   const down = (e: React.PointerEvent) => {
     const r = wrap.current!.getBoundingClientRect();
@@ -68,7 +97,21 @@ function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSe
       <canvas ref={cv} className="absolute inset-0 h-full w-full" />
       <div className="absolute inset-0 cursor-crosshair" style={{ touchAction: "none" }} onPointerDown={down} />
       {boxes.map((b) => (
-        <div key={b.id} onPointerDown={(e) => { e.stopPropagation(); onSelect(b.id); }} className={`absolute cursor-pointer bg-black/80 ${selected === b.id ? "outline outline-2 outline-red-500" : ""}`} style={{ left: `${b.u * 100}%`, top: `${b.v * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%` }} />
+        <div
+          key={b.id}
+          onPointerDown={(e) => { e.stopPropagation(); onSelect(b.id); grab(e, b, "move"); }}
+          className={`absolute bg-black/80 ${selected === b.id ? "cursor-move outline outline-2 outline-red-500" : "cursor-pointer"}`}
+          style={{ left: `${b.u * 100}%`, top: `${b.v * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%`, touchAction: "none" }}
+        >
+          {selected === b.id && HANDLES.map(([k, x, y, cur]) => (
+            <span
+              key={k}
+              onPointerDown={(e) => { e.stopPropagation(); grab(e, b, k); }}
+              className="absolute size-3 border border-red-500 bg-white"
+              style={{ left: `${x * 100}%`, top: `${y * 100}%`, transform: "translate(-50%, -50%)", cursor: cur, touchAction: "none" }}
+            />
+          ))}
+        </div>
       ))}
       {draft && <div className="pointer-events-none absolute bg-black/50 outline outline-1 outline-red-500" style={{ left: `${draft.u * 100}%`, top: `${draft.v * 100}%`, width: `${draft.w * 100}%`, height: `${draft.h * 100}%` }} />}
       <span className="pointer-events-none absolute -bottom-4 right-0 text-[10px] font-semibold text-stone-500">{index + 1}</span>
@@ -128,6 +171,7 @@ export default function Redact() {
     return () => window.removeEventListener("keydown", onKey);
   }, [selected]);
 
+  const change = (id: number, patch: Partial<Omit<Box, "id" | "page">>) => { setMade(null); setBoxes((l) => l.map((b) => (b.id === id ? { ...b, ...patch } : b))); };
   const add = (b: Omit<Box, "id">) => { setMade(null); setBoxes((l) => [...l, { ...b, id: ++uid }]); };
   async function search() {
     if (!src || term.trim().length < 2) return setFound("Type at least two characters.");
@@ -176,9 +220,9 @@ export default function Redact() {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
       <Card title="Mark what to hide" chip={<span className="text-[11px] font-semibold text-stone-600">{src.name} · {src.count} pages</span>}>
-        <p className="text-[11px] text-stone-500">Drag on a page to draw a box. Click a box and press Delete to remove it.</p>
+        <p className="text-[11px] text-stone-500">Drag on a page to draw a box. Drag a box to move it, pull its handles to resize it, and press Delete to remove it.</p>
         <div ref={area} className="max-h-[75vh] overflow-y-auto bg-stone-200 p-3">
-          {src.sizes.map((s, i) => <RedactPage key={i} doc={src.doc} index={i} size={s} width={width} boxes={boxes.filter((b) => b.page === i)} sel={selected} onAdd={add} onSelect={setSelected} />)}
+          {src.sizes.map((s, i) => <RedactPage key={i} doc={src.doc} index={i} size={s} width={width} boxes={boxes.filter((b) => b.page === i)} sel={selected} onAdd={add} onSelect={setSelected} onChange={change} />)}
         </div>
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
