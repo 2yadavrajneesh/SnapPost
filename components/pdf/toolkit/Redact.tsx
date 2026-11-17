@@ -13,9 +13,18 @@ const HANDLES: [string, number, number, string][] = [
   ["nw", 0, 0, "nwse-resize"], ["n", 0.5, 0, "ns-resize"], ["ne", 1, 0, "nesw-resize"], ["e", 1, 0.5, "ew-resize"],
   ["se", 1, 1, "nwse-resize"], ["s", 0.5, 1, "ns-resize"], ["sw", 0, 1, "nesw-resize"], ["w", 0, 0.5, "ew-resize"],
 ];
+const COLOURS: [string, string][] = [
+  ["#000000", "Black"], ["#ffffff", "White"], ["#6b7280", "Grey"], ["#dc2626", "Red"], ["#ea580c", "Orange"],
+  ["#fde047", "Yellow (highlighter)"], ["#86efac", "Green"], ["#67e8f9", "Cyan"], ["#93c5fd", "Blue"], ["#f9a8d4", "Pink"],
+];
+/** A dot colour that shows on top of a swatch. */
+const ink = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16);
+  return 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 150 ? "#111" : "#fff";
+};
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
 
-function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSelect, onChange }: { doc: PdfDocProxy; index: number; size: [number, number]; width: number; boxes: Box[]; sel: number | null; onAdd: (b: Omit<Box, "id">) => void; onSelect: (id: number | null) => void ; onChange: (id: number, patch: Partial<Omit<Box, "id" | "page">>) => void}) {
+function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSelect, onChange, fill }: { doc: PdfDocProxy; index: number; size: [number, number]; width: number; boxes: Box[]; sel: number | null; onAdd: (b: Omit<Box, "id">) => void; onSelect: (id: number | null) => void ; onChange: (id: number, patch: Partial<Omit<Box, "id" | "page">>) => void; fill: string}) {
   const wrap = useRef<HTMLDivElement>(null);
   const cv = useRef<HTMLCanvasElement>(null);
   const [near, setNear] = useState(index < 2);
@@ -100,8 +109,8 @@ function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSe
         <div
           key={b.id}
           onPointerDown={(e) => { e.stopPropagation(); onSelect(b.id); grab(e, b, "move"); }}
-          className={`absolute bg-black/80 ${selected === b.id ? "cursor-move outline outline-2 outline-red-500" : "cursor-pointer"}`}
-          style={{ left: `${b.u * 100}%`, top: `${b.v * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%`, touchAction: "none" }}
+          className={`absolute ${selected === b.id ? "cursor-move outline outline-2 outline-red-500" : "cursor-pointer"}`}
+          style={{ left: `${b.u * 100}%`, top: `${b.v * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%`, touchAction: "none", background: fill, opacity: 0.88 }}
         >
           {selected === b.id && HANDLES.map(([k, x, y, cur]) => (
             <span
@@ -119,38 +128,11 @@ function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSe
   );
 }
 
-/** Finds a word or phrase on every page and returns boxes over each hit. */
-async function findBoxes(src: Source, term: string): Promise<Omit<Box, "id">[]> {
-  const pdfjs = await import("pdfjs-dist");
-  const out: Omit<Box, "id">[] = [];
-  const needle = term.toLowerCase();
-  for (let p = 0; p < src.count; p++) {
-    const page = await src.doc.getPage(p + 1);
-    const vp = page.getViewport({ scale: 1 });
-    const tc = await page.getTextContent();
-    for (const it of tc.items) {
-      if (!("str" in it) || !it.str) continue;
-      const hay = it.str.toLowerCase();
-      const tx = pdfjs.Util.transform(vp.transform, it.transform);
-      const fh = Math.hypot(tx[2], tx[3]) || it.height;
-      const total = it.str.length;
-      for (let at = hay.indexOf(needle); at >= 0; at = hay.indexOf(needle, at + needle.length)) {
-        const x0 = tx[4] + (it.width * at) / total;
-        const w = (it.width * needle.length) / total;
-        out.push({ page: p, u: clamp((x0 - 1.5) / vp.width), v: clamp((tx[5] - fh * 0.86) / vp.height), w: Math.min(1, (w + 3) / vp.width), h: Math.min(1, (fh * 1.1) / vp.height) });
-      }
-    }
-  }
-  return out;
-}
-
 export default function Redact() {
   const toast = useToast();
   const { src, error: srcErr, loading, load, clear } = useSource("redact");
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
-  const [term, setTerm] = useState("");
-  const [found, setFound] = useState("");
   const [fill, setFill] = useState("#000000");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -173,19 +155,6 @@ export default function Redact() {
 
   const change = (id: number, patch: Partial<Omit<Box, "id" | "page">>) => { setMade(null); setBoxes((l) => l.map((b) => (b.id === id ? { ...b, ...patch } : b))); };
   const add = (b: Omit<Box, "id">) => { setMade(null); setBoxes((l) => [...l, { ...b, id: ++uid }]); };
-  async function search() {
-    if (!src || term.trim().length < 2) return setFound("Type at least two characters.");
-    setFound("Searching…");
-    try {
-      const hits = await findBoxes(src, term.trim());
-      setFound(hits.length ? `${hits.length} match${hits.length === 1 ? "" : "es"} marked. Check them, then create the file.` : "No match. Scanned pages have no searchable text. Draw boxes by hand instead.");
-      setMade(null);
-      setBoxes((l) => [...l, ...hits.map((h) => ({ ...h, id: ++uid }))]);
-    } catch {
-      setFound("Could not search this file.");
-    }
-  }
-
   async function run() {
     if (!src) return;
     setBusy(true);
@@ -222,19 +191,32 @@ export default function Redact() {
       <Card title="Mark what to hide" chip={<span className="text-[11px] font-semibold text-stone-600">{src.name} · {src.count} pages</span>}>
         <p className="text-[11px] text-stone-500">Drag on a page to draw a box. Drag a box to move it, pull its handles to resize it, and press Delete to remove it.</p>
         <div ref={area} className="max-h-[75vh] overflow-y-auto bg-stone-200 p-3">
-          {src.sizes.map((s, i) => <RedactPage key={i} doc={src.doc} index={i} size={s} width={width} boxes={boxes.filter((b) => b.page === i)} sel={selected} onAdd={add} onSelect={setSelected} onChange={change} />)}
+          {src.sizes.map((s, i) => <RedactPage key={i} doc={src.doc} index={i} size={s} width={width} boxes={boxes.filter((b) => b.page === i)} sel={selected} onAdd={add} onSelect={setSelected} onChange={change} fill={fill} />)}
         </div>
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
-        <Card title="Find and mark text">
-          <Field label="Word or phrase">
-            <div className="flex gap-2">
-              <input className={sel} value={term} onChange={(e) => setTerm(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void search()} placeholder="a name, number…" />
-              <button type="button" className={btnSm} onClick={() => void search()}>Mark all</button>
-            </div>
-          </Field>
-          {found && <p className="text-[11px] text-stone-600" aria-live="polite">{found}</p>}
-          <Field label="Cover colour"><NativeSelect className={sel} value={fill} onChange={(e) => setFill(e.target.value)}><option value="#000000">Black</option><option value="#ffffff">White</option><option value="#6b7280">Grey</option></NativeSelect></Field>
+        <Card title="Cover colour">
+          <div role="radiogroup" aria-label="Cover colour" className="grid grid-cols-5 gap-2">
+            {COLOURS.map(([hex, name]) => (
+              <button
+                key={hex}
+                type="button"
+                role="radio"
+                aria-checked={fill.toLowerCase() === hex}
+                aria-label={name}
+                title={name}
+                onClick={() => { setFill(hex); setMade(null); }}
+                className={`flex aspect-square items-center justify-center border transition ${fill.toLowerCase() === hex ? "border-stone-900 ring-2 ring-stone-900 ring-offset-1" : "border-stone-300 hover:border-stone-500"}`}
+                style={{ background: hex }}
+              >
+                {fill.toLowerCase() === hex && <span className="size-2 rounded-full" style={{ background: ink(hex) }} />}
+              </button>
+            ))}
+          </div>
+          <label className="flex items-center justify-between gap-3 text-xs font-semibold text-stone-700">
+            Custom colour
+            <input type="color" className="h-8 w-16 border border-stone-300 bg-white" value={fill} onChange={(e) => { setFill(e.target.value); setMade(null); }} />
+          </label>
           <div className="flex items-center justify-between text-xs font-semibold text-stone-700">
             <span>{boxes.length} area{boxes.length === 1 ? "" : "s"} marked</span>
             <button title="Clear all" aria-label="Clear all" type="button" className={btnIcon} disabled={!boxes.length} onClick={() => { const prev = boxes; setBoxes([]); setSelected(null); setMade(null); toast(`Cleared ${prev.length} ${prev.length === 1 ? "box" : "boxes"}.`, "ok", { label: "Undo", run: () => setBoxes(prev) }); }}><Ico n="trash" /></button>
