@@ -160,6 +160,8 @@ export type NumberOpts = {
   /** 0..8: top-left … bottom-right (row by row). */
   pos: number;
   facing: boolean;
+  /** Facing pages: page 1 is a cover that sits alone on the right-hand side, so pages 2 and 3 face each other. */
+  cover?: boolean;
   margin: number;
   first: number;
   from: number;
@@ -182,6 +184,13 @@ export const hexRgb = (hex: string): [number, number, number] => {
   const n = parseInt(m[1], 16);
   return [(n >> 16) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 };
+/** Column (0 left, 1 middle, 2 right) a page number takes. In facing mode the number sits on the outer edge: the chosen side is used on right-hand pages and mirrored on left-hand ones. */
+export function numberCol(o: Pick<NumberOpts, "pos" | "facing" | "cover">, pageNo: number) {
+  const col = o.pos % 3;
+  if (!o.facing || col === 1) return col;
+  const rightHand = o.cover ? pageNo % 2 === 1 : pageNo % 2 === 0;
+  return rightHand ? col : 2 - col;
+}
 export const numberLabel = (kind: NumberOpts["text"], n: number, total: number) => (kind === "n" ? `${n}` : kind === "page-n" ? `Page ${n}` : kind === "n-of-N" ? `${n} of ${total}` : `Page ${n} of ${total}`);
 
 /** The visible area of a page as the viewer shows it (turned pages swap width and height). */
@@ -215,9 +224,7 @@ export async function addPageNumbers(bytes: Bytes, o: NumberOpts): Promise<Bytes
     if (pageNo < from || pageNo > to) return;
     const label = numberLabel(o.text, o.first + (pageNo - from), o.first + (to - from));
     const { w, h } = viewSize(p);
-    let col = o.pos % 3;
-    // facing pages: the number sits on the outer edge, so even pages swap left and right
-    if (o.facing && pageNo % 2 === 0 && col !== 1) col = 2 - col;
+    const col = numberCol(o, pageNo);
     const row = Math.floor(o.pos / 3);
     const tw = f.widthOfTextAtSize(label, o.size);
     const vx = col === 0 ? o.margin : col === 1 ? (w - tw) / 2 : w - o.margin - tw;
