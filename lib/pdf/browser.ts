@@ -40,11 +40,13 @@ export function parseRange(text: string, count: number): number[] {
   return out;
 }
 
-export async function mergePdfs(files: { name: string; bytes: Bytes }[]): Promise<Bytes> {
+/** Joins the files in order. `pick` lists the 0-based pages to take from a file (all of them when left out). */
+export async function mergePdfs(files: { name: string; bytes: Bytes; pick?: number[] | null }[]): Promise<Bytes> {
   const out = await PDFDocument.create();
   for (const f of files) {
     const d = await loadDoc(f.bytes, `"${f.name}"`);
-    const pages = await out.copyPages(d, d.getPageIndices());
+    const idx = f.pick ? f.pick.filter((i) => i >= 0 && i < d.getPageCount()) : d.getPageIndices();
+    const pages = await out.copyPages(d, idx);
     pages.forEach((p) => out.addPage(p));
   }
   return out.save();
