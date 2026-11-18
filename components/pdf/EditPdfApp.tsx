@@ -101,7 +101,7 @@ export default function EditPdfApp() {
       {flow.origin && flow.origin.tab !== id && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-900">
           <span>This file came from <b>{toolLabel(flow.origin.tab)}</b>. Apply your change here, then go back to carry on with the updated file.</span>
-          <button type="button" onClick={() => returnToOrigin(null)} className="inline-flex h-8 items-center gap-1.5 border border-amber-400 bg-white px-3 font-bold text-amber-900 hover:bg-amber-100"><Undo2 size={14} />Return to {toolLabel(flow.origin.tab)}</button>
+          <button type="button" onClick={() => void returnToOrigin()} className="inline-flex h-8 items-center gap-1.5 border border-amber-400 bg-white px-3 font-bold text-amber-900 hover:bg-amber-100"><Undo2 size={14} />Return to {toolLabel(flow.origin.tab)}</button>
         </div>
       )}
       <View key={tab.id} />

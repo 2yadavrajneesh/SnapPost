@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 
 /** The PDF tools a file can be passed between. */
 export const TOOLS: { id: string; label: string }[] = [
@@ -39,10 +39,10 @@ export function takePending(to: string): FlowFile | null {
 }
 /** A tool has made a new version of the file: that is what "return" brings back. */
 export function publish(file: FlowFile) { set({ latest: file }); }
-export function returnToOrigin(current: FlowFile | null) {
+export async function returnToOrigin() {
   const o = state.origin;
   if (!o) return;
-  const f = state.latest ?? current ?? o.file;
+  const f = (await currentFile()) ?? state.latest ?? o.file;
   pending = { ...f, to: o.tab };
   set({ origin: null, latest: null });
   window.location.hash = o.tab;
@@ -51,3 +51,17 @@ export function clearOrigin() { if (state.origin) set({ origin: null }); }
 export function useFlow() {
   return useSyncExternalStore((cb) => { subs.add(cb); return () => { subs.delete(cb); }; }, () => state, () => state);
 }
+
+/** The open tool says how to get its current file, including changes it has not applied yet. */
+type Getter = () => Promise<FlowFile | null>;
+let getter: Getter | null = null;
+export function useCurrentFile(fn: Getter) {
+  const ref = useRef(fn);
+  ref.current = fn;
+  useEffect(() => {
+    const g: Getter = () => ref.current();
+    getter = g;
+    return () => { if (getter === g) getter = null; };
+  }, []);
+}
+export const currentFile = async () => (getter ? getter() : null);

@@ -5,6 +5,7 @@ import { Layers, ListChecks, Plus, Rows3, Scissors, X } from "lucide-react";
 import { Card, btnPlain } from "@/components/linkdesk/ui";
 import { SwitchRow } from "@/components/ui";
 import { parseRange, pickPages } from "@/lib/pdf/browser";
+import { useCurrentFile } from "@/lib/pdf/flow";
 import { Field, Finish, Open, Thumb, asZip, sel, stem, useSource, type Made, SendMenu } from "./shared";
 
 type Range = { id: number; from: number; to: number };
@@ -42,7 +43,7 @@ export default function Extract() {
 
   // what will be made: a list of named groups of 0-based pages
   const plan = useMemo(() => {
-    if (!src) return { groups: [] as { name: string; idx: number[] }[], one: false };
+  if (!src) return { groups: [] as { name: string; idx: number[] }[], one: false };
     const s = stem(src.name);
     if (tab === "range" && rmode === "custom") {
       const g = ranges.map((r) => ({ name: `${s}-pages-${r.from}-${r.to}.pdf`, idx: seq(r.from, r.to) }));
@@ -80,6 +81,7 @@ export default function Extract() {
     }
   }
 
+  useCurrentFile(async () => src ? { name: src.name, bytes: src.bytes } : null);
   if (!src) return <Open onFile={load} loading={loading} error={srcErr} title="Drop the PDF to extract pages from" />;
 
   const Tile = ({ on, icon, label, onClick }: { on: boolean; icon: ReactNode; label: string; onClick: () => void }) => (

@@ -5,6 +5,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Card, btnPlain } from "@/components/linkdesk/ui";
 import { SwitchRow } from "@/components/ui";
 import { addPageNumbers, numberCol, numberLabel, type NumberOpts } from "@/lib/pdf/browser";
+import { useCurrentFile } from "@/lib/pdf/flow";
 import { Field, Finish, Open, PosGrid, Thumb, sel, stem, useSource, type Made, SendMenu } from "./shared";
 
 const MARGINS = { small: 18, rec: 36, big: 60 } as const;
@@ -18,19 +19,23 @@ export default function Numbers() {
   useEffect(() => { if (src) setO((c) => ({ ...c, from: 1, to: src.count })); setMade(null); }, [src]);
   const set = <K extends keyof typeof o>(k: K, v: (typeof o)[K]) => { setMade(null); setO((c) => ({ ...c, [k]: v })); };
 
-  async function run() {
-    if (!src) return;
+  async function run(): Promise<Made | null> {
+  if (!src) return null;
     setBusy(true);
     setError("");
     try {
       const bytes = await addPageNumbers(src.bytes, { ...o, margin: MARGINS[o.margin] });
-      setMade({ name: `${stem(src.name)}-numbered.pdf`, bytes, type: "application/pdf", note: `Numbers added to pages ${o.from} to ${Math.min(o.to, src.count)}.` });
+      const m: Made = { name: `${stem(src.name)}-numbered.pdf`, bytes, type: "application/pdf", note: `Numbers added to pages ${o.from} to ${Math.min(o.to, src.count)}.` };
+      setMade(m);
+      return m;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
+      return null;
     } finally {
       setBusy(false);
     }
   }
+  useCurrentFile(async () => made ?? (src ? { name: src.name, bytes: src.bytes } : null));
   if (!src) return <Open onFile={load} loading={loading} error={srcErr} title="Drop the PDF to number" />;
 
   // preview: page 1 (single) or a two-page spread (facing) and where the number lands on each page

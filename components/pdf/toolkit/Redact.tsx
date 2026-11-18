@@ -6,6 +6,7 @@ import { Ico } from "@/components/Icons";
 import { Slider } from "@/components/ui";
 import { Card, btnPlain, btnSm, btnIcon, useToast } from "@/components/linkdesk/ui";
 import { assembleRedacted } from "@/lib/pdf/browser";
+import { useCurrentFile } from "@/lib/pdf/flow";
 import { Field, Finish, Open, sel, stem, useSource, type Made, type PdfDocProxy, type Source, SendMenu } from "./shared";
 
 type Box = { id: number; page: number; u: number; v: number; w: number; h: number; fill: string; strength: number };
@@ -162,8 +163,8 @@ export default function Redact() {
   useEffect(() => { if (chosen) { setFill(chosen.fill); setStrength(chosen.strength); } }, [selected]); // eslint-disable-line react-hooks/exhaustive-deps
   const pickFill = (hex: string) => { setFill(hex); setMade(null); if (selected != null) change(selected, { fill: hex }); };
   const pickStrength = (v: number) => { setStrength(v); setMade(null); if (selected != null) change(selected, { strength: v }); };
-  async function run() {
-    if (!src) return;
+  async function run(): Promise<Made | null> {
+  if (!src) return null;
     setBusy(true);
     setError("");
     try {
@@ -184,13 +185,17 @@ export default function Redact() {
         flat.set(p, { jpg: new Uint8Array(await blob.arrayBuffer()), w: v1.width, h: v1.height });
       }
       const bytes = await assembleRedacted(src.bytes, flat);
-      setMade({ name: `${stem(src.name)}-redacted.pdf`, bytes, type: "application/pdf", note: `${boxes.length} area${boxes.length === 1 ? "" : "s"} redacted on ${pages.length} page${pages.length === 1 ? "" : "s"}. Those pages are now pictures, so the hidden text cannot be copied or recovered.` });
+      const m: Made = { name: `${stem(src.name)}-redacted.pdf`, bytes, type: "application/pdf", note: `${boxes.length} area${boxes.length === 1 ? "" : "s"} redacted on ${pages.length} page${pages.length === 1 ? "" : "s"}. Those pages are now pictures, so the hidden text cannot be copied or recovered.` };
+      setMade(m);
+      return m;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
+      return null;
     } finally {
       setBusy(false);
     }
   }
+  useCurrentFile(async () => made ?? (src && boxes.length ? await run() : src ? { name: src.name, bytes: src.bytes } : null));
   if (!src) return <Open onFile={load} loading={loading} error={srcErr} title="Drop the PDF to redact" />;
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">

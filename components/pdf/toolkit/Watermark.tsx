@@ -5,6 +5,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { SwitchRow } from "@/components/ui";
 import { Card, btnPlain } from "@/components/linkdesk/ui";
 import { addWatermark, textMark } from "@/lib/pdf/browser";
+import { useCurrentFile } from "@/lib/pdf/flow";
 import { Field, Finish, Open, PosGrid, Seg, Thumb, sel, stem, useSource, type Made, SendMenu } from "./shared";
 
 const FONTS = ["Arial", "Times New Roman", "Courier New", "Georgia", "Verdana", "Noto Sans Devanagari"];
@@ -59,8 +60,8 @@ export default function Watermark() {
     return () => { dead = true; };
   }, [kind, text, font, size, bold, italic, underline, color, pic]);
 
-  async function run() {
-    if (!src) return;
+  async function run(): Promise<Made | null> {
+  if (!src) return null;
     setBusy(true);
     setError("");
     try {
@@ -75,15 +76,19 @@ export default function Watermark() {
         fit = picSize / 100;
       }
       const bytes = await addWatermark(src.bytes, { image: mark.png, png: true, w: mark.w, h: mark.h, pos, mosaic, opacity, rotation, from, to, below, fit });
-      setMade({ name: `${stem(src.name)}-watermarked.pdf`, bytes, type: "application/pdf", note: `Watermark added to pages ${from} to ${Math.min(to, src.count)}.` });
+      const m: Made = { name: `${stem(src.name)}-watermarked.pdf`, bytes, type: "application/pdf", note: `Watermark added to pages ${from} to ${Math.min(to, src.count)}.` };
+      setMade(m);
+      return m;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
+      return null;
     } finally {
       setBusy(false);
     }
   }
   const touch = <T,>(fn: (v: T) => void) => (v: T) => { setMade(null); fn(v); };
 
+  useCurrentFile(async () => made ?? (src ? { name: src.name, bytes: src.bytes } : null));
   if (!src) return <Open onFile={load} loading={loading} error={srcErr} title="Drop the PDF to watermark" />;
 
   const W = 210;

@@ -5,7 +5,7 @@ import { Ico } from "@/components/Icons";
 import { Card, DropZone, btnPlain, btnPrimary, field } from "@/components/linkdesk/ui";
 import { zipFiles } from "@/lib/pdf/browser";
 import { sDel, sGet, sSet } from "@/lib/session";
-import { TOOLS, publish, sendTo, takePending } from "@/lib/pdf/flow";
+import { TOOLS, currentFile, publish, sendTo, takePending } from "@/lib/pdf/flow";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export type PdfDocProxy = import("pdfjs-dist").PDFDocumentProxy;
@@ -27,6 +27,7 @@ export function useSource(key?: string) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const cur = useRef<Source | null>(null);
+  const gotPassed = useRef(false);
   const load = useCallback(async (f: File) => {
     setError("");
     if (!/\.pdf$/i.test(f.name) && f.type !== "application/pdf") return setError("That is not a PDF file.");
@@ -65,11 +66,13 @@ export function useSource(key?: string) {
     // a file passed on from another tool takes the place of the saved one
     const passed = takePending(key);
     if (passed) {
+      gotPassed.current = true;
       void load(new File([passed.bytes as BlobPart], passed.name, { type: "application/pdf" }));
       return;
     }
+    if (gotPassed.current) return; // the effect runs twice in development; the passed file already won
     sGet<{ name: string; bytes: Uint8Array }>(`editpdf:tool:${key}`).then((v) => {
-      if (v && !dead) void load(new File([v.bytes as BlobPart], v.name, { type: "application/pdf" }));
+      if (v && !dead && !gotPassed.current) void load(new File([v.bytes as BlobPart], v.name, { type: "application/pdf" }));
     });
     return () => {
       dead = true;
@@ -219,7 +222,7 @@ export function SendMenu({ from, file, label = "Use in another tool" }: { from: 
       <DropdownMenuContent align="end" className="min-w-52">
         <DropdownMenuLabel className="text-[11px] font-normal text-stone-500">Opens this file there. Apply your changes first to keep them.</DropdownMenuLabel>
         {TOOLS.filter((t) => t.id !== from).map((t) => (
-          <DropdownMenuItem key={t.id} onSelect={() => file && sendTo(from, t.id, file)}>{t.label}</DropdownMenuItem>
+          <DropdownMenuItem key={t.id} onSelect={async () => { const f = (await currentFile()) ?? file; if (f) sendTo(from, t.id, f); }}>{t.label}</DropdownMenuItem>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>

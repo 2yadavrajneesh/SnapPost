@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, btnPlain, btnSm } from "@/components/linkdesk/ui";
 import { parseRange, pickPages, splitPdf, type SplitMode } from "@/lib/pdf/browser";
+import { useCurrentFile } from "@/lib/pdf/flow";
 import { Field, Finish, Open, Seg, Thumb, asZip, sel, stem, useSource, type Made, SendMenu } from "./shared";
 
 type Mode = SplitMode | "pick";
@@ -19,7 +20,7 @@ export default function Split() {
   useEffect(() => { setPicked(new Set()); setMade(null); setSpec(""); }, [src]);
 
   const preview = (() => {
-    if (!src) return "";
+  if (!src) return "";
     try {
       if (mode === "each") return `${src.count} files, one page each.`;
       if (mode === "every") return `${Math.ceil(src.count / Math.max(1, every))} files.`;
@@ -52,6 +53,7 @@ export default function Split() {
     }
   }
 
+  useCurrentFile(async () => src ? { name: src.name, bytes: src.bytes } : null);
   if (!src) return <Open onFile={load} loading={loading} error={srcErr} title="Drop the PDF to split" />;
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">

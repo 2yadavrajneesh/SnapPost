@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Copy, FilePlus2, RotateCcw, RotateCw, Trash2, Undo2 } from "lucide-react";
 import { Card, btnPlain, btnSm } from "@/components/linkdesk/ui";
 import { organizePdf, rotatePdf } from "@/lib/pdf/browser";
+import { useCurrentFile } from "@/lib/pdf/flow";
 import { Finish, Open, SendMenu, Thumb, stem, useSource, type Made } from "./shared";
 
 type P = { id: number; src: number; rot: number };
@@ -51,8 +52,8 @@ export default function Organize({ mode }: { mode: "organize" | "rotate" }) {
     });
   };
 
-  async function run() {
-    if (!src) return;
+  async function run(): Promise<Made | null> {
+  if (!src) return null;
     setBusy(true);
     setError("");
     try {
@@ -60,14 +61,18 @@ export default function Organize({ mode }: { mode: "organize" | "rotate" }) {
         mode === "rotate"
           ? await rotatePdf(src.bytes, Object.fromEntries(pages.map((p) => [p.src, p.rot])))
           : await organizePdf(src.bytes, pages.map((p) => ({ src: p.src, rot: p.rot })));
-      setMade({ name: `${stem(src.name)}-${mode === "rotate" ? "rotated" : "organized"}.pdf`, bytes, type: "application/pdf", note: `${pages.length} page${pages.length === 1 ? "" : "s"}.` });
+      const m: Made = { name: `${stem(src.name)}-${mode === "rotate" ? "rotated" : "organized"}.pdf`, bytes, type: "application/pdf", note: `${pages.length} page${pages.length === 1 ? "" : "s"}.` };
+      setMade(m);
+      return m;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
+      return null;
     } finally {
       setBusy(false);
     }
   }
 
+  useCurrentFile(async () => made ?? (src && (mode === "rotate" ? pages.some((p) => p.rot) : pages.length !== src.count || pages.some((p, i) => p.src !== i || p.rot)) ? await run() : src ? { name: src.name, bytes: src.bytes } : null));
   if (!src) return <Open onFile={load} loading={loading} error={srcErr} title={mode === "rotate" ? "Drop the PDF to rotate" : "Drop the PDF to organize"} />;
   const changed = mode === "rotate" ? pages.some((p) => p.rot) : pages.length !== src.count || pages.some((p, i) => p.src !== i || p.rot);
   return (
