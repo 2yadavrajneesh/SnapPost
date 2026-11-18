@@ -113,6 +113,14 @@ export default function Merge() {
       return a;
     });
   };
+  /** Take pages from..to of a file (1-based); leave one end null to keep the current value. */
+  const setRange = (f: F, from: number | null, to: number | null) => {
+    const lo = f.pick?.length ? Math.min(...f.pick) + 1 : 1;
+    const hi = f.pick?.length ? Math.max(...f.pick) + 1 : f.pages;
+    const a = Math.max(1, Math.min(f.pages, Math.floor(from ?? lo) || 1));
+    const z = Math.max(a, Math.min(f.pages, Math.floor(to ?? hi) || f.pages));
+    setPick(f.id, a === 1 && z === f.pages ? null : Array.from({ length: z - a + 1 }, (_, k) => a - 1 + k));
+  };
   const setPick = (id: number, pick: number[] | null) => { setMade(null); setFiles((c) => c.map((f) => (f.id === id ? { ...f, pick } : f))); };
   const total = useMemo(() => files.reduce((n, f) => n + countOf(f), 0), [files]);
   async function run() {
@@ -171,6 +179,12 @@ export default function Merge() {
                 <button type="button" onClick={() => setPicking(f.id)} className="mt-0.5 text-[11px] text-stone-500 hover:text-stone-900 hover:underline">
                   {f.pick ? `${f.pick.length} of ${f.pages} pages` : `${f.pages} page${f.pages === 1 ? "" : "s"}`} · {fmtSize(f.bytes.length)}
                 </button>
+                <div className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-stone-600" onMouseDown={(e) => e.stopPropagation()}>
+                  From
+                  <input type="number" min={1} max={f.pages} inputMode="numeric" aria-label={`First page of ${f.name}`} className="h-7 w-12 min-w-0 border border-stone-300 bg-white px-1 text-xs" value={f.pick && f.pick.length ? Math.min(...f.pick) + 1 : 1} onChange={(e) => setRange(f, Number(e.target.value), null)} />
+                  to
+                  <input type="number" min={1} max={f.pages} inputMode="numeric" aria-label={`Last page of ${f.name}`} className="h-7 w-12 min-w-0 border border-stone-300 bg-white px-1 text-xs" value={f.pick && f.pick.length ? Math.max(...f.pick) + 1 : f.pages} onChange={(e) => setRange(f, null, Number(e.target.value))} />
+                </div>
               </div>
             </li>
           ))}
