@@ -8,7 +8,7 @@ import { Card, btnPlain, btnSm, btnIcon, useToast } from "@/components/linkdesk/
 import { assembleRedacted } from "@/lib/pdf/browser";
 import { Field, Finish, Open, sel, stem, useSource, type Made, type PdfDocProxy, type Source } from "./shared";
 
-type Box = { id: number; page: number; u: number; v: number; w: number; h: number };
+type Box = { id: number; page: number; u: number; v: number; w: number; h: number; fill: string; strength: number };
 let uid = 0;
 const HANDLES: [string, number, number, string][] = [
   ["nw", 0, 0, "nwse-resize"], ["n", 0.5, 0, "ns-resize"], ["ne", 1, 0, "nesw-resize"], ["e", 1, 0.5, "ew-resize"],
@@ -25,11 +25,11 @@ const ink = (hex: string) => {
 };
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
 
-function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSelect, onChange, fill, strength }: { doc: PdfDocProxy; index: number; size: [number, number]; width: number; boxes: Box[]; sel: number | null; onAdd: (b: Omit<Box, "id">) => void; onSelect: (id: number | null) => void ; onChange: (id: number, patch: Partial<Omit<Box, "id" | "page">>) => void; fill: string; strength: number}) {
+function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSelect, onChange }: { doc: PdfDocProxy; index: number; size: [number, number]; width: number; boxes: Box[]; sel: number | null; onAdd: (b: Omit<Box, "id" | "fill" | "strength">) => void; onSelect: (id: number | null) => void ; onChange: (id: number, patch: Partial<Omit<Box, "id" | "page">>) => void }) {
   const wrap = useRef<HTMLDivElement>(null);
   const cv = useRef<HTMLCanvasElement>(null);
   const [near, setNear] = useState(index < 2);
-  const [draft, setDraft] = useState<Omit<Box, "id" | "page"> | null>(null);
+  const [draft, setDraft] = useState<{ u: number; v: number; w: number; h: number } | null>(null);
   const height = (width * size[1]) / size[0];
   useEffect(() => {
     const el = wrap.current;
@@ -111,7 +111,7 @@ function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSe
           key={b.id}
           onPointerDown={(e) => { e.stopPropagation(); onSelect(b.id); grab(e, b, "move"); }}
           className={`absolute ${selected === b.id ? "cursor-move outline outline-2 outline-red-500" : "cursor-pointer"}`}
-          style={{ left: `${b.u * 100}%`, top: `${b.v * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%`, touchAction: "none", background: fill, opacity: strength / 100 }}
+          style={{ left: `${b.u * 100}%`, top: `${b.v * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%`, touchAction: "none", background: b.fill, opacity: b.strength / 100 }}
         >
           {selected === b.id && HANDLES.map(([k, x, y, cur]) => (
             <span
@@ -156,7 +156,12 @@ export default function Redact() {
   }, [selected]);
 
   const change = (id: number, patch: Partial<Omit<Box, "id" | "page">>) => { setMade(null); setBoxes((l) => l.map((b) => (b.id === id ? { ...b, ...patch } : b))); };
-  const add = (b: Omit<Box, "id">) => { setMade(null); setBoxes((l) => [...l, { ...b, id: ++uid }]); };
+  const add = (b: Omit<Box, "id" | "fill" | "strength">) => { setMade(null); const id = ++uid; setBoxes((l) => [...l, { ...b, id, fill, strength }]); setSelected(id); };
+  const chosen = boxes.find((b) => b.id === selected) ?? null;
+  // picking a box shows its own colour and intensity in the panel
+  useEffect(() => { if (chosen) { setFill(chosen.fill); setStrength(chosen.strength); } }, [selected]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pickFill = (hex: string) => { setFill(hex); setMade(null); if (selected != null) change(selected, { fill: hex }); };
+  const pickStrength = (v: number) => { setStrength(v); setMade(null); if (selected != null) change(selected, { strength: v }); };
   async function run() {
     if (!src) return;
     setBusy(true);
@@ -174,9 +179,7 @@ export default function Redact() {
         c.height = Math.floor(vp.height);
         await page.render({ canvas: c, viewport: vp }).promise;
         const g = c.getContext("2d")!;
-        g.fillStyle = fill;
-        g.globalAlpha = strength / 100;
-        for (const b of boxes.filter((x) => x.page === p)) g.fillRect(b.u * c.width, b.v * c.height, b.w * c.width, b.h * c.height);
+        for (const b of boxes.filter((x) => x.page === p)) { g.fillStyle = b.fill; g.globalAlpha = b.strength / 100; g.fillRect(b.u * c.width, b.v * c.height, b.w * c.width, b.h * c.height); }
         const blob: Blob = await new Promise((r) => c.toBlob((x) => r(x!), "image/jpeg", 0.9));
         flat.set(p, { jpg: new Uint8Array(await blob.arrayBuffer()), w: v1.width, h: v1.height });
       }
@@ -194,11 +197,12 @@ export default function Redact() {
       <Card title="Mark what to hide" chip={<span className="text-[11px] font-semibold text-stone-600">{src.name} · {src.count} pages</span>}>
         <p className="text-[11px] text-stone-500">Drag on a page to draw a box. Drag a box to move it, pull its handles to resize it, and press Delete to remove it.</p>
         <div ref={area} className="max-h-[75vh] overflow-y-auto bg-stone-200 p-3">
-          {src.sizes.map((s, i) => <RedactPage key={i} doc={src.doc} index={i} size={s} width={width} boxes={boxes.filter((b) => b.page === i)} sel={selected} onAdd={add} onSelect={setSelected} onChange={change} fill={fill} strength={strength} />)}
+          {src.sizes.map((s, i) => <RedactPage key={i} doc={src.doc} index={i} size={s} width={width} boxes={boxes.filter((b) => b.page === i)} sel={selected} onAdd={add} onSelect={setSelected} onChange={change} />)}
         </div>
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
         <Card title="Cover colour">
+          <p className="text-[11px] text-stone-500">{chosen ? "Changing the box you selected. Click empty space to change the colour for new boxes." : "New boxes use this colour. Click a box to give it its own."}</p>
           <div role="radiogroup" aria-label="Cover colour" className="grid grid-cols-5 gap-2">
             {COLOURS.map(([hex, name]) => (
               <button
@@ -208,7 +212,7 @@ export default function Redact() {
                 aria-checked={fill.toLowerCase() === hex}
                 aria-label={name}
                 title={name}
-                onClick={() => { setFill(hex); setMade(null); }}
+                onClick={() => pickFill(hex)}
                 className={`flex aspect-square items-center justify-center border transition ${fill.toLowerCase() === hex ? "border-stone-900 ring-2 ring-stone-900 ring-offset-1" : "border-stone-300 hover:border-stone-500"}`}
                 style={{ background: hex }}
               >
@@ -218,10 +222,10 @@ export default function Redact() {
           </div>
           <label className="flex items-center justify-between gap-3 text-xs font-semibold text-stone-700">
             Custom colour
-            <input type="color" className="h-8 w-16 border border-stone-300 bg-white" value={fill} onChange={(e) => { setFill(e.target.value); setMade(null); }} />
+            <input type="color" className="h-8 w-16 border border-stone-300 bg-white" value={fill} onChange={(e) => pickFill(e.target.value)} />
           </label>
-          <Slider label="Intensity" value={strength} min={10} max={100} step={5} suffix="%" lowLabel="See-through" highLabel="Solid" onChange={(v) => { setStrength(v); setMade(null); }} />
-          {strength < 100 && <p className="text-[11px] text-amber-700">Below 100% the covered text can still be read through the colour. Use it as a highlighter, and keep 100% to truly hide something.</p>}
+          <Slider label="Intensity" value={strength} min={10} max={100} step={5} suffix="%" lowLabel="See-through" highLabel="Solid" onChange={pickStrength} />
+          {(chosen ? chosen.strength : strength) < 100 && <p className="text-[11px] text-amber-700">Below 100% the covered text can still be read through the colour. Use it as a highlighter, and keep 100% to truly hide something.</p>}
           <div className="flex items-center justify-between text-xs font-semibold text-stone-700">
             <span>{boxes.length} area{boxes.length === 1 ? "" : "s"} marked</span>
             <button title="Clear all" aria-label="Clear all" type="button" className={btnIcon} disabled={!boxes.length} onClick={() => { const prev = boxes; setBoxes([]); setSelected(null); setMade(null); toast(`Cleared ${prev.length} ${prev.length === 1 ? "box" : "boxes"}.`, "ok", { label: "Undo", run: () => setBoxes(prev) }); }}><Ico n="trash" /></button>
