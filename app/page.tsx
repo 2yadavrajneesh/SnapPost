@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Check, Lock, MonitorSmartphone, Timer } from "lucide-react";
-import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
+import { SITE_NAME } from "@/lib/site";
 import HomeHeader from "@/components/HomeHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,23 +26,7 @@ export default function Home() {
     <div className="min-h-screen">
       <HomeHeader />
       <main>
-        <section className="home-hero relative overflow-hidden border-b border-stone-300">
-          <div className="mx-auto max-w-6xl px-4 py-14 text-center sm:px-6 sm:py-20">
-            <p className="mx-auto inline-block border border-stone-300 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-stone-600">Free · Runs in your browser</p>
-            <h1 className="mx-auto mt-5 max-w-3xl text-balance text-4xl font-extrabold leading-[1.1] tracking-tight text-stone-900 sm:text-6xl">{SITE_TAGLINE}.</h1>
-            <p className="mx-auto mt-4 max-w-xl text-base text-stone-600 sm:text-lg">Six focused tools for researching posts, links and documents. Pick one and start in seconds. No sign-up.</p>
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-              <Button asChild size="lg" className="home-cta font-semibold">
-                <a href="#tools">Choose a tool <ArrowRight /></a>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="font-semibold">
-                <Link href="/snappost">Start with SnapPost</Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        <section id="tools" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-12 sm:px-6 sm:py-16">
+        <section id="tools" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-8 sm:px-6 sm:py-10">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-2">
             <div>
               <h2 className="text-2xl font-bold tracking-tight text-stone-900 sm:text-3xl">All tools</h2>
