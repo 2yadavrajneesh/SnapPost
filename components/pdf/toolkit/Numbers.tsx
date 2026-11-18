@@ -6,7 +6,7 @@ import { Card, btnPlain } from "@/components/linkdesk/ui";
 import { SwitchRow } from "@/components/ui";
 import { addPageNumbers, numberCol, numberLabel, type NumberOpts } from "@/lib/pdf/browser";
 import { useCurrentFile } from "@/lib/pdf/flow";
-import { Field, Finish, Open, PosGrid, Thumb, sel, stem, useSource, type Made, SendMenu } from "./shared";
+import { Field, Finish, Open, PosGrid, Thumb, sel, stem, useSource, type Made, ToolActions } from "./shared";
 
 const MARGINS = { small: 18, rec: 36, big: 60 } as const;
 
@@ -149,9 +149,7 @@ export default function Numbers() {
             )}
           </div>
         </Card>
-        <Finish from="numbers" ready busy={busy} label="Add page numbers" onRun={run} made={made} onReset={() => setMade(null)} error={error} />
-        <SendMenu from="numbers" file={src ? { name: src.name, bytes: src.bytes } : null} />
-        <button type="button" className={`${btnPlain} w-full`} onClick={clear}>Start with another PDF</button>
+        <Finish from="numbers" extra={<ToolActions from="numbers" file={src ? { name: src.name, bytes: src.bytes } : null} onClear={clear} />} ready busy={busy} label="Add page numbers" onRun={run} made={made} onReset={() => setMade(null)} error={error} />
       </aside>
     </div>
   );

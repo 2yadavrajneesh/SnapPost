@@ -8,7 +8,7 @@ import { Card, btnPlain, btnSm, btnIcon, useToast } from "@/components/linkdesk/
 import { loadDoc, mergePdfs } from "@/lib/pdf/browser";
 import { sDel, sGet, sSet } from "@/lib/session";
 import { takePending } from "@/lib/pdf/flow";
-import { Finish, MAX_BYTES, Thumb, fmtSize, openPdfjs, type Made, type PdfDocProxy } from "./shared";
+import { Finish, ToolActions, MAX_BYTES, Thumb, fmtSize, openPdfjs, type Made, type PdfDocProxy } from "./shared";
 
 /** pick: the 0-based pages to take from this file, or null for all of them. */
 type F = { id: number; name: string; bytes: Uint8Array; pages: number; pick?: number[] | null };
@@ -205,7 +205,7 @@ export default function Merge() {
         {files.length > 1 && <p className="text-[11px] text-stone-500">Drag the cards to change the order. Use the checklist button on a card to take only some of its pages.</p>}
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
-        <Finish from="merge" ready={files.length >= 1 && total > 0 && files.every((f) => countOf(f) > 0) && (files.length >= 2 || files.some((f) => f.pick))} busy={busy} label="Merge PDFs" onRun={run} made={made} onReset={() => setMade(null)} error={error} hint={files.length < 2 && !files.some((f) => f.pick) ? "Add at least two PDFs, or one PDF and choose some of its pages." : undefined} />
+        <Finish from="merge" extra={made ? <ToolActions from="merge" file={{ name: made.name, bytes: made.bytes }} onClear={() => { setFiles([]); setMade(null); }} /> : undefined} ready={files.length >= 1 && total > 0 && files.every((f) => countOf(f) > 0) && (files.length >= 2 || files.some((f) => f.pick))} busy={busy} label="Merge PDFs" onRun={run} made={made} onReset={() => setMade(null)} error={error} hint={files.length < 2 && !files.some((f) => f.pick) ? "Add at least two PDFs, or one PDF and choose some of its pages." : undefined} />
         {files.length > 0 && <button type="button" className={`${btnPlain} w-full`} onClick={() => input.current?.click()}>Add more files</button>}
       </aside>
       <PagePicker file={files.find((f) => f.id === picking) ?? null} doc={picking != null ? docs[picking] : undefined} onClose={() => setPicking(null)} onChange={(pick) => picking != null && setPick(picking, pick)} />

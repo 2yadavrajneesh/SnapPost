@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui";
 import { Card, btnPlain, btnSm, btnIcon, useToast } from "@/components/linkdesk/ui";
 import { assembleRedacted } from "@/lib/pdf/browser";
 import { useCurrentFile } from "@/lib/pdf/flow";
-import { Field, Finish, Open, sel, stem, useSource, type Made, type PdfDocProxy, type Source, SendMenu } from "./shared";
+import { Field, Finish, Open, sel, stem, useSource, type Made, type PdfDocProxy, type Source, ToolActions } from "./shared";
 
 type Box = { id: number; page: number; u: number; v: number; w: number; h: number; fill: string; strength: number };
 let uid = 0;
@@ -236,9 +236,7 @@ export default function Redact() {
             <button title="Clear all" aria-label="Clear all" type="button" className={btnIcon} disabled={!boxes.length} onClick={() => { const prev = boxes; setBoxes([]); setSelected(null); setMade(null); toast(`Cleared ${prev.length} ${prev.length === 1 ? "box" : "boxes"}.`, "ok", { label: "Undo", run: () => setBoxes(prev) }); }}><Ico n="trash" /></button>
           </div>
         </Card>
-        <Finish from="redact" ready={boxes.length > 0} busy={busy} label="Apply redaction" onRun={run} made={made} onReset={() => setMade(null)} error={error} hint="Pages with boxes become pictures, so the covered text is truly removed. Other pages stay unchanged." />
-        <SendMenu from="redact" file={src ? { name: src.name, bytes: src.bytes } : null} />
-        <button type="button" className={`${btnPlain} w-full`} onClick={clear}>Start with another PDF</button>
+        <Finish from="redact" extra={<ToolActions from="redact" file={src ? { name: src.name, bytes: src.bytes } : null} onClear={clear} />} ready={boxes.length > 0} busy={busy} label="Apply redaction" onRun={run} made={made} onReset={() => setMade(null)} error={error} hint="Pages with boxes become pictures, so the covered text is truly removed. Other pages stay unchanged." />
       </aside>
     </div>
   );

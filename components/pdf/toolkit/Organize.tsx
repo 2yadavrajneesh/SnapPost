@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight, Copy, FilePlus2, RotateCcw, RotateCw, Trash2, Un
 import { Card, btnPlain, btnSm } from "@/components/linkdesk/ui";
 import { organizePdf, rotatePdf } from "@/lib/pdf/browser";
 import { useCurrentFile } from "@/lib/pdf/flow";
-import { Finish, Open, SendMenu, Thumb, stem, useSource, type Made } from "./shared";
+import { Finish, Open, ToolActions, Thumb, stem, useSource, type Made } from "./shared";
 
 type P = { id: number; src: number; rot: number };
 let uid = 0;
@@ -134,9 +134,7 @@ export default function Organize({ mode }: { mode: "organize" | "rotate" }) {
         {!pages.length && <p className="text-xs text-stone-500">No pages left. Press Reset to bring them back.</p>}
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
-        <Finish from={mode} ready={pages.length > 0 && changed} busy={busy} label={mode === "rotate" ? "Rotate PDF" : "Save organized PDF"} onRun={run} made={made} onReset={() => setMade(null)} error={error} hint={!changed ? "Make a change first." : undefined} />
-        <SendMenu from={mode} file={src ? { name: src.name, bytes: src.bytes } : null} />
-        <button type="button" className={`${btnPlain} w-full`} onClick={clear}>Start with another PDF</button>
+        <Finish from={mode} extra={<ToolActions from={mode} file={src ? { name: src.name, bytes: src.bytes } : null} onClear={clear} />} ready={pages.length > 0 && changed} busy={busy} label={mode === "rotate" ? "Rotate PDF" : "Save organized PDF"} onRun={run} made={made} onReset={() => setMade(null)} error={error} hint={!changed ? "Make a change first." : undefined} />
       </aside>
     </div>
   );

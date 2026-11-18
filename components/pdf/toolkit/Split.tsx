@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, btnPlain, btnSm } from "@/components/linkdesk/ui";
 import { parseRange, pickPages, splitPdf, type SplitMode } from "@/lib/pdf/browser";
 import { useCurrentFile } from "@/lib/pdf/flow";
-import { Field, Finish, Open, Seg, Thumb, asZip, sel, stem, useSource, type Made, SendMenu } from "./shared";
+import { Field, Finish, Open, Seg, Thumb, asZip, sel, stem, useSource, type Made, ToolActions } from "./shared";
 
 type Mode = SplitMode | "pick";
 
@@ -91,9 +91,7 @@ export default function Split() {
         {preview && <p className="bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-800">{preview}</p>}
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
-        <Finish from="split" ready busy={busy} label={mode === "pick" ? "Extract pages" : "Split PDF"} onRun={run} made={made} onReset={() => setMade(null)} error={error} hint="More than one file is delivered as a ZIP." />
-        <SendMenu from="split" file={src ? { name: src.name, bytes: src.bytes } : null} />
-        <button type="button" className={`${btnPlain} w-full`} onClick={clear}>Start with another PDF</button>
+        <Finish from="split" extra={<ToolActions from="split" file={src ? { name: src.name, bytes: src.bytes } : null} onClear={clear} />} ready busy={busy} label={mode === "pick" ? "Extract pages" : "Split PDF"} onRun={run} made={made} onReset={() => setMade(null)} error={error} hint="More than one file is delivered as a ZIP." />
       </aside>
     </div>
   );

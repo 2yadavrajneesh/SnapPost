@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { ArrowRightLeft, FilePlus2 } from "lucide-react";
 import { Ico } from "@/components/Icons";
 import { Card, DropZone, btnPlain, btnPrimary, field } from "@/components/linkdesk/ui";
 import { zipFiles } from "@/lib/pdf/browser";
@@ -158,7 +159,7 @@ export const asZip = (base: string, parts: { name: string; bytes: Uint8Array }[]
 export const stem = (n: string) => n.replace(/\.[^.]+$/, "") || "file";
 
 /** The result box: a button to run, then the finished file to download. */
-export function Finish({ ready, busy, label, onRun, made, onReset, error, hint, from }: { from?: string;  ready: boolean; busy: boolean; label: string; onRun: () => void; made: Made | null; onReset: () => void; error: string; hint?: ReactNode }) {
+export function Finish({ ready, busy, label, onRun, made, onReset, error, hint, extra }: { extra?: ReactNode; from?: string;  ready: boolean; busy: boolean; label: string; onRun: () => void; made: Made | null; onReset: () => void; error: string; hint?: ReactNode }) {
   // the newest version is what "Return to <tool>" brings back
   useEffect(() => { if (made && made.type === "application/pdf") publish({ name: made.name, bytes: made.bytes }); }, [made]);
   return (
@@ -176,9 +177,9 @@ export function Finish({ ready, busy, label, onRun, made, onReset, error, hint, 
           <p className="bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-800">{made.note} {fmtSize(made.bytes.length)}.</p>
           <button type="button" className={`${btnPrimary} w-full`} onClick={() => save(made.name, made.bytes, made.type)}><Ico n="download" />Download</button>
           <button type="button" className={`${btnPlain} w-full`} onClick={onReset}>Change something and redo</button>
-          {from && made.type === "application/pdf" && <SendMenu from={from} file={{ name: made.name, bytes: made.bytes }} label="Continue in another tool" />}
         </div>
       )}
+      {extra}
     </Card>
   );
 }
@@ -213,11 +214,11 @@ export function Seg<T extends string | number>({ value, options, onChange }: { v
 }
 
 /** Pass the open file to another EditPDF tool. Come back from there with the banner at the top. */
-export function SendMenu({ from, file, label = "Use in another tool" }: { from: string; file: { name: string; bytes: Uint8Array } | null; label?: string }) {
+export function SendMenu({ from, file, label = "Send to tool" }: { from: string; file: { name: string; bytes: Uint8Array } | null; label?: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button type="button" disabled={!file} className={`${btnPlain} w-full`}>{label} ▾</button>
+        <button type="button" disabled={!file} className={`${btnPlain} flex w-full items-center justify-center gap-2`}><ArrowRightLeft size={15} />{label}</button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">
         <DropdownMenuLabel className="text-[11px] font-normal text-stone-500">Opens this file there. Apply your changes first to keep them.</DropdownMenuLabel>
@@ -226,5 +227,15 @@ export function SendMenu({ from, file, label = "Use in another tool" }: { from: 
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/** The two actions under "Create the file": pass the PDF to another tool, or start over with a new one. */
+export function ToolActions({ from, file, onClear }: { from: string; file: { name: string; bytes: Uint8Array } | null; onClear: () => void }) {
+  return (
+    <div className="grid grid-cols-2 gap-2 border-t border-stone-200 pt-3">
+      <SendMenu from={from} file={file} />
+      <button type="button" className={`${btnPlain} flex w-full items-center justify-center gap-2`} onClick={onClear}><FilePlus2 size={15} />New PDF</button>
+    </div>
   );
 }

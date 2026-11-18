@@ -6,7 +6,7 @@ import { SwitchRow } from "@/components/ui";
 import { Card, btnPlain } from "@/components/linkdesk/ui";
 import { addWatermark, textMark } from "@/lib/pdf/browser";
 import { useCurrentFile } from "@/lib/pdf/flow";
-import { Field, Finish, Open, PosGrid, Seg, Thumb, sel, stem, useSource, type Made, SendMenu } from "./shared";
+import { Field, Finish, Open, PosGrid, Seg, Thumb, sel, stem, useSource, type Made, ToolActions } from "./shared";
 
 const FONTS = ["Arial", "Times New Roman", "Courier New", "Georgia", "Verdana", "Noto Sans Devanagari"];
 
@@ -165,9 +165,7 @@ export default function Watermark() {
             </div>
           </div>
         </Card>
-        <Finish from="watermark" ready busy={busy} label="Add watermark" onRun={run} made={made} onReset={() => setMade(null)} error={error} />
-        <SendMenu from="watermark" file={src ? { name: src.name, bytes: src.bytes } : null} />
-        <button type="button" className={`${btnPlain} w-full`} onClick={clear}>Start with another PDF</button>
+        <Finish from="watermark" extra={<ToolActions from="watermark" file={src ? { name: src.name, bytes: src.bytes } : null} onClear={clear} />} ready busy={busy} label="Add watermark" onRun={run} made={made} onReset={() => setMade(null)} error={error} />
       </aside>
     </div>
   );

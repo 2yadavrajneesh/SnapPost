@@ -6,7 +6,7 @@ import { Card, btnPlain } from "@/components/linkdesk/ui";
 import { SwitchRow } from "@/components/ui";
 import { parseRange, pickPages } from "@/lib/pdf/browser";
 import { useCurrentFile } from "@/lib/pdf/flow";
-import { Field, Finish, Open, Thumb, asZip, sel, stem, useSource, type Made, SendMenu } from "./shared";
+import { Field, Finish, Open, Thumb, asZip, sel, stem, useSource, type Made, ToolActions } from "./shared";
 
 type Range = { id: number; from: number; to: number };
 let uid = 0;
@@ -184,9 +184,7 @@ export default function Extract() {
         {summary && <p className="flex items-center gap-2 bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-800"><ListChecks size={15} /> {summary}</p>}
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
-        <Finish from="extract" ready={files > 0} busy={busy} label="Extract pages" onRun={run} made={made} onReset={() => setMade(null)} error={error} hint="More than one file is delivered as a ZIP." />
-        <SendMenu from="extract" file={src ? { name: src.name, bytes: src.bytes } : null} />
-        <button type="button" className={`${btnPlain} w-full`} onClick={clear}>Start with another PDF</button>
+        <Finish from="extract" extra={<ToolActions from="extract" file={src ? { name: src.name, bytes: src.bytes } : null} onClear={clear} />} ready={files > 0} busy={busy} label="Extract pages" onRun={run} made={made} onReset={() => setMade(null)} error={error} hint="More than one file is delivered as a ZIP." />
       </aside>
     </div>
   );
