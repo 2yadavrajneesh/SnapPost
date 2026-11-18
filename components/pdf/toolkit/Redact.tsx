@@ -26,7 +26,7 @@ const ink = (hex: string) => {
 };
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
 
-function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSelect, onChange }: { doc: PdfDocProxy; index: number; size: [number, number]; width: number; boxes: Box[]; sel: number | null; onAdd: (b: Omit<Box, "id" | "fill" | "strength">) => void; onSelect: (id: number | null) => void ; onChange: (id: number, patch: Partial<Omit<Box, "id" | "page">>) => void }) {
+function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSelect, onChange, onDelete }: { doc: PdfDocProxy; index: number; size: [number, number]; width: number; boxes: Box[]; sel: number | null; onAdd: (b: Omit<Box, "id" | "fill" | "strength">) => void; onSelect: (id: number | null) => void ; onChange: (id: number, patch: Partial<Omit<Box, "id" | "page">>) => void; onDelete: (id: number) => void }) {
   const wrap = useRef<HTMLDivElement>(null);
   const cv = useRef<HTMLCanvasElement>(null);
   const [near, setNear] = useState(index < 2);
@@ -114,6 +114,9 @@ function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSe
           className={`absolute ${selected === b.id ? "cursor-move outline outline-2 outline-red-500" : "cursor-pointer"}`}
           style={{ left: `${b.u * 100}%`, top: `${b.v * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%`, touchAction: "none", background: b.fill, opacity: b.strength / 100 }}
         >
+          {selected === b.id && (
+            <button type="button" title="Delete this box" aria-label="Delete this box" onPointerDown={(e) => { e.stopPropagation(); onDelete(b.id); }} className="absolute -right-3 -top-3 z-10 flex size-6 items-center justify-center rounded-full bg-red-600 text-sm font-bold leading-none text-white shadow">×</button>
+          )}
           {selected === b.id && HANDLES.map(([k, x, y, cur]) => (
             <span
               key={k}
@@ -135,7 +138,7 @@ export default function Redact() {
   const { src, error: srcErr, loading, load, clear } = useSource("redact");
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
-  const [fill, setFill] = useState("#000000");
+  const [fill, setFill] = useState("#fde047");
   const [strength, setStrength] = useState(35); // cover intensity, per cent
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -158,6 +161,7 @@ export default function Redact() {
 
   const change = (id: number, patch: Partial<Omit<Box, "id" | "page">>) => { setMade(null); setBoxes((l) => l.map((b) => (b.id === id ? { ...b, ...patch } : b))); };
   const add = (b: Omit<Box, "id" | "fill" | "strength">) => { setMade(null); const id = ++uid; setBoxes((l) => [...l, { ...b, id, fill, strength }]); setSelected(id); };
+  const del = (id: number) => { setMade(null); setBoxes((l) => l.filter((b) => b.id !== id)); setSelected(null); };
   const chosen = boxes.find((b) => b.id === selected) ?? null;
   // picking a box shows its own colour and intensity in the panel
   useEffect(() => { if (chosen) { setFill(chosen.fill); setStrength(chosen.strength); } }, [selected]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -202,7 +206,7 @@ export default function Redact() {
       <Card title="Mark what to hide" chip={<span className="text-[11px] font-semibold text-stone-600">{src.name} · {src.count} pages</span>}>
         <p className="text-[11px] text-stone-500">Drag on a page to draw a box. Drag a box to move it, pull its handles to resize it, and press Delete to remove it.</p>
         <div ref={area} className="overflow-y-auto overflow-x-hidden bg-stone-200 p-3" style={{ maxHeight: Math.ceil((width * src.sizes[0][1]) / src.sizes[0][0]) + 40 }}>
-          {src.sizes.map((s, i) => <RedactPage key={i} doc={src.doc} index={i} size={s} width={width} boxes={boxes.filter((b) => b.page === i)} sel={selected} onAdd={add} onSelect={setSelected} onChange={change} />)}
+          {src.sizes.map((s, i) => <RedactPage key={i} doc={src.doc} index={i} size={s} width={width} boxes={boxes.filter((b) => b.page === i)} sel={selected} onAdd={add} onSelect={setSelected} onChange={change} onDelete={del} />)}
         </div>
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
@@ -231,6 +235,7 @@ export default function Redact() {
           </label>
           <Slider label="Intensity" value={strength} min={10} max={100} step={5} suffix="%" lowLabel="See-through" highLabel="Solid" onChange={pickStrength} />
           {(chosen ? chosen.strength : strength) < 100 && <p className="text-[11px] text-amber-700">Below 100% the covered text can still be read through the colour. Use it as a highlighter, and keep 100% to truly hide something.</p>}
+          {chosen && <button type="button" className={`${btnPlain} flex w-full items-center justify-center gap-2`} onClick={() => del(chosen.id)}><Ico n="trash" />Delete selected box</button>}
           <div className="flex items-center justify-between text-xs font-semibold text-stone-700">
             <span>{boxes.length} area{boxes.length === 1 ? "" : "s"} marked</span>
             <button title="Clear all" aria-label="Clear all" type="button" className={btnIcon} disabled={!boxes.length} onClick={() => { const prev = boxes; setBoxes([]); setSelected(null); setMade(null); toast(`Cleared ${prev.length} ${prev.length === 1 ? "box" : "boxes"}.`, "ok", { label: "Undo", run: () => setBoxes(prev) }); }}><Ico n="trash" /></button>
