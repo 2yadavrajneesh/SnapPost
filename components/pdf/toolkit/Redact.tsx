@@ -145,7 +145,7 @@ export default function Redact() {
   useEffect(() => {
     const el = area.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setWidth(Math.max(260, Math.min(760, el.clientWidth - 8))));
+    const ro = new ResizeObserver(() => setWidth(Math.max(180, Math.floor(el.clientWidth - 24 - 17))));
     ro.observe(el);
     return () => ro.disconnect();
   }, [src]);
@@ -196,7 +196,7 @@ export default function Redact() {
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
       <Card title="Mark what to hide" chip={<span className="text-[11px] font-semibold text-stone-600">{src.name} · {src.count} pages</span>}>
         <p className="text-[11px] text-stone-500">Drag on a page to draw a box. Drag a box to move it, pull its handles to resize it, and press Delete to remove it.</p>
-        <div ref={area} className="max-h-[75vh] overflow-y-auto bg-stone-200 p-3">
+        <div ref={area} className="max-h-[75vh] overflow-y-auto overflow-x-hidden bg-stone-200 p-3">
           {src.sizes.map((s, i) => <RedactPage key={i} doc={src.doc} index={i} size={s} width={width} boxes={boxes.filter((b) => b.page === i)} sel={selected} onAdd={add} onSelect={setSelected} onChange={change} />)}
         </div>
       </Card>
