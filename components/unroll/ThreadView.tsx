@@ -265,13 +265,15 @@ function usePages(posts: PostData[], size: PageSizeId, orientation: Orientation,
     const measure = () => {
       const next: Record<string, number> = {};
       el.querySelectorAll<HTMLElement>("[data-m]").forEach((n) => (next[n.dataset.m!] = n.offsetHeight));
+      // a measurer that is not laid out yet reports zero everywhere: keep the last good sizes instead of squeezing every post onto one page
+      if (Object.keys(next).length && Object.values(next).every((v) => v === 0)) return;
       setHs((prev) => (Object.keys(next).length === Object.keys(prev).length && Object.keys(next).every((k) => prev[k] === next[k]) ? prev : next));
     };
     measure();
     const ro = new ResizeObserver(measure);
     el.querySelectorAll("[data-m]").forEach((n) => ro.observe(n));
     return () => ro.disconnect();
-  }, [posts, boxW, o.stats, o.media, o.numbers, o.leftMarks, o.hl, o.redact.name, o.redact.avatar]);
+  }, [posts, boxW, o.stats, o.media, o.numbers, o.leftMarks, o.hl, o.redact.name, o.redact.avatar, o.mediaOnly]);
 
   const groups: Group[] = [];
   let cur: (Group & { used: number }) | null = null;
