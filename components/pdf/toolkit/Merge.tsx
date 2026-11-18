@@ -154,7 +154,7 @@ export default function Merge() {
             <button title="Remove all" aria-label="Remove all" type="button" className={btnIcon} onClick={() => { const prev = files; const prevMade = made; setFiles([]); setMade(null); toast(`Removed ${prev.length} ${prev.length === 1 ? "file" : "files"}.`, "ok", { label: "Undo", run: () => { setFiles(prev); setMade(prevMade); } }); }}><Ico n="trash" /></button>
           </div>
         )}
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+        {files.length > 0 && <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
           {files.map((f, i) => (
             <li
               key={f.id}
@@ -193,12 +193,12 @@ export default function Merge() {
               <Plus size={22} /> Add PDFs
             </button>
           </li>
-        </ul>
+        </ul>}
         {files.length > 1 && <p className="text-[11px] text-stone-500">Drag the cards to change the order. Use the checklist button on a card to take only some of its pages.</p>}
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
         <Finish ready={files.length >= 1 && total > 0 && files.every((f) => countOf(f) > 0) && (files.length >= 2 || files.some((f) => f.pick))} busy={busy} label="Merge PDFs" onRun={run} made={made} onReset={() => setMade(null)} error={error} hint={files.length < 2 && !files.some((f) => f.pick) ? "Add at least two PDFs, or one PDF and choose some of its pages." : undefined} />
-        <button type="button" className={`${btnPlain} w-full`} onClick={() => input.current?.click()}>Add more files</button>
+        {files.length > 0 && <button type="button" className={`${btnPlain} w-full`} onClick={() => input.current?.click()}>Add more files</button>}
       </aside>
       <PagePicker file={files.find((f) => f.id === picking) ?? null} doc={picking != null ? docs[picking] : undefined} onClose={() => setPicking(null)} onChange={(pick) => picking != null && setPick(picking, pick)} />
     </div>
