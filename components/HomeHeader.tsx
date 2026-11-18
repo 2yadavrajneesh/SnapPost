@@ -7,7 +7,7 @@ import Logo from "@/components/Logo";
 import { SITE_NAME } from "@/lib/site";
 import { useSiteTheme } from "@/lib/useSiteTheme";
 
-/** Top bar of the home page: brand, a jump link to the tools, and the theme switch. */
+/** Top bar of the home page: brand and the theme switch. */
 export default function HomeHeader() {
   const [theme, setTheme] = useSiteTheme();
   return (
@@ -18,9 +18,6 @@ export default function HomeHeader() {
           <span className="text-base font-bold leading-none">{SITE_NAME}</span>
         </Link>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline" className="hidden text-xs font-semibold sm:inline-flex">
-            <a href="#tools">Browse tools</a>
-          </Button>
           <Button
             variant="outline"
             size="icon"

@@ -25,7 +25,7 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       <HomeHeader />
-      <main>
+      <main className="home-stage">
         <section id="tools" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-8 sm:px-6 sm:py-10">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-2">
             <div>

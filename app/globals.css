@@ -594,10 +594,24 @@ button:not(:disabled):active { transform: scale(0.96); }
 }
 
 /* ---- home page ---- */
-.home-hero { background-image: radial-gradient(circle, rgba(27, 36, 32, 0.16) 1.4px, transparent 1.6px); background-size: 22px 22px; }
-.home-hero::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 40%, hsl(var(--background)) 30%, transparent 75%); }
-.home-hero > * { position: relative; z-index: 1; }
-html[data-theme="dark"] .home-hero { background-image: radial-gradient(circle, rgba(255, 255, 255, 0.12) 1.4px, transparent 1.6px); }
+.home-stage { position: relative; overflow: hidden; }
+.home-stage > * { position: relative; z-index: 1; }
+/* Home: a still dotted field with a band of larger dots that drifts slowly across it */
+.home-stage::before, .home-stage::after { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background-size: 22px 22px; }
+.home-stage::before { background-image: radial-gradient(circle, rgba(27, 36, 32, 0.14) 1.4px, transparent 1.7px); }
+.home-stage::after {
+  background-image: radial-gradient(circle, rgba(13, 148, 136, 0.75) 2px, transparent 2.5px);
+  -webkit-mask-image: linear-gradient(115deg, transparent 30%, #000 50%, transparent 70%); mask-image: linear-gradient(115deg, transparent 30%, #000 50%, transparent 70%);
+  -webkit-mask-size: 220% 100%; mask-size: 220% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  animation: home-sweep 14s ease-in-out infinite;
+}
+@keyframes home-sweep {
+  0%, 100% { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  50% { -webkit-mask-position: 0 0; mask-position: 0 0; }
+}
+html[data-theme="dark"] .home-stage::before { background-image: radial-gradient(circle, rgba(255, 255, 255, 0.12) 1.4px, transparent 1.7px); }
+html[data-theme="dark"] .home-stage::after { background-image: radial-gradient(circle, rgba(94, 234, 212, 0.7) 2px, transparent 2.5px); }
+@media (prefers-reduced-motion: reduce) { .home-stage::after { animation: none; } }
 .home-card:hover { border-color: var(--tc); }
 .home-cta { background: #1b2420; color: #fff; }
 .home-cta:hover { background: #2c3a33; }

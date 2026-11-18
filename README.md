@@ -8,7 +8,7 @@
 | **ThreadScroll** | `/unroll` | Unroll a whole thread to read, print or save it as text, Markdown or a paged PDF. |
 | **CollageMaker** | `/collage` | Paste several tweet links and/or upload pictures (drop files or paste with Ctrl+V) and make one clean, aligned collage as a PNG or PDF. |
 | **ClipBook** | `/clipbook` | Bulk news screenshots to one tidy daily-update PDF (captions, sources, page numbers; English and Hindi). Runs on the server and needs a Vercel Blob store (`BLOB_READ_WRITE_TOKEN`); files are deleted after 30 minutes. |
-| **EditPDF** | `/editpdf` | Page editor: text, highlight, box, circle, whiteout, draw, signature, pictures, with a live file-size estimate. Same server pipeline and limits as ClipBook. PDFs up to 100 MB, pictures up to 25 MB. |
+| **EditPDF** | `/editpdf` | Ten PDF tools in one page: Edit (text, highlight, shapes, draw, sign, pictures), Organize, Page numbers (cover and facing pages), Redact (move/resize boxes, colour and intensity), Merge (drag cards, pick pages), Split, Extract (custom ranges, every N pages, tick pages), Rotate and Watermark. Edit and ClipBook share the server pipeline and limits; PDFs up to 100 MB, pictures up to 25 MB. |
 | **LinkDesk** | `/links` | Link tools: open links in batches, make spreadsheet links clickable, extract and clean links, and archive pages. |
 
 Paste a link, tweak the look, and download or copy the result. Built with Next.js and Tailwind CSS. No environment variables are needed to run it.
@@ -17,7 +17,7 @@ Paste a link, tweak the look, and download or copy the result. Built with Next.j
 
 ## Across all tools
 
-- **Home page:** `/` shows every tool with a short description and a link.
+- **Home page:** `/` opens straight on the list of tools, each with a short description and a link, over a softly animated dotted background.
 - **Saved on your device:** work is kept in the browser (IndexedDB) so a reload brings it back; it is cleared by *Reset* or after 7 days without use. A small "Your progress is saved" note confirms it.
 - **Undo, Redo and Reset:** the header has Undo and Redo (Ctrl+Z, Ctrl+Shift+Z) and a Reset menu with *Reset changes* (back to how your content first loaded), *Reset settings* (options back to default, content kept) and *Reset page* (clear everything, with a warning).
 - **UI kit:** [shadcn/ui](https://ui.shadcn.com/) components (drop-downs, tabs, navigation, dialogs, switches, sliders, toasts) on Tailwind CSS, in light and dark themes.
