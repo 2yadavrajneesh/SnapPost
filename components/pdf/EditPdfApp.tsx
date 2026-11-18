@@ -9,6 +9,7 @@ import EditorWorkspace from "./EditorWorkspace";
 import Organize from "./toolkit/Organize";
 import Merge from "./toolkit/Merge";
 import Split from "./toolkit/Split";
+import Extract from "./toolkit/Extract";
 import Numbers from "./toolkit/Numbers";
 import Watermark from "./toolkit/Watermark";
 import Redact from "./toolkit/Redact";
@@ -20,6 +21,7 @@ const TABS: { id: string; label: string; blurb: string; color: string; icon: str
   { id: "redact", label: "Redact", blurb: "Permanently cover names, numbers or any area. Draw boxes, move and resize them, and pick the cover colour.", color: "#111827", icon: "M4 6h16v4H4zM4 14h10v4H4z", View: Redact },
   { id: "merge", label: "Merge", blurb: "Join several PDFs into one, in the order you choose.", color: "#d97706", icon: "M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M8 12h8M12 8v8", View: Merge },
   { id: "split", label: "Split", blurb: "Cut a PDF by ranges, every N pages, one page per file, or pick the pages you need.", color: "#db2777", icon: "M12 3v18M7 8l-4 4 4 4M17 8l4 4-4 4", View: Split },
+  { id: "extract", label: "Extract", blurb: "Pull pages out of a PDF: custom ranges, every N pages, or tick the pages you need.", color: "#0d9488", icon: "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M12 17v-6M9 14l3-3 3 3", View: Extract },
   { id: "rotate", label: "Rotate", blurb: "Turn the whole PDF or each page on its own.", color: "#0891b2", icon: "M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5", View: () => <Organize mode="rotate" /> },
   { id: "watermark", label: "Watermark", blurb: "Stamp text or a picture on the pages: position, mosaic, transparency, rotation and layer.", color: "#dc2626", icon: "M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z", View: Watermark },
 ];

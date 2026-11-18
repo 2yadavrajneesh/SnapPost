@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Ico } from "@/components/Icons";
+import { Slider } from "@/components/ui";
 import { Card, btnPlain, btnSm, btnIcon, useToast } from "@/components/linkdesk/ui";
 import { assembleRedacted } from "@/lib/pdf/browser";
 import { Field, Finish, Open, sel, stem, useSource, type Made, type PdfDocProxy, type Source } from "./shared";
@@ -24,7 +25,7 @@ const ink = (hex: string) => {
 };
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
 
-function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSelect, onChange, fill }: { doc: PdfDocProxy; index: number; size: [number, number]; width: number; boxes: Box[]; sel: number | null; onAdd: (b: Omit<Box, "id">) => void; onSelect: (id: number | null) => void ; onChange: (id: number, patch: Partial<Omit<Box, "id" | "page">>) => void; fill: string}) {
+function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSelect, onChange, fill, strength }: { doc: PdfDocProxy; index: number; size: [number, number]; width: number; boxes: Box[]; sel: number | null; onAdd: (b: Omit<Box, "id">) => void; onSelect: (id: number | null) => void ; onChange: (id: number, patch: Partial<Omit<Box, "id" | "page">>) => void; fill: string; strength: number}) {
   const wrap = useRef<HTMLDivElement>(null);
   const cv = useRef<HTMLCanvasElement>(null);
   const [near, setNear] = useState(index < 2);
@@ -110,7 +111,7 @@ function RedactPage({ doc, index, size, width, boxes, sel: selected, onAdd, onSe
           key={b.id}
           onPointerDown={(e) => { e.stopPropagation(); onSelect(b.id); grab(e, b, "move"); }}
           className={`absolute ${selected === b.id ? "cursor-move outline outline-2 outline-red-500" : "cursor-pointer"}`}
-          style={{ left: `${b.u * 100}%`, top: `${b.v * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%`, touchAction: "none", background: fill, opacity: 0.88 }}
+          style={{ left: `${b.u * 100}%`, top: `${b.v * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%`, touchAction: "none", background: fill, opacity: strength / 100 }}
         >
           {selected === b.id && HANDLES.map(([k, x, y, cur]) => (
             <span
@@ -134,6 +135,7 @@ export default function Redact() {
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [fill, setFill] = useState("#000000");
+  const [strength, setStrength] = useState(100); // cover intensity, per cent
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [made, setMade] = useState<Made | null>(null);
@@ -173,6 +175,7 @@ export default function Redact() {
         await page.render({ canvas: c, viewport: vp }).promise;
         const g = c.getContext("2d")!;
         g.fillStyle = fill;
+        g.globalAlpha = strength / 100;
         for (const b of boxes.filter((x) => x.page === p)) g.fillRect(b.u * c.width, b.v * c.height, b.w * c.width, b.h * c.height);
         const blob: Blob = await new Promise((r) => c.toBlob((x) => r(x!), "image/jpeg", 0.9));
         flat.set(p, { jpg: new Uint8Array(await blob.arrayBuffer()), w: v1.width, h: v1.height });
@@ -191,7 +194,7 @@ export default function Redact() {
       <Card title="Mark what to hide" chip={<span className="text-[11px] font-semibold text-stone-600">{src.name} · {src.count} pages</span>}>
         <p className="text-[11px] text-stone-500">Drag on a page to draw a box. Drag a box to move it, pull its handles to resize it, and press Delete to remove it.</p>
         <div ref={area} className="max-h-[75vh] overflow-y-auto bg-stone-200 p-3">
-          {src.sizes.map((s, i) => <RedactPage key={i} doc={src.doc} index={i} size={s} width={width} boxes={boxes.filter((b) => b.page === i)} sel={selected} onAdd={add} onSelect={setSelected} onChange={change} fill={fill} />)}
+          {src.sizes.map((s, i) => <RedactPage key={i} doc={src.doc} index={i} size={s} width={width} boxes={boxes.filter((b) => b.page === i)} sel={selected} onAdd={add} onSelect={setSelected} onChange={change} fill={fill} strength={strength} />)}
         </div>
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
@@ -217,6 +220,8 @@ export default function Redact() {
             Custom colour
             <input type="color" className="h-8 w-16 border border-stone-300 bg-white" value={fill} onChange={(e) => { setFill(e.target.value); setMade(null); }} />
           </label>
+          <Slider label="Intensity" value={strength} min={10} max={100} step={5} suffix="%" lowLabel="See-through" highLabel="Solid" onChange={(v) => { setStrength(v); setMade(null); }} />
+          {strength < 100 && <p className="text-[11px] text-amber-700">Below 100% the covered text can still be read through the colour. Use it as a highlighter, and keep 100% to truly hide something.</p>}
           <div className="flex items-center justify-between text-xs font-semibold text-stone-700">
             <span>{boxes.length} area{boxes.length === 1 ? "" : "s"} marked</span>
             <button title="Clear all" aria-label="Clear all" type="button" className={btnIcon} disabled={!boxes.length} onClick={() => { const prev = boxes; setBoxes([]); setSelected(null); setMade(null); toast(`Cleared ${prev.length} ${prev.length === 1 ? "box" : "boxes"}.`, "ok", { label: "Undo", run: () => setBoxes(prev) }); }}><Ico n="trash" /></button>
