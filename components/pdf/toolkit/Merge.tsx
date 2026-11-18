@@ -206,7 +206,6 @@ export default function Merge() {
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
         <Finish from="merge" extra={made ? <ToolActions from="merge" file={{ name: made.name, bytes: made.bytes }} onClear={() => { setFiles([]); setMade(null); }} /> : undefined} ready={files.length >= 1 && total > 0 && files.every((f) => countOf(f) > 0) && (files.length >= 2 || files.some((f) => f.pick))} busy={busy} label="Merge PDFs" onRun={run} made={made} onReset={() => setMade(null)} error={error} hint={files.length < 2 && !files.some((f) => f.pick) ? "Add at least two PDFs, or one PDF and choose some of its pages." : undefined} />
-        {files.length > 0 && <button type="button" className={`${btnPlain} w-full`} onClick={() => input.current?.click()}>Add more files</button>}
       </aside>
       <PagePicker file={files.find((f) => f.id === picking) ?? null} doc={picking != null ? docs[picking] : undefined} onClose={() => setPicking(null)} onChange={(pick) => picking != null && setPick(picking, pick)} />
     </div>
