@@ -7,7 +7,7 @@ import { Ico } from "@/components/Icons";
 import { Card, btnPlain, btnSm, btnIcon, useToast } from "@/components/linkdesk/ui";
 import { loadDoc, mergePdfs } from "@/lib/pdf/browser";
 import { sDel, sGet, sSet } from "@/lib/session";
-import { takePending } from "@/lib/pdf/flow";
+import { takePending, useCurrentFile } from "@/lib/pdf/flow";
 import { Finish, ToolActions, MAX_BYTES, Thumb, fmtSize, openPdfjs, type Made, type PdfDocProxy } from "./shared";
 
 /** pick: the 0-based pages to take from this file, or null for all of them. */
@@ -131,14 +131,19 @@ export default function Merge() {
   };
   const setPick = (id: number, pick: number[] | null) => { setMade(null); setFiles((c) => c.map((f) => (f.id === id ? { ...f, pick } : f))); };
   const total = useMemo(() => files.reduce((n, f) => n + countOf(f), 0), [files]);
-  async function run() {
+  useCurrentFile(async () => made ?? (files.length ? await run() : null));
+  async function run(): Promise<Made | null> {
+    if (!files.length) return null;
     setBusy(true);
     setError("");
     try {
       const bytes = await mergePdfs(files.map((f) => ({ name: f.name, bytes: f.bytes, pick: f.pick })));
-      setMade({ name: "merged.pdf", bytes, type: "application/pdf", note: `${files.length} files, ${total} pages.` });
+      const m: Made = { name: "merged.pdf", bytes, type: "application/pdf", note: `${files.length} files, ${total} pages.` };
+      setMade(m);
+      return m;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
+      return null;
     } finally {
       setBusy(false);
     }
@@ -206,7 +211,7 @@ export default function Merge() {
         {files.length > 1 && <p className="text-[11px] text-stone-500">Drag the cards to change the order. Use the checklist button on a card to take only some of its pages.</p>}
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
-        <Finish from="merge" extra={made ? <ToolActions from="merge" file={{ name: made.name, bytes: made.bytes }} onClear={() => { setFiles([]); setMade(null); }} /> : undefined} ready={files.length >= 1 && total > 0 && files.every((f) => countOf(f) > 0) && (files.length >= 2 || files.some((f) => f.pick))} busy={busy} label="Merge PDFs" onRun={run} made={made} onReset={() => setMade(null)} error={error} hint={files.length < 2 && !files.some((f) => f.pick) ? "Add at least two PDFs, or one PDF and choose some of its pages." : undefined} />
+        <Finish from="merge" extra={<ToolActions from="merge" file={files.length ? { name: made?.name ?? "merged.pdf", bytes: made?.bytes ?? files[0].bytes } : null} onClear={() => { setFiles([]); setMade(null); }} />} ready={files.length >= 1 && total > 0 && files.every((f) => countOf(f) > 0) && (files.length >= 2 || files.some((f) => f.pick))} busy={busy} label="Merge PDFs" onRun={run} made={made} onReset={() => setMade(null)} error={error} hint={files.length < 2 && !files.some((f) => f.pick) ? "Add at least two PDFs, or one PDF and choose some of its pages." : undefined} />
       </aside>
       <PagePicker file={files.find((f) => f.id === picking) ?? null} doc={picking != null ? docs[picking] : undefined} onClose={() => setPicking(null)} onChange={(pick) => picking != null && setPick(picking, pick)} />
     </div>
