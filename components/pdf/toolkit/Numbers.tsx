@@ -16,8 +16,9 @@ export default function Numbers() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [made, setMade] = useState<Made | null>(null);
-  useEffect(() => { if (src) setO((c) => ({ ...c, from: 1, to: src.count })); setMade(null); }, [src]);
-  const set = <K extends keyof typeof o>(k: K, v: (typeof o)[K]) => { setMade(null); setO((c) => ({ ...c, [k]: v })); };
+  const [dirty, setDirty] = useState(false); // the person has changed a setting
+  useEffect(() => { if (src) setO((c) => ({ ...c, from: 1, to: src.count })); setMade(null); setDirty(false); }, [src]);
+  const set = <K extends keyof typeof o>(k: K, v: (typeof o)[K]) => { setMade(null); setDirty(true); setO((c) => ({ ...c, [k]: v })); };
 
   async function run(): Promise<Made | null> {
   if (!src) return null;
@@ -35,7 +36,7 @@ export default function Numbers() {
       setBusy(false);
     }
   }
-  useCurrentFile(async () => made ?? (src ? { name: src.name, bytes: src.bytes } : null));
+  useCurrentFile(async () => made ?? (src && dirty ? await run() : src ? { name: src.name, bytes: src.bytes } : null));
   if (!src) return <Open onFile={load} loading={loading} error={srcErr} title="Drop the PDF to number" />;
 
   // preview: page 1 (single) or a two-page spread (facing) and where the number lands on each page
