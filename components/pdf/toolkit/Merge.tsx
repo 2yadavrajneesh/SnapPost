@@ -148,6 +148,7 @@ export default function Merge() {
       <Card title="Add the PDFs to join" chip={files.length ? <span className="text-[11px] font-semibold text-stone-600">{files.length} added · {total} pages</span> : undefined}>
         <input ref={input} type="file" hidden multiple accept="application/pdf,.pdf" onChange={(e) => { if (e.target.files) void add(e.target.files); e.target.value = ""; }} />
         {files.length === 0 && <label
+          onClick={() => input.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setOver(true); }}
           onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); void add(e.dataTransfer.files); }}
