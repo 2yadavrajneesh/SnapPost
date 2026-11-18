@@ -465,7 +465,7 @@ export default function BatchTool({ active }: { active: boolean }) {
                     {sl.map((i, k) => <i key={k} className={`h-2.5 w-2.5 border ${i.opened ? "border-accent bg-accent" : "border-stone-300 bg-stone-100"}`} />)}
                   </div>
                   <div className="flex gap-1.5">
-                    <button type="button" className={isNext ? `${btnSm} flex-1 border-transparent bg-accent text-white hover:brightness-110` : `${btnSm} flex-1`} onClick={() => launch(pendingIndices(b), `Batch ${b}`)}>
+                    <button type="button" className={isNext ? `${btnSm} flex-1 !border-transparent !bg-accent !text-white hover:brightness-110` : `${btnSm} flex-1`} onClick={() => launch(pendingIndices(b), `Batch ${b}`)}>
                       {finished ? "Open again" : `Open ${plural(sl.length - done, "tab")}`}
                     </button>
                     <button type="button" className={btnIcon} aria-label={`Copy links in batch ${b}`} title="Copy links" onClick={() => void copy(sl.map((x) => x.url).join("\n"), `Copied the links in batch ${b}.`)}><Ico n="copy" /></button>
