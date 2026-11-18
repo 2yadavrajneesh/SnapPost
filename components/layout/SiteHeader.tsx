@@ -13,6 +13,18 @@ import { useSiteTheme } from "@/lib/useSiteTheme";
  * Top bar shared by every tool. On wide screens the five tools sit in the bar; on tablets and phones they
  * fold into a small app-switcher button, so the bar stays one tidy row (brand, page actions, theme switch, menu).
  */
+/** The Home tile: the same square shape as the tool icons, in the site's dark ink. */
+function HomeIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
+      <rect width="64" height="64" fill="#1b2420" />
+      <path d="M12 32L32 14l20 18" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="square" strokeLinejoin="miter" />
+      <path d="M19 30v20h26V30" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="square" />
+      <rect x="28" y="38" width="8" height="12" fill="#fde68a" />
+    </svg>
+  );
+}
+
 export default function SiteHeader({ actions }: { actions?: ReactNode }) {
   const path = usePathname();
   const [theme, setTheme] = useSiteTheme();
@@ -47,9 +59,9 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
         <NavigationMenu viewport={false} aria-label="Tools" className="hidden flex-none xl:flex">
           <NavigationMenuList>
             <NavigationMenuItem>
-              <NavigationMenuLink asChild className="flex-row items-center gap-1.5 rounded-none px-2.5 py-1.5 text-xs font-semibold">
-                <Link href="/" title="All tools">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10" /></svg>
+              <NavigationMenuLink asChild className="tool-pill flex-row items-center gap-2 whitespace-nowrap rounded-none py-1 pl-1 pr-3 text-xs font-semibold">
+                <Link href="/" title="All tools" style={{ ["--tc" as string]: "#1b2420" }}>
+                  <HomeIcon size={24} />
                   Home
                 </Link>
               </NavigationMenuLink>
@@ -114,8 +126,8 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
             <SheetTitle className="text-sm">Switch tool</SheetTitle>
             <SheetDescription className="sr-only">Choose which tool to open</SheetDescription>
           </SheetHeader>
-          <Link href="/" className="mx-3 mt-3 flex items-center gap-2 border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-stone-100">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10" /></svg>
+          <Link href="/" className="mx-3 mt-3 flex items-center gap-2 border border-stone-300 bg-white py-1 pl-1 pr-3 text-xs font-semibold text-stone-800 hover:bg-stone-100">
+            <HomeIcon size={28} />
             All tools
           </Link>
           <nav aria-label="Tools" className="grid grid-cols-2 gap-2 p-3">
