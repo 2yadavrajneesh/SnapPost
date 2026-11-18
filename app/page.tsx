@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Check, Lock, MonitorSmartphone, Timer } from "lucide-react";
 import { SITE_NAME } from "@/lib/site";
-import HomeHeader from "@/components/HomeHeader";
+import HomeHeader from "@/components/layout/HomeHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { TOOLS, ToolIcon, type ToolId } from "@/lib/tools";

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { addHighlight, offsetIn as offsetOf, HIGHLIGHT_COLORS, REDACT_STYLES, removeHighlight, renderHighlighted, type Highlight, type HighlightStyle } from "@/lib/highlight";
-import { Segmented } from "./ui";
+import { Segmented } from "@/components/ui";
 
 /**
  * Select some of the tweet's text, then tap a colour to highlight it. Highlights are kept as

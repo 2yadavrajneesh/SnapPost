@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Logo from "@/components/Logo";
+import Logo from "@/components/layout/Logo";
 import { SITE_NAME } from "@/lib/site";
 import { useSiteTheme } from "@/lib/useSiteTheme";
 

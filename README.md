@@ -123,20 +123,20 @@ Copy `.env.example` to `.env.local` to change these. None are needed to run.
 
 | Piece | File |
 |---|---|
-| Home page (the list of tools) | `app/page.tsx`, `components/HomeHeader.tsx`, `lib/site.ts` (site name) |
+| Home page (the list of tools) | `app/page.tsx`, `components/layout/HomeHeader.tsx`, `lib/site.ts` (site name) |
 | SnapPost page: controls, auto fetch, thread switch, preview, zoom and export buttons | `app/snappost/page.tsx` |
 | CollageMaker page, layout rules and card | `app/collage/page.tsx`, `lib/collage.ts`, `components/collage/*` |
 | ClipBook and EditPDF pages, storage and API | `app/clipbook/*`, `app/editpdf/*`, `app/api/pdf/*`, `lib/pdf/*`, `components/pdf/*` |
 | LinkDesk page, its four tools and shared list | `app/links/page.tsx`, `components/linkdesk/*`, `lib/linkdesk/*` |
 | Archive tab and its save/lookup route | `components/linkdesk/ArchiveTool.tsx`, `app/api/archive/route.ts`, `lib/archive.ts` |
 | ThreadScroll page: link box, display options, page size, orientation, text and PDF export | `app/unroll/page.tsx` |
-| ThreadScroll views: reading view and the one-post-per-page layout | `components/ThreadView.tsx` |
-| Top bar shared by every tool (names, icons, tool buttons, theme switch) | `components/SiteHeader.tsx`, `lib/tools.tsx`, `lib/useSiteTheme.ts` |
+| ThreadScroll views: reading view and the one-post-per-page layout | `components/unroll/ThreadView.tsx` |
+| Top bar shared by every tool (names, icons, tool buttons, theme switch) | `components/layout/SiteHeader.tsx`, `lib/tools.tsx`, `lib/useSiteTheme.ts` |
 | Page sizes and the PDF builder | `lib/paper.ts` |
 | Per-IP rate limiting and the video size limit | `lib/ratelimit.ts`, `lib/limits.ts` |
 | Media size lookup for the download picker | `app/api/media-size/route.ts` |
-| The exportable card: posts, quotes, photos, video, thread view, fit-to-ratio | `components/TweetCard.tsx` |
-| Image viewer (enlarge) | `components/Lightbox.tsx` |
+| The exportable card: posts, quotes, photos, video, thread view, fit-to-ratio | `components/snappost/TweetCard.tsx` |
+| Image viewer (enlarge) | `components/snappost/Lightbox.tsx` |
 | Appearance tiles | `components/AppearanceTiles.tsx` |
 | Fetches a post via [FxEmbed](https://github.com/FxEmbed/FxEmbed) and returns clean JSON (5-minute cache) | `app/api/tweet/route.ts` |
 | Detects and returns a whole thread (used by both tools) | `app/api/thread/route.ts` |

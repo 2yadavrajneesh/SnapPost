@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Badge, BIRD, Icon, XLOGO } from "@/components/TweetCard";
+import { Badge, BIRD, Icon, XLOGO } from "@/components/snappost/TweetCard";
 import { compact, formatDate, formatTime, photoSize, proxied } from "@/lib/format";
 import { CARD_W } from "@/lib/collage";
 import type { PostData } from "@/lib/types";

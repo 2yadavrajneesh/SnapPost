@@ -9,9 +9,9 @@ import BatchTool from "@/components/linkdesk/BatchTool";
 import { ToastProvider, useToast } from "@/components/linkdesk/ui";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NativeSelect } from "@/components/ui/native-select";
-import ScrollTop from "@/components/ScrollTop";
+import ScrollTop from "@/components/layout/ScrollTop";
 import { setHistoryScope } from "@/lib/history";
-import SiteHeader from "@/components/SiteHeader";
+import SiteHeader from "@/components/layout/SiteHeader";
 import { LinkProvider, useLinks } from "@/lib/linkdesk/store";
 
 const ICONS: Record<string, string> = {

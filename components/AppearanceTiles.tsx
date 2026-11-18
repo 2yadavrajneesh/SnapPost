@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { Settings } from "@/lib/types";
-import { BIRD, FONT_STACKS, XLOGO } from "./TweetCard";
+import { BIRD, FONT_STACKS, XLOGO } from "@/components/snappost/TweetCard";
 
 export const FONT_LABELS: Record<Settings["font"], string> = { sans: "Chirp", rounded: "Rounded", inter: "Inter", geist: "Geist", serif: "Serif", mono: "Mono" };
 

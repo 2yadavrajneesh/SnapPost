@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { historyFor } from "@/lib/history";
 import { toolFor } from "@/lib/tools";
-import ResetPageDialog from "@/components/ResetPageDialog";
+import ResetPageDialog from "@/components/layout/ResetPageDialog";
 import { useToast } from "@/components/linkdesk/ui";
 
 function Hint({ label, children }: { label: string; children: React.ReactNode }) {

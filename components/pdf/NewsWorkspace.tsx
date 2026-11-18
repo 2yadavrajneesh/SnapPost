@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Progress } from "@/components/ui/progress";
-import ResetButton from "@/components/ResetButton";
+import ResetButton from "@/components/layout/ResetButton";
 import { Ico } from "@/components/Icons";
 import { sDel, sGet, sList, sSet, useSessionSnapshot, useWork } from "@/lib/session";
 import { SwitchRow } from "@/components/ui";

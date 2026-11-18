@@ -1,18 +1,18 @@
 "use client";
 
-import SiteHeader from "@/components/SiteHeader";
+import SiteHeader from "@/components/layout/SiteHeader";
 import { NativeSelect } from "@/components/ui/native-select";
 import { useSessionSnapshot, useWork } from "@/lib/session";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import AppearanceTiles from "@/components/AppearanceTiles";
-import Lightbox from "@/components/Lightbox";
-import ScrollTop from "@/components/ScrollTop";
+import Lightbox from "@/components/snappost/Lightbox";
+import ScrollTop from "@/components/layout/ScrollTop";
 import HighlightEditor from "@/components/HighlightEditor";
-import MediaDownload from "@/components/MediaDownload";
+import MediaDownload from "@/components/snappost/MediaDownload";
 import type { Highlight } from "@/lib/highlight";
-import RatioTiles from "@/components/RatioTiles";
-import TweetCard, { ALL_INFO, type DisplayInfo, type Redact } from "@/components/TweetCard";
+import RatioTiles from "@/components/snappost/RatioTiles";
+import TweetCard, { ALL_INFO, type DisplayInfo, type Redact } from "@/components/snappost/TweetCard";
 import { Check, CollapsibleSection, Label, Section, Segmented, Slider, SwitchRow, TextField, Toggle, ToggleTile } from "@/components/ui";
 import { formatDate, formatTime } from "@/lib/format";
 import { copyPngToClipboard, downloadBlob, downloadUrl, renderPdf, renderPdfPages, renderPng, renderVideo, zipFiles } from "@/lib/export";

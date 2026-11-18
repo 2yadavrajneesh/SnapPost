@@ -1,15 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import StepHints from "@/components/StepHints";
+import StepHints from "@/components/layout/StepHints";
 import { useSessionSnapshot, useWork } from "@/lib/session";
 import CollageFrame, { type FrameLook, type Item, type Picture } from "@/components/collage/CollageFrame";
 import { BORDERS, type BorderKind, type CardStyle } from "@/components/collage/CollageCard";
 import { Maximize2, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CollageTiles } from "@/components/AppearanceTiles";
-import ScrollTop from "@/components/ScrollTop";
-import SiteHeader from "@/components/SiteHeader";
+import ScrollTop from "@/components/layout/ScrollTop";
+import SiteHeader from "@/components/layout/SiteHeader";
 import { CollapsibleSection, Label, Section, Segmented, Slider, SwitchRow, Toggle } from "@/components/ui";
 import { BACKGROUNDS, CANVASES, FRAME_W, MAX_TWEETS, type CanvasKey, type LastRow, type LayoutMode } from "@/lib/collage";
 import { downloadBlob, renderPdf, renderPng } from "@/lib/export";

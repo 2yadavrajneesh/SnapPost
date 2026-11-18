@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ComponentType } from "react";
 import { sList, useWork } from "@/lib/session";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NativeSelect } from "@/components/ui/native-select";
-import ResetButton from "@/components/ResetButton";
+import ResetButton from "@/components/layout/ResetButton";
 import EditorWorkspace from "./EditorWorkspace";
 import Organize from "./toolkit/Organize";
 import Merge from "./toolkit/Merge";

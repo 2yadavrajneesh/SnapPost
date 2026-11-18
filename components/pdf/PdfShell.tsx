@@ -2,8 +2,8 @@
 
 import type { ReactNode } from "react";
 import { ToastProvider } from "@/components/linkdesk/ui";
-import ScrollTop from "@/components/ScrollTop";
-import SiteHeader from "@/components/SiteHeader";
+import ScrollTop from "@/components/layout/ScrollTop";
+import SiteHeader from "@/components/layout/SiteHeader";
 
 export default function PdfShell({ children, accent = "#6d28d9", variant = "clip" }: { children: ReactNode; accent?: string; variant?: "clip" | "edit" }) {
   return (

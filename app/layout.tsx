@@ -6,9 +6,9 @@ import { ToastProvider } from "@/components/linkdesk/ui";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
-import SessionGuard from "@/components/SessionGuard";
+import SessionGuard from "@/components/layout/SessionGuard";
 import DragOverlay from "@/components/DragOverlay";
-import SaveNotice from "@/components/SaveNotice";
+import SaveNotice from "@/components/layout/SaveNotice";
 
 export const metadata: Metadata = {
   title: `${SITE_NAME} — ${SITE_TAGLINE}`,

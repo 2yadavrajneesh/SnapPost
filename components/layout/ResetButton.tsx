@@ -6,7 +6,7 @@ import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toolFor } from "@/lib/tools";
 import { hasWork } from "@/lib/session";
-import ResetPageDialog from "@/components/ResetPageDialog";
+import ResetPageDialog from "@/components/layout/ResetPageDialog";
 
 /** Page-reset control that sits inside a tool. It stays off until there is something to reset, and always asks first. */
 export default function ResetButton({ className = "" }: { className?: string }) {
