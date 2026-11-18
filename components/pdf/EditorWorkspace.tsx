@@ -4,6 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Ico } from "@/components/Icons";
 import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
+import { takePending } from "@/lib/pdf/flow";
 import { Card, btnPlain, btnPrimary, btnSm, useCopy, btnIcon } from "@/components/linkdesk/ui";
 import { deleteResult, downloadHref, getConfig, runTool, uploadFile, type PdfConfig, type RunResult } from "@/lib/pdf/client";
 
@@ -344,6 +345,13 @@ export default function EditorWorkspace() {
     if (file) void sSet("editpdf:edit:file", file);
     else void sDel("editpdf:edit:file");
   }, [file, restoredEdit]);
+  // a file passed on from another tool opens here
+  useEffect(() => {
+    if (!restoredEdit) return;
+    const p = takePending("edit");
+    if (p) void open(new File([p.bytes as BlobPart], p.name, { type: "application/pdf" }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restoredEdit]);
   const scroller = useRef<HTMLDivElement>(null);
   const pageEls = useRef(new Map<number, HTMLElement>());
   const imgInput = useRef<HTMLInputElement>(null);

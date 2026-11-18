@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Copy, FilePlus2, RotateCcw, RotateCw, Trash2, Undo2 } from "lucide-react";
 import { Card, btnPlain, btnSm } from "@/components/linkdesk/ui";
 import { organizePdf, rotatePdf } from "@/lib/pdf/browser";
-import { Finish, Open, Thumb, stem, useSource, type Made } from "./shared";
+import { Finish, Open, SendMenu, Thumb, stem, useSource, type Made } from "./shared";
 
 type P = { id: number; src: number; rot: number };
 let uid = 0;
@@ -129,7 +129,8 @@ export default function Organize({ mode }: { mode: "organize" | "rotate" }) {
         {!pages.length && <p className="text-xs text-stone-500">No pages left. Press Reset to bring them back.</p>}
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
-        <Finish ready={pages.length > 0 && changed} busy={busy} label={mode === "rotate" ? "Rotate PDF" : "Save organized PDF"} onRun={run} made={made} onReset={() => setMade(null)} error={error} hint={!changed ? "Make a change first." : undefined} />
+        <Finish from={mode} ready={pages.length > 0 && changed} busy={busy} label={mode === "rotate" ? "Rotate PDF" : "Save organized PDF"} onRun={run} made={made} onReset={() => setMade(null)} error={error} hint={!changed ? "Make a change first." : undefined} />
+        <SendMenu from={mode} file={src ? { name: src.name, bytes: src.bytes } : null} />
         <button type="button" className={`${btnPlain} w-full`} onClick={clear}>Start with another PDF</button>
       </aside>
     </div>

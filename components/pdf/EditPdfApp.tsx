@@ -5,6 +5,8 @@ import { sList, useWork } from "@/lib/session";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NativeSelect } from "@/components/ui/native-select";
 import ResetButton from "@/components/layout/ResetButton";
+import { clearOrigin, returnToOrigin, toolLabel, useFlow } from "@/lib/pdf/flow";
+import { Undo2 } from "lucide-react";
 import EditorWorkspace from "./EditorWorkspace";
 import Organize from "./toolkit/Organize";
 import Merge from "./toolkit/Merge";
@@ -53,6 +55,14 @@ export default function EditPdfApp() {
     setId(t);
     history.replaceState(null, "", `#${t}`);
   };
+  const flow = useFlow();
+  // arriving back at the tool the file came from ends the round trip
+  const away = useRef(false);
+  useEffect(() => {
+    if (!flow.origin) away.current = false;
+    else if (flow.origin.tab !== id) away.current = true;
+    else if (away.current) clearOrigin();
+  }, [flow.origin, id]);
   const tab = TABS.find((t) => t.id === id) ?? TABS[0];
   const View = tab.View;
   return (
@@ -88,6 +98,12 @@ export default function EditPdfApp() {
           <ResetButton className="h-auto flex-none self-stretch" />
         </TabsList>
       </Tabs>
+      {flow.origin && flow.origin.tab !== id && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-900">
+          <span>This file came from <b>{toolLabel(flow.origin.tab)}</b>. Apply your change here, then go back to carry on with the updated file.</span>
+          <button type="button" onClick={() => returnToOrigin(null)} className="inline-flex h-8 items-center gap-1.5 border border-amber-400 bg-white px-3 font-bold text-amber-900 hover:bg-amber-100"><Undo2 size={14} />Return to {toolLabel(flow.origin.tab)}</button>
+        </div>
+      )}
       <View key={tab.id} />
     </div>
   );
