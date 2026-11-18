@@ -172,6 +172,18 @@ export default function NewsWorkspace() {
   }, [add]);
 
   const update = (id: number, patch: Partial<Item>) => setItems((c) => c.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+  /** After a page number is entered, move the picture to where that page falls in the list. */
+  const placeByPage = (id: number) =>
+    setItems((c) => {
+      const it = c.find((x) => x.id === id);
+      if (!it || it.page < 1) return c;
+      const per = s.layout === "1" || s.layout === "auto" ? 1 : s.layout === "4" ? 4 : 2;
+      const rest = c.filter((x) => x.id !== id);
+      const at = Math.min((it.page - 1) * per, rest.length);
+      if (c.indexOf(it) === at) return c;
+      rest.splice(at, 0, it);
+      return rest;
+    });
   const move = (i: number, d: number) =>
     setItems((c) => {
       const a = [...c];
@@ -312,7 +324,7 @@ export default function NewsWorkspace() {
                     <input className={sel} placeholder="Caption or headline (optional)" maxLength={400} value={it.caption} onChange={(e) => update(it.id, { caption: e.target.value })} />
                     <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-stone-600">
                       <label className="flex items-center gap-1.5">Go to page
-                        <input type="number" min={1} max={200} inputMode="numeric" placeholder="auto" aria-label={`Page number for picture ${i + 1}`} className="w-16 border border-stone-200 bg-white px-1.5 py-1 text-xs" value={it.page || ""} onChange={(e) => update(it.id, { page: Math.max(0, Math.min(200, Math.floor(Number(e.target.value)) || 0)), dx: 0, dy: 0 })} />
+                        <input type="number" min={1} max={200} inputMode="numeric" placeholder="auto" aria-label={`Page number for picture ${i + 1}`} className="w-16 border border-stone-200 bg-white px-1.5 py-1 text-xs" value={it.page || ""} onChange={(e) => update(it.id, { page: Math.max(0, Math.min(200, Math.floor(Number(e.target.value)) || 0)), dx: 0, dy: 0 })} onBlur={() => placeByPage(it.id)} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} />
                       </label>
                       {(it.dx !== 0 || it.dy !== 0 || it.page > 0) && <button title="Reset position" aria-label="Reset position" type="button" className={btnIcon} onClick={() => update(it.id, { dx: 0, dy: 0, page: 0 })}><Ico n="reset" /></button>}
                     </div>
