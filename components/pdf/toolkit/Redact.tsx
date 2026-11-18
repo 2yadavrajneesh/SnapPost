@@ -135,7 +135,7 @@ export default function Redact() {
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [fill, setFill] = useState("#000000");
-  const [strength, setStrength] = useState(100); // cover intensity, per cent
+  const [strength, setStrength] = useState(35); // cover intensity, per cent
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [made, setMade] = useState<Made | null>(null);
