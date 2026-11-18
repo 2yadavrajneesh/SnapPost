@@ -146,23 +146,23 @@ export default function Merge() {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
       <Card title="Add the PDFs to join" chip={files.length ? <span className="text-[11px] font-semibold text-stone-600">{files.length} added · {total} pages</span> : undefined}>
-        <label
+        <input ref={input} type="file" hidden multiple accept="application/pdf,.pdf" onChange={(e) => { if (e.target.files) void add(e.target.files); e.target.value = ""; }} />
+        {files.length === 0 && <label
           onDragOver={(e) => { e.preventDefault(); setOver(true); }}
           onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); void add(e.dataTransfer.files); }}
           className={`flex cursor-pointer flex-col items-center gap-1 border-2 border-dashed px-4 py-7 text-center ${over ? "border-accent bg-white" : "border-stone-300 bg-stone-50 hover:bg-white"}`}
         >
-          <input ref={input} type="file" hidden multiple accept="application/pdf,.pdf" onChange={(e) => { if (e.target.files) void add(e.target.files); e.target.value = ""; }} />
           <strong className="text-sm text-stone-900">Drop PDFs here or click to choose</strong>
           <small className="text-[11px] text-stone-500">Joined in the order shown below. Works on your device.</small>
-        </label>
+        </label>}
         {files.length > 0 && (
           <div className="flex flex-wrap gap-2">
             <button type="button" className={btnSm} onClick={() => { setMade(null); setFiles((c) => [...c].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))); }}>Sort by name</button>
             <button title="Remove all" aria-label="Remove all" type="button" className={btnIcon} onClick={() => { const prev = files; const prevMade = made; setFiles([]); setMade(null); toast(`Removed ${prev.length} ${prev.length === 1 ? "file" : "files"}.`, "ok", { label: "Undo", run: () => { setFiles(prev); setMade(prevMade); } }); }}><Ico n="trash" /></button>
           </div>
         )}
-        {files.length > 0 && <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+        {files.length > 0 && <ul onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); }} onDrop={(e) => { if (e.dataTransfer.files.length) { e.preventDefault(); void add(e.dataTransfer.files); } }} className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
           {files.map((f, i) => (
             <li
               key={f.id}
