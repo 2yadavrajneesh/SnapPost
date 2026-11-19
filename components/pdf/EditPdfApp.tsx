@@ -33,18 +33,25 @@ export default function EditPdfApp() {
   const [id, setId] = useState("edit");
   // "Reset style" puts the open tool's options back to their defaults and keeps its PDF
   const [fresh, setFresh] = useState(0);
-  const resetStyle = () => { if (id === "edit") historyFor("editpdf")?.resetSettings(); else setFresh((n) => n + 1); };
+  // the other tabs keep their options in local state, so "something was changed" is any edit inside the open tool after its PDF is open
+  const [touched, setTouched] = useState(false);
+  const [tabHas, setTabHas] = useState(false);
+  useEffect(() => { setTouched(false); }, [id, fresh, tabHas]);
+  const resetStyle = () => { setTouched(false); if (id === "edit") historyFor("editpdf")?.resetSettings(); else setFresh((n) => n + 1); };
+  const styleOff = id === "edit" ? undefined : !(tabHas && touched);
   const nav = useRef<HTMLDivElement>(null);
   // "Reset everything" stays off until a PDF has actually been opened
   const [has, setHas] = useState(false);
   useWork("editpdf", has);
   useEffect(() => {
     let live = true;
-    const check = () => void sList("editpdf:").then((l) => live && setHas(l.some((e) => /^editpdf:(edit:file|tool:)/.test(e.key))));
+    const mine = id === "edit" ? "editpdf:edit:file" : id === "merge" ? "editpdf:merge:files" : `editpdf:tool:${id}`;
+    const check = () => void sList("editpdf:").then((l) => { if (!live) return; setHas(l.some((e) => /^editpdf:(edit:file|tool:)/.test(e.key))); setTabHas(l.some((e) => e.key === mine)); });
     check();
     const t = setTimeout(check, 1500);
     window.addEventListener("snap:saved", check);
-    return () => { live = false; clearTimeout(t); window.removeEventListener("snap:saved", check); };
+    window.addEventListener("snap:dirty", check);
+    return () => { live = false; clearTimeout(t); window.removeEventListener("snap:saved", check); window.removeEventListener("snap:dirty", check); };
   }, [id]);
   useEffect(() => {
     const sync = () => {
@@ -85,7 +92,7 @@ export default function EditPdfApp() {
                 </span>
               </option>)}
           </NativeSelect>
-          <ResetStyleButton className="!h-12 flex-none" onReset={resetStyle} />
+          <ResetStyleButton className="!h-12 flex-none" onReset={resetStyle} disabled={styleOff} />
           <ResetButton className="h-12 flex-none" />
         </div>
         <TabsList ref={nav} aria-label="PDF tools" className="relative hidden !h-auto w-full sm:flex flex-wrap min-[1180px]:flex-nowrap items-stretch justify-start gap-1 rounded-none bg-transparent p-0 pb-1">
@@ -100,11 +107,11 @@ export default function EditPdfApp() {
               {t.label}
             </TabsTrigger>
           ))}
-          <ResetStyleButton className="!h-auto flex-auto self-stretch !px-2.5" onReset={resetStyle} />
+          <ResetStyleButton className="!h-auto flex-auto self-stretch !px-2.5" onReset={resetStyle} disabled={styleOff} />
           <ResetButton className="h-auto flex-auto self-stretch !px-2.5" />
         </TabsList>
       </Tabs>
-      <View key={`${tab.id}:${fresh}`} />
+      <div onChangeCapture={() => setTouched(true)} onClickCapture={() => setTouched(true)}><View key={`${tab.id}:${fresh}`} /></div>
     </div>
   );
 }
