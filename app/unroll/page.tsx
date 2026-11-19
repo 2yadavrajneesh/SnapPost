@@ -570,13 +570,13 @@ export default function Unroller() {
           </Section>
 
           <Section>
-            <button type="button" disabled={!thread || printing} onClick={() => void downloadPdf()} className={`w-full bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 ${printing ? "btn-busy" : ""}`}>
+            <div className="flex gap-2">
+              <button type="button" disabled={!thread || printing} onClick={() => void downloadPdf()} className={`h-9 min-w-0 flex-1 whitespace-nowrap bg-accent px-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 ${printing ? "btn-busy" : ""}`}>
                 {printing ? "Making PDF…" : "Download PDF"}
               </button>
-            <div className="grid grid-cols-2 gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button type="button" disabled={!thread} title="Copy or download as text or Markdown" aria-label="More formats" className="inline-flex h-9 w-full items-center justify-center gap-1.5 border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-800 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50">
+                  <button type="button" disabled={!thread} title="Copy or download as text or Markdown" aria-label="More formats" className="inline-flex h-9 w-auto items-center justify-center gap-1.5 border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-800 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50">
                     Text <ChevronDown size={14} aria-hidden="true" />
                   </button>
                 </DropdownMenuTrigger>
@@ -590,7 +590,7 @@ export default function Unroller() {
                   <DropdownMenuItem onSelect={() => thread && save(`${base}.md`, toMarkdown(thread, opts), "text/markdown;charset=utf-8")}><FileText />Download .md</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <ResetStyleButton className="w-full" />
+              <ResetStyleButton className="h-9 flex-none px-3" />
             </div>
             <div className="text-xs font-medium text-emerald-700 empty:hidden" aria-live="polite">
               {notice}
