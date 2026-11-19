@@ -44,6 +44,7 @@ const wrap: Wrap = (text, width, size, maxLines) => {
 export default function NewsPreview({ items, s, date, onMove, onSend }: { items: PreviewItem[]; s: PreviewSettings; date: string; onMove?: (id: number, dx: number, dy: number) => void; onSend?: (id: number, page: number) => void }) {
   const drag = useRef<{ id: number; sx: number; sy: number; dx: number; dy: number; page: number; k: number } | null>(null);
   const [live, setLive] = useState<{ id: number; dx: number; dy: number } | null>(null);
+  const [target, setTarget] = useState<number | null>(null);
   const down = (e: React.PointerEvent, id: number, dx: number, dy: number, page: number, k: number) => {
     if (!onMove) return;
     e.preventDefault();
@@ -53,7 +54,11 @@ export default function NewsPreview({ items, s, date, onMove, onSend }: { items:
   };
   const moveTo = (e: React.PointerEvent) => {
     const d = drag.current;
-    if (d) setLive({ id: d.id, dx: d.dx + (e.clientX - d.sx) / d.k, dy: d.dy + (e.clientY - d.sy) / d.k });
+    if (!d) return;
+    setLive({ id: d.id, dx: d.dx + (e.clientX - d.sx) / d.k, dy: d.dy + (e.clientY - d.sy) / d.k });
+    const hit = document.elementsFromPoint(e.clientX, e.clientY).map((el) => (el as HTMLElement).closest?.("[data-pg]")).find(Boolean) as HTMLElement | null | undefined;
+    const pg = hit ? Number(hit.dataset.pg) : null;
+    setTarget(pg != null && pg !== d.page ? pg : null);
   };
   const up = (e: React.PointerEvent) => {
     const d = drag.current;
@@ -66,6 +71,7 @@ export default function NewsPreview({ items, s, date, onMove, onSend }: { items:
     if (hit && pg !== d.page && onSend) onSend(d.id, pg + 1);
     else onMove?.(d.id, Math.round(nx), Math.round(ny));
     setLive(null);
+    setTarget(null);
   };
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(340);
@@ -100,7 +106,7 @@ export default function NewsPreview({ items, s, date, onMove, onSend }: { items:
       {!total && <div className="border border-dashed border-stone-300 bg-white px-3 py-8 text-center text-xs text-stone-500">Add a screenshot and the pages appear here as you work.</div>}
       {layout.pages.map((pg, pi) => (
         <figure key={pi} className="m-0">
-          <div data-pg={pi} className="relative overflow-hidden bg-white shadow-md ring-1 ring-stone-300" style={{ width: layout.pw * k, height: layout.ph * k }}>
+          <div data-pg={pi} className={`relative overflow-hidden bg-white shadow-md transition-shadow duration-150 ${target === pi ? "ring-4 ring-accent" : "ring-1 ring-stone-300"}`} style={{ width: layout.pw * k, height: layout.ph * k }}>
             <div className="absolute left-0 top-0 origin-top-left" style={{ width: layout.pw, height: layout.ph, transform: `scale(${k})`, fontFamily: font, color: "#262626" }}>
               {layout.showHeadOn(pi) && (
                 <>
@@ -115,9 +121,9 @@ export default function NewsPreview({ items, s, date, onMove, onSend }: { items:
                 const sc = c.h / c.it.ph;
                 const lv = live && live.id === c.it.id ? { x: live.dx - (c.it.dx ?? 0), y: live.dy - (c.it.dy ?? 0) } : { x: 0, y: 0 };
                 return (
-                  <div key={ci} onPointerDown={(e) => down(e, c.it.id, c.it.dx ?? 0, c.it.dy ?? 0, pi, k)} onPointerMove={moveTo} onPointerUp={up} title={onMove ? "Drag to move. Drop on another page to send it there." : undefined} style={{ position: "absolute", inset: 0, pointerEvents: "none", transform: `translate(${lv.x}px, ${lv.y}px)`, zIndex: live && live.id === c.it.id ? 5 : undefined }}>
+                  <div key={ci} onPointerDown={(e) => down(e, c.it.id, c.it.dx ?? 0, c.it.dy ?? 0, pi, k)} onPointerMove={moveTo} onPointerUp={up} title={onMove ? "Drag to move. Drop on another page to send it there." : undefined} style={{ position: "absolute", inset: 0, pointerEvents: "none", transform: `translate(${lv.x}px, ${lv.y}px)`, zIndex: live && live.id === c.it.id ? 5 : undefined, filter: live && live.id === c.it.id ? "drop-shadow(0 10px 14px rgba(0,0,0,.35))" : undefined }}>
                     <div className="absolute" style={{ left: c.x - 0.5, top: c.y - 0.5, width: c.w + 1, height: c.h + 1, border: "0.75px solid #ccc", boxSizing: "border-box" }} />
-                    <div className="absolute" style={{ pointerEvents: "auto", cursor: onMove ? "grab" : undefined, touchAction: "none", left: c.x, top: c.y, width: c.w, height: c.h, backgroundImage: `url(${c.it.url})`, backgroundSize: `${c.w}px ${c.it.full * sc}px`, backgroundPosition: `0 ${-c.it.top * sc}px`, backgroundRepeat: "no-repeat" }} />
+                    <div className="absolute" style={{ pointerEvents: "auto", cursor: onMove ? (live && live.id === c.it.id ? "grabbing" : "grab") : undefined, touchAction: "none", left: c.x, top: c.y, width: c.w, height: c.h, backgroundImage: `url(${c.it.url})`, backgroundSize: `${c.w}px ${c.it.full * sc}px`, backgroundPosition: `0 ${-c.it.top * sc}px`, backgroundRepeat: "no-repeat" }} />
                     {(c.label || c.source) && (
                       <div className="absolute whitespace-nowrap font-bold" style={{ left: c.x, top: c.base - c.size * 1.05, fontSize: c.size, lineHeight: 1.1 }}>
                         {c.label && <span style={{ color: accent }}>{c.label}&nbsp;</span>}

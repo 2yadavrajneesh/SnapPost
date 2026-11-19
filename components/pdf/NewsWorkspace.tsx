@@ -303,12 +303,22 @@ export default function NewsWorkspace() {
                 <li
                   key={it.id}
                   draggable={!busy}
-                  onDragStart={(e) => { setDragFrom(i); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(i)); }}
+                  onDragStart={(e) => {
+                    setDragFrom(i);
+                    e.dataTransfer.effectAllowed = "move";
+                    e.dataTransfer.setData("text/plain", String(i));
+                    const card = e.currentTarget;
+                    const g = card.cloneNode(true) as HTMLElement;
+                    g.style.cssText = `position:fixed;top:-1000px;left:-1000px;width:${card.offsetWidth}px;opacity:.95;transform:rotate(2deg);box-shadow:0 14px 28px rgba(0,0,0,.28);background:#fff`;
+                    document.body.appendChild(g);
+                    e.dataTransfer.setDragImage(g, 24, 24);
+                    setTimeout(() => g.remove(), 0);
+                  }}
                   onDragOver={(e) => { if (dragFrom != null) { e.preventDefault(); setDragOver(i); } }}
                   onDragLeave={() => setDragOver((v) => (v === i ? null : v))}
                   onDrop={(e) => { e.preventDefault(); e.stopPropagation(); dropOn(i); setDragFrom(null); setDragOver(null); }}
                   onDragEnd={() => { setDragFrom(null); setDragOver(null); }}
-                  className={`flex cursor-grab gap-3 border bg-white p-2.5 active:cursor-grabbing ${dragOver === i && dragFrom !== i ? "border-accent ring-2 ring-accent/30" : "border-stone-200"} ${dragFrom === i ? "opacity-50" : ""}`}
+                  className={`flex cursor-grab gap-3 border bg-white p-2.5 transition duration-150 active:cursor-grabbing ${dragOver === i && dragFrom !== i ? "scale-[1.02] border-accent bg-accent/5 shadow-md ring-2 ring-accent/40" : "border-stone-200"} ${dragFrom === i ? "scale-[.97] border-dashed opacity-40" : ""}`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={it.url} alt="" draggable={false} className="h-24 w-20 flex-none border border-stone-200 bg-stone-50 object-contain" />
