@@ -680,8 +680,8 @@ export default function Home() {
               {formatPicker}
               {pdfOptions}
               <div className="flex gap-2 [&>button:last-child]:flex-1">
-                {copyButton()}
-                {downloadButton()}
+                {copyButton(true)}
+                {downloadButton(true)}
               </div>
             </div>
 

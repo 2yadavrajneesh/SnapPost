@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { addHighlight, offsetIn as offsetOf, HIGHLIGHT_COLORS, REDACT_STYLES, removeHighlight, renderHighlighted, type Highlight, type HighlightStyle } from "@/lib/highlight";
+import { Eraser, Trash2, Undo2 } from "lucide-react";
 import { Segmented } from "@/components/ui";
 
 /**
@@ -159,18 +160,22 @@ export default function HighlightEditor({
           type="button"
           disabled={history.length === 0}
           onClick={undo}
-          className="h-9 border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-700 transition hover:bg-stone-100 disabled:opacity-35"
+          title="Undo"
+          aria-label="Undo"
+          className="inline-flex h-9 w-9 items-center justify-center border border-stone-300 bg-white text-stone-700 transition hover:bg-stone-100 disabled:opacity-35"
         >
-          Undo
+          <Undo2 size={16} aria-hidden="true" />
         </button>
         <button
           type="button"
           disabled={!sel}
           onMouseDown={keep}
           onClick={remove}
-          className="h-9 border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-700 transition hover:bg-stone-100 disabled:opacity-35"
+          title="Remove the selected mark"
+          aria-label="Remove the selected mark"
+          className="inline-flex h-9 w-9 items-center justify-center border border-stone-300 bg-white text-stone-700 transition hover:bg-stone-100 disabled:opacity-35"
         >
-          Remove
+          <Eraser size={16} aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -179,9 +184,11 @@ export default function HighlightEditor({
             commit([]);
             setSel(null);
           }}
-          className="h-9 border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-700 transition hover:bg-stone-100 disabled:opacity-35"
+          title="Clear all marks"
+          aria-label="Clear all marks"
+          className="inline-flex h-9 w-9 items-center justify-center border border-stone-300 bg-white text-stone-700 transition hover:bg-stone-100 disabled:opacity-35"
         >
-          Clear all
+          <Trash2 size={16} aria-hidden="true" />
         </button>
       </div>
       {mode === "redact" && redactExtra}

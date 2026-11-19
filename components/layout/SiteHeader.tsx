@@ -1,5 +1,6 @@
 "use client";
 
+import HistoryBar from "@/components/layout/HistoryBar";
 import Link from "next/link";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
@@ -83,6 +84,7 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
         </NavigationMenu>
 
         <div className="flex flex-none items-center gap-2">
+          <HistoryBar />
           {actions}
           <button
             type="button"
