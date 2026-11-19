@@ -285,7 +285,7 @@ export default function NewsWorkspace() {
           {items.length > 0 && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="text-[11px] font-semibold text-stone-600">Sort by</span>
-              <NativeSelect aria-label="Sort by" className="h-8 border border-stone-300 bg-white px-2 text-[11px] font-semibold text-stone-800" value={sortKey} onChange={(e) => setSortKey(e.target.value as "name" | "time" | "size")}>
+              <NativeSelect aria-label="Sort by" className="!h-8 !w-36 border border-stone-300 bg-white px-2 text-[11px] font-semibold text-stone-800" value={sortKey} onChange={(e) => setSortKey(e.target.value as "name" | "time" | "size")}>
                 <option value="name">Name</option>
                 <option value="time">Date / time</option>
                 <option value="size">File size</option>
