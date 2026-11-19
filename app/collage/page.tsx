@@ -501,6 +501,24 @@ export default function CollageMaker() {
             )}
           </Section>
 
+          <Section>
+            <div>
+              <Label>Format</Label>
+              <Segmented value={format} onChange={setFormat} options={[{ value: "png", label: "PNG image" }, { value: "pdf", label: "PDF document" }]} />
+            </div>
+            <div>
+              <Label>Size</Label>
+              <Segmented value={String(quality)} onChange={(v) => setQuality(Number(v) as 1 | 2)} options={[{ value: "1", label: `Standard ${FRAME_W}px` }, { value: "2", label: `High ${FRAME_W * 2}px` }]} />
+            </div>
+            <div className="sticky bottom-3 z-20 flex gap-2 lg:static">
+              <button type="button" className={`${btnPrimary} h-11 min-w-0 flex-1 whitespace-nowrap text-sm shadow-lg disabled:!bg-stone-400 disabled:!opacity-100 lg:shadow-none ${exporting ? "btn-busy" : ""}`} disabled={!items.length || exporting || loading > 0} onClick={() => void download()}>
+                {exporting ? "Creating…" : loading ? "Loading tweets…" : `Download ${format.toUpperCase()}`}
+              </button>
+              <ResetStyleButton className="h-11 flex-none px-3 shadow-lg lg:shadow-none" />
+            </div>
+            {!items.length && <p className="text-[11px] text-stone-500">Add at least one tweet to download a collage.</p>}
+          </Section>
+
           <Section title="Title and look">
             <button type="button" role="switch" aria-checked={showHead} className={`${btnPlain} w-full justify-between`} onClick={() => setShowHead(!showHead)}>
               <span>Show title on top</span>
@@ -605,22 +623,6 @@ export default function CollageMaker() {
               <Toggle label="Soft shadow" checked={shadow} onChange={setShadow} />
             </div>
           </CollapsibleSection>
-
-          <Section title="Save">
-            <div>
-              <Label>Format</Label>
-              <Segmented value={format} onChange={setFormat} options={[{ value: "png", label: "PNG image" }, { value: "pdf", label: "PDF document" }]} />
-            </div>
-            <div>
-              <Label>Size</Label>
-              <Segmented value={String(quality)} onChange={(v) => setQuality(Number(v) as 1 | 2)} options={[{ value: "1", label: `Standard ${FRAME_W}px` }, { value: "2", label: `High ${FRAME_W * 2}px` }]} />
-            </div>
-            <button type="button" className={`${btnPrimary} sticky bottom-3 z-20 h-11 w-full text-sm shadow-lg disabled:!bg-stone-400 disabled:!opacity-100 lg:static lg:shadow-none ${exporting ? "btn-busy" : ""}`} disabled={!items.length || exporting || loading > 0} onClick={() => void download()}>
-              {exporting ? "Creating…" : loading ? "Loading tweets…" : `Download ${format.toUpperCase()}`}
-            </button>
-            {!items.length && <p className="text-[11px] text-stone-500">Add at least one tweet to download a collage.</p>}
-            <ResetStyleButton className="w-full" />
-          </Section>
         </aside>
 
         <div className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">
