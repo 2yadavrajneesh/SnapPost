@@ -15,6 +15,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { CollapsibleSection, Label, Section, Segmented, Slider, SwitchRow, Toggle } from "@/components/ui";
 import { BACKGROUNDS, CANVASES, FRAME_W, MAX_TWEETS, type CanvasKey, type LastRow, type LayoutMode } from "@/lib/collage";
 import { downloadBlob, renderPdf, renderPng } from "@/lib/export";
+import { PAGE_SIZES, type PageSizeId } from "@/lib/paper";
 import { findTweetLinks, parseTweetUrl } from "@/lib/parse";
 import { readLinkFile } from "@/lib/linkfile";
 import type { PostData } from "@/lib/types";
@@ -86,10 +87,12 @@ export default function CollageMaker() {
   // export
   const [format, setFormat] = useState<"png" | "pdf">("png");
   const [quality, setQuality] = useState<1 | 2>(1);
+  const [pdfSize, setPdfSize] = useState<PageSizeId | "fit">("fit");
+  const [pdfOrient, setPdfOrient] = useState<"auto" | "portrait" | "landscape">("auto");
 
   useSessionSnapshot(
     "collage:state",
-    { entries, text, mode, cols, canvas, lastRow, gap, pad, bgId, customBg, card, shadow, crop, headText, showHead, headSize, headDark, classic, format, quality, before: before.current },
+    { entries, text, mode, cols, canvas, lastRow, gap, pad, bgId, customBg, card, shadow, crop, headText, showHead, headSize, headDark, classic, format, quality, pdfSize, pdfOrient, before: before.current },
     (v) => {
       setEntries(v.entries ?? []);
       setText(v.text ?? "");
@@ -112,6 +115,8 @@ export default function CollageMaker() {
       before.current = v.before ?? null;
       setFormat(v.format ?? "png");
       setQuality(v.quality ?? 1);
+      setPdfSize(v.pdfSize ?? "fit");
+      setPdfOrient(v.pdfOrient ?? "auto");
     },
     { content: ["entries", "text"] },
   );
@@ -381,7 +386,7 @@ export default function CollageMaker() {
       const r = await renderPng(node, { maxWidth: FRAME_W * quality });
       const slug = headText.trim().replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").slice(0, 40);
       const base = slug ? `collage-${slug}` : `collage-${items.length}-${items.length === 1 ? "item" : "items"}`;
-      if (format === "pdf") downloadBlob(await renderPdf(r.dataUrl, r.width, r.height), `${base}.pdf`);
+      if (format === "pdf") downloadBlob(await renderPdf(r.dataUrl, r.width, r.height, { size: pdfSize, orientation: pdfOrient }), `${base}.pdf`);
       else {
         const blob = await (await fetch(r.dataUrl)).blob();
         downloadBlob(blob, `${base}.png`);
@@ -519,6 +524,25 @@ export default function CollageMaker() {
                 </NativeSelect>
               </div>
             </div>
+            {format === "pdf" && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label>Page</Label>
+                  <NativeSelect aria-label="PDF page size" className="!h-9 border border-stone-300 bg-white px-2 text-xs font-semibold text-stone-800" value={pdfSize} onChange={(e) => setPdfSize(e.target.value as PageSizeId | "fit")}>
+                    <option value="fit">Fit the picture</option>
+                    {PAGE_SIZES.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+                  </NativeSelect>
+                </div>
+                <div>
+                  <Label>Orientation</Label>
+                  <NativeSelect aria-label="PDF orientation" disabled={pdfSize === "fit"} title={pdfSize === "fit" ? "Choose a paper size first" : undefined} className="!h-9 border border-stone-300 bg-white px-2 text-xs font-semibold text-stone-800" value={pdfOrient} onChange={(e) => setPdfOrient(e.target.value as "auto" | "portrait" | "landscape")}>
+                    <option value="auto">Auto</option>
+                    <option value="portrait">Portrait</option>
+                    <option value="landscape">Landscape</option>
+                  </NativeSelect>
+                </div>
+              </div>
+            )}
             <div className="sticky bottom-3 z-20 flex gap-2 lg:static">
               <button type="button" className={`${btnPrimary} h-11 min-w-0 flex-1 whitespace-nowrap text-sm shadow-lg disabled:!bg-stone-400 disabled:!opacity-100 lg:shadow-none ${exporting ? "btn-busy" : ""}`} disabled={!items.length || exporting || loading > 0} onClick={() => void download()}>
                 {exporting ? "Creating…" : loading ? "Loading tweets…" : `Download ${format.toUpperCase()}`}
