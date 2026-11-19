@@ -569,6 +569,34 @@ export default function Unroller() {
             </div>
           </Section>
 
+          <Section title="Save">
+            <button type="button" disabled={!thread || printing} onClick={() => void downloadPdf()} className="w-full bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60">
+                {printing ? "Making PDF…" : "Download PDF"}
+              </button>
+            <div className="grid grid-cols-2 gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button type="button" disabled={!thread} title="Copy or download as text or Markdown" aria-label="More formats" className="inline-flex h-9 w-full items-center justify-center gap-1.5 border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-800 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50">
+                    Text <ChevronDown size={14} aria-hidden="true" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-48">
+                  <DropdownMenuLabel className="text-[11px] font-normal text-stone-500">Copy</DropdownMenuLabel>
+                  <DropdownMenuItem onSelect={async () => thread && flash((await copy(toText(thread, opts))) ? "Text copied" : "Copy failed")}><Copy />Copy as text</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={async () => thread && flash((await copy(toMarkdown(thread, opts))) ? "Markdown copied" : "Copy failed")}><Copy />Copy Markdown</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-[11px] font-normal text-stone-500">Download</DropdownMenuLabel>
+                  <DropdownMenuItem onSelect={() => thread && save(`${base}.txt`, toText(thread, opts), "text/plain;charset=utf-8")}><FileText />Download .txt</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => thread && save(`${base}.md`, toMarkdown(thread, opts), "text/markdown;charset=utf-8")}><FileText />Download .md</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <ResetStyleButton className="w-full" />
+            </div>
+            <div className="h-4 text-xs font-medium text-emerald-700" aria-live="polite">
+              {notice}
+            </div>
+          </Section>
+
           <CollapsibleSection title="Display">
             {[
               ["Number the posts (1/n)", numbers, setNumbers],
@@ -780,34 +808,6 @@ export default function Unroller() {
               Remove label
             </button>
           </CollapsibleSection>
-
-          <Section title="Save">
-            <div className="flex gap-2">
-              <button type="button" disabled={!thread || printing} onClick={() => void downloadPdf()} className="min-w-0 flex-1 bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60">
-                {printing ? "Making PDF…" : "Download PDF"}
-              </button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button type="button" disabled={!thread} title="Copy or download as text or Markdown" aria-label="More formats" className="inline-flex flex-none items-center gap-1.5 border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-800 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50">
-                    Text <ChevronDown size={14} aria-hidden="true" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-48">
-                  <DropdownMenuLabel className="text-[11px] font-normal text-stone-500">Copy</DropdownMenuLabel>
-                  <DropdownMenuItem onSelect={async () => thread && flash((await copy(toText(thread, opts))) ? "Text copied" : "Copy failed")}><Copy />Copy as text</DropdownMenuItem>
-                  <DropdownMenuItem onSelect={async () => thread && flash((await copy(toMarkdown(thread, opts))) ? "Markdown copied" : "Copy failed")}><Copy />Copy Markdown</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="text-[11px] font-normal text-stone-500">Download</DropdownMenuLabel>
-                  <DropdownMenuItem onSelect={() => thread && save(`${base}.txt`, toText(thread, opts), "text/plain;charset=utf-8")}><FileText />Download .txt</DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => thread && save(`${base}.md`, toMarkdown(thread, opts), "text/markdown;charset=utf-8")}><FileText />Download .md</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <ResetStyleButton className="w-full" />
-            <div className="h-4 text-xs font-medium text-emerald-700" aria-live="polite">
-              {notice}
-            </div>
-          </Section>
         </aside>
 
         <div className="order-1 flex min-w-0 flex-col lg:order-2 lg:min-h-0">
