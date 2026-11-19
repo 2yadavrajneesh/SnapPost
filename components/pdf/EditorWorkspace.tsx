@@ -640,7 +640,7 @@ export default function EditorWorkspace() {
               <div className="flex justify-between"><dt className="text-stone-500">After saving</dt><dd className="font-bold text-stone-900">about {size(file.size + extra + (annots.length ? 2500 : 0))}</dd></div>
             </dl>
             {!result && (
-              <button type="button" className={`${btnPrimary} w-full`} disabled={!annots.length || !!busy || cfg?.mode === "off"} onClick={save}>
+              <button type="button" className={`${btnPrimary} w-full ${busy ? "btn-busy" : ""}`} style={busy === "upload" ? { "--p": `${pct}%`, "--pa": "none" } as React.CSSProperties : undefined} disabled={!annots.length || !!busy || cfg?.mode === "off"} onClick={save}>
                 {busy === "upload" ? `Uploading ${pct}%` : busy === "process" ? "Saving…" : "Save edits"}
               </button>
             )}

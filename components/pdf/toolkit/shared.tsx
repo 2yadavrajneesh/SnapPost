@@ -165,7 +165,7 @@ export function Finish({ ready, busy, label, onRun, made, onReset, error, hint, 
   return (
     <Card title={made ? "Your file is ready" : "Create the file"}>
       {!made && (
-        <button type="button" className={`${btnPrimary} w-full`} disabled={!ready || busy} onClick={onRun}>
+        <button type="button" className={`${btnPrimary} w-full ${busy ? "btn-busy" : ""}`} disabled={!ready || busy} onClick={onRun}>
           {busy ? "Working…" : label}
         </button>
       )}

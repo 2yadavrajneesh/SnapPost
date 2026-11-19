@@ -388,7 +388,7 @@ export default function NewsWorkspace() {
           {cfg?.mode === "off" && <p className="mb-3 bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-900">File storage is not set up on this site yet.</p>}
           <div className="flex gap-2">
             {!result && (
-              <button type="button" className={`${btnPrimary} flex-1 whitespace-nowrap max-lg:hidden`} disabled={!ready} onClick={run}>
+              <button type="button" className={`${btnPrimary} flex-1 whitespace-nowrap max-lg:hidden ${busy ? "btn-busy" : ""}`} style={busy === "upload" ? { "--p": `${pct}%`, "--pa": "none" } as React.CSSProperties : undefined} disabled={!ready} onClick={run}>
                 {busy === "upload" ? `Uploading ${pct}%` : busy === "process" ? "Building the PDF…" : "Make PDF"}
               </button>
             )}
@@ -419,7 +419,7 @@ export default function NewsWorkspace() {
         <p className="px-1 text-[11px] leading-relaxed text-stone-500 max-lg:order-5">Screenshots are processed on the server and removed right after. Hindi and English text are both supported in titles and captions.</p>
       </aside>
       {!result && (
-        <button type="button" className={`${btnPrimary} sticky bottom-3 z-20 col-span-full max-lg:order-6 h-12 w-full text-sm shadow-lg disabled:!bg-stone-400 disabled:!opacity-100 lg:hidden`} disabled={!ready} onClick={run}>
+        <button type="button" className={`${btnPrimary} sticky bottom-3 z-20 col-span-full max-lg:order-6 h-12 w-full text-sm shadow-lg disabled:!bg-stone-400 disabled:!opacity-100 lg:hidden ${busy ? "btn-busy" : ""}`} style={busy === "upload" ? { "--p": `${pct}%`, "--pa": "none" } as React.CSSProperties : undefined} disabled={!ready} onClick={run}>
           {busy === "upload" ? `Uploading ${pct}%` : busy === "process" ? "Building the PDF…" : "Make PDF"}
         </button>
       )}

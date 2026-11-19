@@ -601,7 +601,7 @@ export default function Home() {
     onClick={download}
     disabled={!hasTweet || exporting}
     title={hasTweet ? undefined : "Paste a tweet link first"}
-    className={`whitespace-nowrap bg-accent text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 ${
+    className={`whitespace-nowrap bg-accent text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 ${exporting ? "btn-busy" : ""} ${
       block ? "h-12 min-w-0 flex-1 px-4" : "px-4 py-2"
     }`}
   >
