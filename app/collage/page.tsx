@@ -79,7 +79,7 @@ export default function CollageMaker() {
   const [shadow, setShadow] = useState(false);
   const [crop, setCrop] = useState(false);
   const [headText, setHeadText] = useState("");
-  const [showHead, setShowHead] = useState(true);
+  const [showHead, setShowHead] = useState(false);
   const [headSize, setHeadSize] = useState(44);
   const [headDark, setHeadDark] = useState(true);
   const [classic, setClassic] = useState(false);
@@ -108,7 +108,7 @@ export default function CollageMaker() {
       setShadow(!!v.shadow);
       setCrop(!!v.crop);
       setHeadText(v.headText ?? "");
-      setShowHead(v.showHead ?? true);
+      setShowHead(v.showHead ?? false);
       setHeadSize(v.headSize ?? 44);
       setHeadDark(v.headDark ?? true);
       setClassic(!!v.classic);
@@ -311,7 +311,7 @@ export default function CollageMaker() {
       setHeadDark(b?.headDark ?? true);
       setHeadSize(b?.headSize ?? 44);
       setHeadText(b?.headText ?? "");
-      setShowHead(b?.showHead ?? true);
+      setShowHead(b?.showHead ?? false);
       setClassic(false);
       flash("Classic grid look is off. Your earlier layout is back.");
       return;
@@ -549,7 +549,7 @@ export default function CollageMaker() {
             {!items.length && <p className="text-[11px] text-stone-500">Add at least one tweet to download a collage.</p>}
           </Section>
 
-          <Section title="Title and look">
+          <CollapsibleSection title="Title and look">
             <button type="button" role="switch" aria-checked={showHead} className={`${btnPlain} w-full justify-between`} onClick={() => setShowHead(!showHead)}>
               <span>Show title on top</span>
               <span className={`flex h-5 w-9 items-center rounded-full p-0.5 transition ${showHead ? "bg-emerald-600" : "bg-stone-300"}`}>
@@ -582,7 +582,7 @@ export default function CollageMaker() {
                 </span>
               }
             />
-          </Section>
+          </CollapsibleSection>
 
           <CollapsibleSection title="Layout">
             <div>
