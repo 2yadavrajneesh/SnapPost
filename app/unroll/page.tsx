@@ -569,7 +569,7 @@ export default function Unroller() {
             </div>
           </Section>
 
-          <Section title="Save">
+          <Section>
             <button type="button" disabled={!thread || printing} onClick={() => void downloadPdf()} className="w-full bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60">
                 {printing ? "Making PDF…" : "Download PDF"}
               </button>

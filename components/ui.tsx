@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-export function Section({ title, children }: { title: string; children: ReactNode }) {
+export function Section({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <section className="border-b border-stone-300 px-5 pb-5 pt-5">
-      <h2 className="mb-3 text-sm font-bold text-stone-900">{title}</h2>
+      {title && <h2 className="mb-3 text-sm font-bold text-stone-900">{title}</h2>}
       <div className="space-y-3">{children}</div>
     </section>
   );
