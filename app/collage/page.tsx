@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { CollageTiles } from "@/components/AppearanceTiles";
 import ScrollTop from "@/components/layout/ScrollTop";
 import SiteHeader from "@/components/layout/SiteHeader";
+import { NativeSelect } from "@/components/ui/native-select";
 import { CollapsibleSection, Label, Section, Segmented, Slider, SwitchRow, Toggle } from "@/components/ui";
 import { BACKGROUNDS, CANVASES, FRAME_W, MAX_TWEETS, type CanvasKey, type LastRow, type LayoutMode } from "@/lib/collage";
 import { downloadBlob, renderPdf, renderPng } from "@/lib/export";
@@ -502,13 +503,21 @@ export default function CollageMaker() {
           </Section>
 
           <Section>
-            <div>
-              <Label>Format</Label>
-              <Segmented value={format} onChange={setFormat} options={[{ value: "png", label: "PNG image" }, { value: "pdf", label: "PDF document" }]} />
-            </div>
-            <div>
-              <Label>Size</Label>
-              <Segmented value={String(quality)} onChange={(v) => setQuality(Number(v) as 1 | 2)} options={[{ value: "1", label: `Standard ${FRAME_W}px` }, { value: "2", label: `High ${FRAME_W * 2}px` }]} />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Format</Label>
+                <NativeSelect aria-label="Format" className="!h-9 border border-stone-300 bg-white px-2 text-xs font-semibold text-stone-800" value={format} onChange={(e) => setFormat(e.target.value as typeof format)}>
+                  <option value="png">PNG image</option>
+                  <option value="pdf">PDF document</option>
+                </NativeSelect>
+              </div>
+              <div>
+                <Label>Size</Label>
+                <NativeSelect aria-label="Size" className="!h-9 border border-stone-300 bg-white px-2 text-xs font-semibold text-stone-800" value={String(quality)} onChange={(e) => setQuality(Number(e.target.value) as 1 | 2)}>
+                  <option value="1">Standard {FRAME_W}px</option>
+                  <option value="2">High {FRAME_W * 2}px</option>
+                </NativeSelect>
+              </div>
             </div>
             <div className="sticky bottom-3 z-20 flex gap-2 lg:static">
               <button type="button" className={`${btnPrimary} h-11 min-w-0 flex-1 whitespace-nowrap text-sm shadow-lg disabled:!bg-stone-400 disabled:!opacity-100 lg:shadow-none ${exporting ? "btn-busy" : ""}`} disabled={!items.length || exporting || loading > 0} onClick={() => void download()}>
