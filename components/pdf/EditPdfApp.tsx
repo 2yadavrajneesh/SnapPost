@@ -93,15 +93,15 @@ export default function EditPdfApp() {
             <TabsTrigger
               key={t.id}
               value={t.id}
-              className={`!h-auto flex-none gap-1.5 rounded-none border px-2.5 py-2 text-xs font-bold shadow-none transition ${t.id === id ? "text-white" : "bg-white text-stone-800 hover:bg-stone-100 hover:text-stone-800"}`}
+              className={`!h-auto flex-auto justify-center gap-1.5 rounded-none border px-2.5 py-2 text-xs font-bold shadow-none transition ${t.id === id ? "text-white" : "bg-white text-stone-800 hover:bg-stone-100 hover:text-stone-800"}`}
               style={t.id === id ? { background: t.color, borderColor: t.color, color: "#fff" } : { borderColor: "#d6d3d1" }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.id === id ? "#fff" : t.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={t.icon} /></svg>
               {t.label}
             </TabsTrigger>
           ))}
-          <ResetStyleButton className="!h-auto flex-none self-stretch !px-2.5" onReset={resetStyle} />
-          <ResetButton className="h-auto flex-none self-stretch !px-2.5" />
+          <ResetStyleButton className="!h-auto flex-auto self-stretch !px-2.5" onReset={resetStyle} />
+          <ResetButton className="h-auto flex-auto self-stretch !px-2.5" />
         </TabsList>
       </Tabs>
       <View key={`${tab.id}:${fresh}`} />
