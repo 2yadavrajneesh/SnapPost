@@ -1,18 +1,15 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { CircleCheck } from "lucide-react";
-import { Alert, AlertTitle } from "@/components/ui/alert";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { liveWork, markWork } from "@/lib/session";
 import { toolFor } from "@/lib/tools";
 
 /** A brief "saved" note after work is stored in the browser. Shown at most once every 30 seconds, for 5 seconds. */
 export default function SaveNotice() {
   const path = usePathname();
-  const [show, setShow] = useState(false);
   const last = useRef(0);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
     last.current = 0;
     // only a save that follows something the person did counts; restoring data on load does not
@@ -38,22 +35,13 @@ export default function SaveNotice() {
       markWork(app);
       if (now - last.current < 30000) return;
       last.current = now;
-      setShow(true);
-      clearTimeout(timer.current);
-      timer.current = setTimeout(() => setShow(false), 5000);
+      toast.success("Your progress is saved", { id: "save-notice", duration: 4000 });
     };
     window.addEventListener("snap:saved", on);
     return () => {
       window.removeEventListener("snap:saved", on);
       evs.forEach((e) => window.removeEventListener(e, touch, true));
-      clearTimeout(timer.current);
     };
   }, [path]);
-  if (!show) return null;
-  return (
-    <Alert variant="success" role="status" aria-live="polite" className="snap-pop pointer-events-none fixed bottom-20 right-4 z-[60] w-auto max-w-[calc(100vw-2rem)] items-center py-2.5 shadow-lg">
-      <CircleCheck />
-      <AlertTitle className="text-xs font-semibold">Your progress is saved</AlertTitle>
-    </Alert>
-  );
+  return null;
 }
