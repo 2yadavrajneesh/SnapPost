@@ -419,8 +419,8 @@ export default function NewsWorkspace() {
             <span className="text-sm font-semibold">PDF preview · drag a picture to place it, or drop it on another page</span>
             <button type="button" onClick={() => setBig(false)} className="border border-white/50 px-3 py-1 text-xs font-semibold hover:bg-white/10">Close ✕</button>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6" onClick={(e) => e.stopPropagation()}>
-            <div className="mx-auto max-w-[860px]">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6">
+            <div className="mx-auto max-w-[860px]" onClick={(e) => e.stopPropagation()}>
               <NewsPreview items={items} s={s} date={s.showDate ? date : ""} />
             </div>
           </div>
