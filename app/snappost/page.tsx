@@ -1,5 +1,6 @@
 "use client";
 
+import { Paintbrush } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
 import { NativeSelect } from "@/components/ui/native-select";
 import { useSessionSnapshot, useWork } from "@/lib/session";
@@ -864,11 +865,8 @@ export default function Home() {
               onClick={resetAll}
               className="flex h-12 items-center justify-center gap-2 border border-stone-200 bg-[#f3ecdf]/60 px-5 text-sm font-semibold text-stone-600 transition hover:bg-[#ece3d2]"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
-                <path d="M21 3v5h-5" />
-              </svg>
-              Reset styles
+              <Paintbrush size={16} aria-hidden="true" />
+              Reset style
             </button>
           </div>
 

@@ -6,6 +6,7 @@ import { useSessionSnapshot, useWork } from "@/lib/session";
 import CollageFrame, { type FrameLook, type Item, type Picture } from "@/components/collage/CollageFrame";
 import { BORDERS, type BorderKind, type CardStyle } from "@/components/collage/CollageCard";
 import { Maximize2, Minus, Plus } from "lucide-react";
+import ResetStyleButton from "@/components/layout/ResetStyleButton";
 import { Button } from "@/components/ui/button";
 import { CollageTiles } from "@/components/AppearanceTiles";
 import ScrollTop from "@/components/layout/ScrollTop";
@@ -618,6 +619,7 @@ export default function CollageMaker() {
               {exporting ? "Creating…" : loading ? "Loading tweets…" : `Download ${format.toUpperCase()}`}
             </button>
             {!items.length && <p className="text-[11px] text-stone-500">Add at least one tweet to download a collage.</p>}
+            <ResetStyleButton className="w-full" />
           </Section>
         </aside>
 

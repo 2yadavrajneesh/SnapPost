@@ -15,6 +15,7 @@ import PageModePicker, { type PageMode } from "@/components/unroll/PageModePicke
 import ScrollTop from "@/components/layout/ScrollTop";
 import HighlightEditor from "@/components/HighlightEditor";
 import { Eraser, Undo2 } from "lucide-react";
+import ResetStyleButton from "@/components/layout/ResetStyleButton";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { addHighlight, HIGHLIGHT_COLORS, offsetIn, REDACT_STYLES, removeHighlight, type HighlightStyle } from "@/lib/highlight";
@@ -797,6 +798,7 @@ export default function Unroller() {
                 Download .md
               </button>
             </div>
+            <ResetStyleButton className="w-full" />
             <div className="h-4 text-xs font-medium text-emerald-700" aria-live="polite">
               {notice}
             </div>

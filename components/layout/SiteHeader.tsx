@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
-import HistoryBar from "@/components/layout/HistoryBar";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { TOOLS, ToolIcon, toolFor } from "@/lib/tools";
@@ -84,7 +83,6 @@ export default function SiteHeader({ actions }: { actions?: ReactNode }) {
         </NavigationMenu>
 
         <div className="flex flex-none items-center gap-2">
-          <HistoryBar />
           {actions}
           <button
             type="button"
