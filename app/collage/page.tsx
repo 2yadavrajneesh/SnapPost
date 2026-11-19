@@ -408,8 +408,18 @@ export default function CollageMaker() {
       <main className="grid w-full flex-1 lg:min-h-0 lg:grid-cols-[380px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
         <aside className="order-2 min-w-0 border-t border-stone-300 lg:order-1 lg:min-h-0 lg:overflow-y-auto lg:border-r lg:border-t-0">
           <Section title="Tweets and pictures">
-            <div>
-              <Label>Paste tweet links, one per line</Label>
+            <div
+              onDragOver={(e) => { e.preventDefault(); setOverDrop(true); }}
+              onDragLeave={() => setOverDrop(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files.length) void addFiles(e.dataTransfer.files);
+                else addLinks(e.dataTransfer.getData("text/uri-list") || e.dataTransfer.getData("text"));
+                setOverDrop(false);
+              }}
+              className={`-m-1 p-1 transition ${overDrop ? "bg-pink-50 outline-2 outline-dashed outline-accent" : ""}`}
+            >
+              <Label>Paste links, or drop files here (or Ctrl+V)</Label>
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -425,10 +435,14 @@ export default function CollageMaker() {
                 placeholder={"https://x.com/user/status/123…\nhttps://x.com/user/status/456…"}
                 aria-label="Tweet links"
                 disabled={linksOff}
-                className="h-28 disabled:cursor-not-allowed disabled:opacity-50 w-full resize-y border border-stone-200 bg-white p-2.5 font-mono text-xs outline-none focus:border-[color:var(--accent)]"
+                className="h-16 disabled:cursor-not-allowed disabled:opacity-50 w-full resize-y border border-stone-200 bg-white p-2.5 font-mono text-xs outline-none focus:border-[color:var(--accent)]"
               />
               <div className="mt-2 flex gap-2">
                 <button type="button" className={`${btnPrimary} flex-1`} disabled={linksOff || !text.trim() || entries.length >= MAX_TWEETS} onClick={submit}>Add links</button>
+                <button type="button" className={`${btnPlain} gap-1.5 px-3`} disabled={filesOff || entries.length >= MAX_TWEETS} onClick={() => fileInput.current?.click()} title="Pictures, or one Word, PDF, text, CSV, HTML or Excel file with tweet links inside. Pictures and links cannot be mixed.">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>
+                  Upload
+                </button>
                 <button type="button" disabled={linksOff} onClick={() => void pasteClipboard()} aria-label="Paste links from clipboard" title="Paste from clipboard" className={`${btnPlain} w-10 px-0`}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></svg>
                 </button>
@@ -437,25 +451,8 @@ export default function CollageMaker() {
                 </button>
               </div>
               <input ref={fileInput} type="file" accept="image/*,.txt,.csv,.tsv,.json,.md,.html,.htm,.xml,.docx,.pdf,.xlsx,.xls,.xlsm,.ods" multiple hidden onChange={(e) => { if (e.target.files) void addFiles(e.target.files); e.target.value = ""; }} />
-              <div
-                onDragOver={(e) => { e.preventDefault(); setOverDrop(true); }}
-                onDragLeave={() => setOverDrop(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (e.dataTransfer.files.length) void addFiles(e.dataTransfer.files);
-                  else addLinks(e.dataTransfer.getData("text/uri-list") || e.dataTransfer.getData("text"));
-                  setOverDrop(false);
-                }}
-                className={`mt-2 flex flex-col items-center gap-1 border-2 border-dashed px-3 py-3 text-center transition ${filesOff ? "opacity-50" : overDrop ? "border-accent bg-pink-50" : "border-stone-300 bg-white"}`}
-              >
-                <button type="button" className={`${btnPlain} w-full`} disabled={filesOff || entries.length >= MAX_TWEETS} onClick={() => fileInput.current?.click()}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>
-                  Upload files
-                </button>
-                <span className="text-[11px] text-stone-500">Pictures, or one Word, PDF, text, CSV, HTML or Excel file with tweet links inside (found for you). Pictures and links cannot be mixed. Drop files here or paste with Ctrl+V.</span>
-              </div>
               {lockNote && <p role="status" className="mt-1.5 bg-stone-100 px-2.5 py-1.5 text-[11px] font-semibold text-stone-700">{lockNote}</p>}
-              <p className="mt-1.5 text-[11px] text-stone-500">{entries.length} of {MAX_TWEETS} items{loading ? ` · loading ${loading}…` : ""}{failed ? ` · ${failed} failed` : ""}</p>
+              <p className="mt-1 text-[11px] text-stone-500">{entries.length} of {MAX_TWEETS} items{loading ? ` · loading ${loading}…` : ""}{failed ? ` · ${failed} failed` : ""}</p>
             </div>
 
             {entries.length > 0 && (
