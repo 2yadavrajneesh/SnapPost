@@ -5,6 +5,8 @@ import { sList, useWork } from "@/lib/session";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NativeSelect } from "@/components/ui/native-select";
 import ResetButton from "@/components/layout/ResetButton";
+import ResetStyleButton from "@/components/layout/ResetStyleButton";
+import { historyFor } from "@/lib/history";
 import { clearOrigin, useFlow } from "@/lib/pdf/flow";
 import EditorWorkspace from "./EditorWorkspace";
 import Organize from "./toolkit/Organize";
@@ -29,6 +31,9 @@ const TABS: { id: string; label: string; blurb: string; color: string; icon: str
 
 export default function EditPdfApp() {
   const [id, setId] = useState("edit");
+  // "Reset style" puts the open tool's options back to their defaults and keeps its PDF
+  const [fresh, setFresh] = useState(0);
+  const resetStyle = () => { if (id === "edit") historyFor("editpdf")?.resetSettings(); else setFresh((n) => n + 1); };
   const nav = useRef<HTMLDivElement>(null);
   // "Reset everything" stays off until a PDF has actually been opened
   const [has, setHas] = useState(false);
@@ -80,6 +85,7 @@ export default function EditPdfApp() {
                 </span>
               </option>)}
           </NativeSelect>
+          <ResetStyleButton className="!h-12 flex-none" onReset={resetStyle} />
           <ResetButton className="h-12 flex-none" />
         </div>
         <TabsList ref={nav} aria-label="PDF tools" className="relative hidden !h-auto w-full flex-wrap sm:flex justify-start gap-1.5 rounded-none bg-transparent p-0 pb-1">
@@ -94,10 +100,11 @@ export default function EditPdfApp() {
               {t.label}
             </TabsTrigger>
           ))}
+          <ResetStyleButton className="!h-auto flex-none self-stretch" onReset={resetStyle} />
           <ResetButton className="h-auto flex-none self-stretch" />
         </TabsList>
       </Tabs>
-      <View key={tab.id} />
+      <View key={`${tab.id}:${fresh}`} />
     </div>
   );
 }
