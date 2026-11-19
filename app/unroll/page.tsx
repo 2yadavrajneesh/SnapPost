@@ -592,7 +592,7 @@ export default function Unroller() {
               </DropdownMenu>
               <ResetStyleButton className="w-full" />
             </div>
-            <div className="h-4 text-xs font-medium text-emerald-700" aria-live="polite">
+            <div className="text-xs font-medium text-emerald-700 empty:hidden" aria-live="polite">
               {notice}
             </div>
           </Section>
