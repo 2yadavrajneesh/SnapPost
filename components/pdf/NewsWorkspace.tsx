@@ -388,13 +388,13 @@ export default function NewsWorkspace() {
           {cfg?.mode === "off" && <p className="mb-3 bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-900">File storage is not set up on this site yet.</p>}
           <div className="flex gap-2">
             {!result && (
-              <button type="button" className={`${btnPrimary} flex-1 max-lg:hidden`} disabled={!ready} onClick={run}>
+              <button type="button" className={`${btnPrimary} flex-1 whitespace-nowrap max-lg:hidden`} disabled={!ready} onClick={run}>
                 {busy === "upload" ? `Uploading ${pct}%` : busy === "process" ? "Building the PDF…" : "Make PDF"}
               </button>
             )}
             <ResetButton className="h-auto max-lg:flex-1 lg:flex-none" />
+            <ResetStyleButton className="h-auto px-3 max-lg:flex-1 lg:flex-none" />
           </div>
-          <ResetStyleButton className="mt-2 w-full" />
           {busy === "upload" && <Progress value={pct} aria-label="Upload progress" className="mt-2 h-1.5" />}
           {!result && !items.length && <p className="mt-2 text-[11px] text-stone-500">Add at least one screenshot to continue.</p>}
           {error && <p role="alert" className="mt-3 bg-red-50 px-3 py-2 text-xs font-semibold text-red-800">{error}</p>}
