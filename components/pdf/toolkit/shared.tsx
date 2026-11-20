@@ -215,11 +215,11 @@ export function Seg<T extends string | number>({ value, options, onChange }: { v
 }
 
 /** Pass the open file to another EditPDF tool. Come back from there with the banner at the top. */
-export function SendMenu({ from, file, label = "Continue in…" }: { from: string; file: { name: string; bytes: Uint8Array } | null; label?: string }) {
+export function SendMenu({ from, file, label = "Continue in" }: { from: string; file: { name: string; bytes: Uint8Array } | null; label?: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button type="button" disabled={!file} className={`${btnPlain} flex w-full items-center justify-center gap-2`}><ArrowRightLeft size={15} />{label}</button>
+        <button type="button" disabled={!file} className={`${btnPlain} flex w-full items-center justify-center gap-1.5 whitespace-nowrap px-2`}><ArrowRightLeft size={15} />{label}</button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">
         <DropdownMenuLabel className="text-sm font-bold text-stone-900">Or continue in</DropdownMenuLabel>

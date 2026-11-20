@@ -1,10 +1,11 @@
 "use client";
 
 import { Switch } from "@/components/ui/switch";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Ico } from "@/components/Icons";
 import { sDel, sGet, sSet, useSessionSnapshot } from "@/lib/session";
-import { takePending } from "@/lib/pdf/flow";
+import { takePending, useCurrentFile } from "@/lib/pdf/flow";
+import { ToolActions } from "@/components/pdf/toolkit/shared";
 import { Card, btnPlain, btnPrimary, btnSm, useCopy, btnIcon } from "@/components/linkdesk/ui";
 import { deleteResult, downloadHref, getConfig, runTool, uploadFile, type PdfConfig, type RunResult } from "@/lib/pdf/client";
 
@@ -13,11 +14,11 @@ type Base = { id: number; page: number };
 type Ann = Base &
   (
     | { k: "text"; x: number; y: number; text: string; size: number; color: string; bold: boolean }
-    | { k: "rect" | "ellipse" | "highlight" | "white"; x: number; y: number; w: number; h: number; color: string; width: number }
+    | { k: "rect" | "ellipse" | "highlight" | "white" | "crop"; x: number; y: number; w: number; h: number; color: string; width: number }
     | { k: "ink"; pts: Pt[]; color: string; width: number }
     | { k: "image"; x: number; y: number; w: number; h: number; data: string }
   );
-type Tool = "select" | "text" | "highlight" | "rect" | "ellipse" | "white" | "ink" | "image";
+type Tool = "select" | "text" | "highlight" | "rect" | "ellipse" | "white" | "ink" | "image" | "crop";
 type PdfDocProxy = import("pdfjs-dist").PDFDocumentProxy;
 
 const COLORS = ["#111827", "#dc2626", "#2563eb", "#16a34a", "#f59e0b", "#7c3aed"];
@@ -30,6 +31,7 @@ const TOOLS: { id: Tool; label: string; icon: string }[] = [
   { id: "white", label: "Whiteout", icon: "M4 5h16v14H4zM4 19L20 5" },
   { id: "ink", label: "Draw", icon: "M4 20c4-1 5-6 9-9l4-4 3 3-4 4c-3 4-8 5-12 6z" },
   { id: "image", label: "Picture", icon: "M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4" },
+  { id: "crop", label: "Crop", icon: "M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2" },
 ];
 const SIG_KEY = "editpdf:signature:v1";
 let nid = 0;
@@ -189,8 +191,20 @@ function PageView({
             );
           }
           const box = { left: `${a.x * 100}%`, top: `${a.y * 100}%`, width: `${a.w * 100}%`, height: `${a.h * 100}%`, cursor: "move" } as const;
+          const dim = a.k === "crop" ? (
+            <>
+              {[
+                { left: 0, top: 0, width: "100%", height: `${a.y * 100}%` },
+                { left: 0, top: `${(a.y + a.h) * 100}%`, width: "100%", height: `${(1 - a.y - a.h) * 100}%` },
+                { left: 0, top: `${a.y * 100}%`, width: `${a.x * 100}%`, height: `${a.h * 100}%` },
+                { left: `${(a.x + a.w) * 100}%`, top: `${a.y * 100}%`, width: `${(1 - a.x - a.w) * 100}%`, height: `${a.h * 100}%` },
+              ].map((st, i) => <div key={i} className="pointer-events-none absolute bg-black/55" style={st} />)}
+            </>
+          ) : null;
           return (
-            <div key={a.id} className={`absolute ${ring}`} style={box} onPointerDown={(e) => startDrag(e, a, "move")}>
+            <Fragment key={a.id}>
+            {dim}
+            <div className={`absolute ${ring}`} style={box} onPointerDown={(e) => startDrag(e, a, "move")}>
               {a.k === "image" ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={a.data} alt="" draggable={false} className="pointer-events-none h-full w-full" />
@@ -199,7 +213,7 @@ function PageView({
                   className="h-full w-full"
                   style={{
                     background: a.k === "highlight" ? hexA(a.color, 0.35) : a.k === "white" ? "#fff" : "transparent",
-                    border: a.k === "rect" || a.k === "ellipse" ? `${Math.max(1, a.width * scale)}px solid ${a.color}` : "none",
+                    border: a.k === "rect" || a.k === "ellipse" ? `${Math.max(1, a.width * scale)}px solid ${a.color}` : a.k === "crop" ? "2px dashed #fff" : "none",
                     borderRadius: a.k === "ellipse" ? "50%" : 0,
                     boxShadow: a.k === "white" && sel ? "inset 0 0 0 1px #94a3b8" : "none",
                   }}
@@ -207,6 +221,7 @@ function PageView({
               )}
               {sel && <span onPointerDown={(e) => startDrag(e, a, "resize")} className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-nwse-resize border border-white bg-accent" />}
             </div>
+            </Fragment>
           );
         })}
       </div>
@@ -492,10 +507,10 @@ export default function EditorWorkspace() {
       window.addEventListener("pointerup", up);
       return;
     }
-    if (tool === "highlight" || tool === "rect" || tool === "ellipse" || tool === "white") {
+    if (tool === "highlight" || tool === "rect" || tool === "ellipse" || tool === "white" || tool === "crop") {
       const a: Ann = { id: ++nid, page, k: tool, x: u, y: v, w: 0.001, h: 0.001, color, width: strokeW };
       snapshot();
-      setAnnots((l) => [...l, a]);
+      setAnnots((l) => [...l.filter((x) => !(tool === "crop" && x.k === "crop" && x.page === page)), a]);
       setSelected(a.id);
       const r = el.getBoundingClientRect();
       const mv = (ev: PointerEvent) => {
@@ -548,6 +563,16 @@ export default function EditorWorkspace() {
     }
   }
 
+  // "Continue in" hands over the saved PDF if there is one, otherwise the PDF as it was opened
+  useCurrentFile(async () => {
+    if (!file) return null;
+    if (result) {
+      const res = await fetch(result.url);
+      if (res.ok) return { name: result.name, bytes: new Uint8Array(await res.arrayBuffer()) };
+    }
+    return { name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) };
+  });
+
   // rough size after saving: the original plus the pictures, drawings and text that get added
   const extra = annots.reduce((n, a) => n + (a.k === "image" ? Math.round(a.data.length * 0.75) : a.k === "ink" ? a.pts.length * 14 + 200 : a.k === "text" ? 300 + a.text.length * 2 : 220), 0);
   const selAnn = annots.find((a) => a.id === selected) ?? null;
@@ -576,7 +601,7 @@ export default function EditorWorkspace() {
   }
 
   const isText = selAnn?.k === "text";
-  const canColor = tool !== "select" && tool !== "white" && tool !== "image" ? true : !!selAnn && selAnn.k !== "white" && selAnn.k !== "image";
+  const canColor = tool !== "select" && tool !== "white" && tool !== "image" && tool !== "crop" ? true : !!selAnn && selAnn.k !== "white" && selAnn.k !== "image" && selAnn.k !== "crop";
   return (
     <div className="space-y-3">
       <div className="sticky top-0 z-20 space-y-2 border border-stone-300 bg-white/95 p-2.5 backdrop-blur">
@@ -623,7 +648,7 @@ export default function EditorWorkspace() {
             </label>
           )}
           <span className="text-stone-500">
-            {pending ? "Click on the page to place it." : tool === "select" ? "Click an item to move or resize it. Double-click text to edit." : tool === "text" ? "Click where the text should go." : tool === "ink" ? "Press and drag to draw." : tool === "image" ? "Choose a picture, then click to place it." : "Press and drag on the page."}
+            {pending ? "Click on the page to place it." : tool === "select" ? "Click an item to move or resize it. Double-click text to edit." : tool === "text" ? "Click where the text should go." : tool === "ink" ? "Press and drag to draw." : tool === "image" ? "Choose a picture, then click to place it." : tool === "crop" ? "Drag the part of the page to keep. One crop per page; the rest is cut away when you save." : "Press and drag on the page."}
           </span>
         </div>
       </div>
@@ -657,7 +682,9 @@ export default function EditorWorkspace() {
                 <button type="button" className={`${btnPlain} w-full`} onClick={() => { deleteResult(result.url); setResult(null); }}>Keep editing</button>
               </div>
             )}
-            <button type="button" className={`${btnPlain} mt-2 w-full`} onClick={() => { if (result) deleteResult(result.url); setDoc(null); setFile(null); setAnnots([]); setPast([]); setResult(null); setError(""); }}>Open another PDF</button>
+            <div className="mt-3">
+              <ToolActions from="edit" file={{ name: file.name, bytes: new Uint8Array(0) }} onClear={() => { if (result) deleteResult(result.url); setDoc(null); setFile(null); setAnnots([]); setPast([]); setResult(null); setError(""); }} />
+            </div>
           </Card>
           <div className="px-1 text-[11px] leading-relaxed text-stone-500">
             <label className="mb-2 flex items-center gap-1.5 font-semibold text-stone-700">Go to page

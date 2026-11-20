@@ -147,11 +147,16 @@ async function editPdf({ inputs, options }: Ctx): Promise<Output> {
   const pages = doc.getPages();
   const images = new Map<string, Awaited<ReturnType<PDFDocument["embedPng"]>>>();
   let applied = 0;
+  const crops = new Map<number, EditAnn>();
   for (const a of list) {
     const pi = Number(a.page);
     if (!Number.isInteger(pi) || pi < 0 || pi >= pages.length) continue;
     const page = pages[pi];
     if (page.getRotation().angle % 360 !== 0) throw new Error(`Page ${pi + 1} is rotated. Use Rotate PDF to turn it upright first, then edit it.`);
+    if (a.k === "crop") {
+      crops.set(pi, a);
+      continue;
+    }
     const box = page.getCropBox();
     const W = box.width;
     const H = box.height;
@@ -189,6 +194,18 @@ async function editPdf({ inputs, options }: Ctx): Promise<Output> {
       const h = Math.abs(unit(a.h) * H);
       page.drawImage(img, { x: X(a.x as number), y: Y(a.y as number) - h, width: w, height: h });
     } else continue;
+    applied++;
+  }
+  // crops go last so every other edit is placed against the original page
+  for (const [pi, a] of crops) {
+    const page = pages[pi];
+    const box = page.getCropBox();
+    const u = (v: unknown) => Math.min(1, Math.max(0, Number(v) || 0));
+    const x = u(a.x), y = u(a.y), w = Math.min(u(a.w), 1 - x), h = Math.min(u(a.h), 1 - y);
+    if (w < 0.01 || h < 0.01) continue;
+    const nx = box.x + x * box.width, ny = box.y + (1 - y - h) * box.height, nw = w * box.width, nh = h * box.height;
+    page.setCropBox(nx, ny, nw, nh);
+    page.setMediaBox(nx, ny, nw, nh);
     applied++;
   }
   if (!applied) throw new Error("None of the edits could be applied.");

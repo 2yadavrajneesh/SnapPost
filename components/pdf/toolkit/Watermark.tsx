@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Maximize2, X } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Maximize2, X } from "lucide-react";
 import { NativeSelect } from "@/components/ui/native-select";
 import { SwitchRow } from "@/components/ui";
 import { Card, btnPlain } from "@/components/linkdesk/ui";
@@ -160,8 +160,16 @@ export default function Watermark() {
         <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
           <Field label="Position"><PosGrid value={pos} onChange={touch(setPos)} disabled={mosaic} /></Field>
           <div className="min-w-56 flex-1 space-y-3">
-            <Field label="Layer"><Seg value={below ? "b" : "o"} onChange={(v) => touch(setBelow)(v === "b")} options={[{ v: "o", l: "Over content" }, { v: "b", l: "Below content" }]} /></Field>
-            <label className="flex items-center gap-2 text-xs font-semibold text-stone-700"><input type="checkbox" checked={mosaic} onChange={(e) => touch(setMosaic)(e.target.checked)} />Mosaic (repeat across the page)</label>
+            <Field label="Layer">
+              <div role="radiogroup" aria-label="Layer" className="grid gap-1.5 sm:grid-cols-2">
+                {([["o", "Over the PDF", ArrowUpFromLine], ["b", "Below the PDF", ArrowDownToLine]] as const).map(([v, l, Icon]) => (
+                  <button key={v} type="button" role="radio" aria-checked={below === (v === "b")} onClick={() => touch(setBelow)(v === "b")} className={`flex items-center justify-center gap-2 border px-3 py-2.5 text-xs font-semibold transition ${below === (v === "b") ? "border-accent bg-accent text-white" : "border-stone-300 bg-white text-stone-700 hover:bg-stone-100"}`}>
+                    <Icon size={15} />{l}
+                  </button>
+                ))}
+              </div>
+            </Field>
+            <SwitchRow label="Mosaic (repeat across the page)" checked={mosaic} onChange={(v) => touch(setMosaic)(v)} />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
