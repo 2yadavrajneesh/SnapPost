@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SessionGuard />
         <DragOverlay />
         <SaveNotice />
-        <TooltipProvider delayDuration={200}><ToastProvider>{children}</ToastProvider><Toaster position="bottom-center" /></TooltipProvider>
+        <TooltipProvider delayDuration={200}><ToastProvider>{children}</ToastProvider><Toaster position="bottom-center" expand visibleToasts={3} gap={8} duration={3500} /></TooltipProvider>
         <Analytics />
         <SpeedInsights />
       </body>
