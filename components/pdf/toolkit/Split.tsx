@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Files, ListOrdered, MousePointerClick, Scissors } from "lucide-react";
 import { Card, btnPlain, btnSm } from "@/components/linkdesk/ui";
 import { parseRange, pickPages, splitPdf, type SplitMode } from "@/lib/pdf/browser";
 import { useCurrentFile } from "@/lib/pdf/flow";
@@ -58,7 +59,7 @@ export default function Split() {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
       <Card title="How should it be split?" chip={<span className="text-[11px] font-semibold text-stone-600">{src.name} · {src.count} pages</span>}>
-        <Seg<Mode> value={mode} onChange={(m) => { setMode(m); setMade(null); }} options={[{ v: "ranges", l: "By ranges" }, { v: "every", l: "Every N pages" }, { v: "each", l: "Each page" }, { v: "pick", l: "Pick pages" }]} />
+        <Seg<Mode> value={mode} onChange={(m) => { setMode(m); setMade(null); }} options={[{ v: "ranges", l: "By ranges", icon: <Scissors size={14} /> }, { v: "every", l: "Every N pages", icon: <ListOrdered size={14} /> }, { v: "each", l: "Each page", icon: <Files size={14} /> }, { v: "pick", l: "Pick pages", icon: <MousePointerClick size={14} /> }]} />
         {mode === "ranges" && (
           <Field label="Pages for each file, separated by commas">
             <input className={sel} value={spec} placeholder="1-3, 4-6, 9" onChange={(e) => { setSpec(e.target.value); setMade(null); }} />

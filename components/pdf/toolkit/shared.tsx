@@ -201,11 +201,12 @@ export function Field({ label, children, className = "" }: { label: string; chil
   return <label className={`block text-xs font-semibold text-stone-700 ${className}`}>{label}<div className="mt-1">{children}</div></label>;
 }
 
-export function Seg<T extends string | number>({ value, options, onChange }: { value: T; options: { v: T; l: ReactNode }[]; onChange: (v: T) => void }) {
+export function Seg<T extends string | number>({ value, options, onChange }: { value: T; options: { v: T; l: ReactNode; icon?: ReactNode }[]; onChange: (v: T) => void }) {
   return (
-    <div className="flex gap-1 bg-stone-100 p-1">
+    <div className="grid grid-cols-2 gap-1 border border-stone-300 bg-stone-100 p-1 sm:flex">
       {options.map((o) => (
-        <button key={String(o.v)} type="button" aria-pressed={value === o.v} onClick={() => onChange(o.v)} className={`flex-1 px-2 py-1.5 text-xs font-semibold transition ${value === o.v ? "bg-white text-stone-900 shadow-sm ring-1 ring-stone-300" : "text-stone-600 hover:bg-white/60"}`}>
+        <button key={String(o.v)} type="button" aria-pressed={value === o.v} onClick={() => onChange(o.v)} className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-2.5 py-2 text-xs font-semibold transition ${value === o.v ? "bg-accent text-white shadow-sm hover:brightness-110" : "text-stone-600 hover:bg-stone-200 hover:text-stone-900"}`}>
+          {o.icon}
           {o.l}
         </button>
       ))}
