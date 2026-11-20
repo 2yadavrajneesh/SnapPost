@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowRightLeft, FilePlus2 } from "lucide-react";
+import { ArrowRightLeft, ChevronRight, FilePlus2 } from "lucide-react";
 import { Ico } from "@/components/Icons";
 import { Card, DropZone, btnPlain, btnPrimary, field } from "@/components/linkdesk/ui";
 import { zipFiles } from "@/lib/pdf/browser";
@@ -215,16 +215,23 @@ export function Seg<T extends string | number>({ value, options, onChange }: { v
 }
 
 /** Pass the open file to another EditPDF tool. Come back from there with the banner at the top. */
-export function SendMenu({ from, file, label = "Send to tool" }: { from: string; file: { name: string; bytes: Uint8Array } | null; label?: string }) {
+export function SendMenu({ from, file, label = "Continue in…" }: { from: string; file: { name: string; bytes: Uint8Array } | null; label?: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button type="button" disabled={!file} className={`${btnPlain} flex w-full items-center justify-center gap-2`}><ArrowRightLeft size={15} />{label}</button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">
-        <DropdownMenuLabel className="text-[11px] font-normal text-stone-500">Opens this file there. Apply your changes first to keep them.</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-sm font-bold text-stone-900">Or continue in</DropdownMenuLabel>
+        <p className="px-2 pb-1.5 text-[11px] text-stone-500">Opens this file there. Apply your changes first to keep them.</p>
         {TOOLS.filter((t) => t.id !== from).map((t) => (
-          <DropdownMenuItem key={t.id} onSelect={async () => { const f = (await currentFile()) ?? file; if (f) sendTo(from, t.id, f); }}>{t.label}</DropdownMenuItem>
+          <DropdownMenuItem key={t.id} className="gap-2.5 py-1.5 text-sm" onSelect={async () => { const f = (await currentFile()) ?? file; if (f) sendTo(from, t.id, f); }}>
+            <span className="flex size-6 flex-none items-center justify-center rounded-md text-white [&_svg]:!text-white" style={{ background: t.color }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={t.icon} /></svg>
+            </span>
+            <span className="flex-1">{t.label}</span>
+            <ChevronRight size={14} className="text-stone-400" />
+          </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>

@@ -3,16 +3,16 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
 
 /** The PDF tools a file can be passed between. */
-export const TOOLS: { id: string; label: string }[] = [
-  { id: "edit", label: "Edit" },
-  { id: "organize", label: "Organize" },
-  { id: "numbers", label: "Page numbers" },
-  { id: "redact", label: "Redact" },
-  { id: "merge", label: "Merge" },
-  { id: "split", label: "Split" },
-  { id: "extract", label: "Extract" },
-  { id: "rotate", label: "Rotate" },
-  { id: "watermark", label: "Watermark" },
+export const TOOLS: { id: string; label: string; color: string; icon: string }[] = [
+  { id: "edit", label: "Edit", color: "#047857", icon: "M4 20h4L19 9l-4-4L4 16zM13 7l4 4" },
+  { id: "organize", label: "Organize", color: "#2563eb", icon: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" },
+  { id: "numbers", label: "Page numbers", color: "#7c3aed", icon: "M5 4h14v16H5zM9 16h6M12 8v5" },
+  { id: "redact", label: "Redact", color: "#111827", icon: "M4 6h16v4H4zM4 14h10v4H4z" },
+  { id: "merge", label: "Merge", color: "#d97706", icon: "M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M8 12h8M12 8v8" },
+  { id: "split", label: "Split", color: "#db2777", icon: "M12 3v18M7 8l-4 4 4 4M17 8l4 4-4 4" },
+  { id: "extract", label: "Extract", color: "#0d9488", icon: "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M12 17v-6M9 14l3-3 3 3" },
+  { id: "rotate", label: "Rotate", color: "#0891b2", icon: "M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5" },
+  { id: "watermark", label: "Watermark", color: "#dc2626", icon: "M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z" },
 ];
 export const toolLabel = (id: string) => TOOLS.find((t) => t.id === id)?.label ?? id;
 
