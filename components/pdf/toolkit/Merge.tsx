@@ -149,7 +149,7 @@ export default function Merge() {
     }
   }
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className={`grid gap-4 ${files.length ? "lg:grid-cols-[minmax(0,1fr)_300px]" : ""}`}>
       <Card title="Add the PDFs to join" chip={files.length ? <span className="text-[11px] font-semibold text-stone-600">{files.length} added · {total} pages</span> : undefined}>
         <input ref={input} type="file" hidden multiple accept="application/pdf,.pdf" onChange={(e) => { if (e.target.files) void add(e.target.files); e.target.value = ""; }} />
         {files.length === 0 && <label
@@ -162,6 +162,14 @@ export default function Merge() {
           <strong className="text-sm text-stone-900">Drop PDFs here or click to choose</strong>
           <small className="text-[11px] text-stone-500">Joined in the order shown below. Works on your device.</small>
         </label>}
+        {files.length === 0 && (
+          <ol className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+            <li><b className="text-slate-700">1</b> Choose the PDFs</li>
+            <li><b className="text-slate-700">2</b> Arrange them</li>
+            <li><b className="text-slate-700">3</b> Download the result</li>
+          </ol>
+        )}
+        {files.length === 0 && error && <p role="alert" className="bg-red-50 px-3 py-2 text-xs font-semibold text-red-800">{error}</p>}
         {files.length > 0 && (
           <div className="flex flex-wrap gap-2">
             <button type="button" className={btnSm} onClick={() => { setMade(null); setFiles((c) => [...c].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))); }}>Sort by name</button>
@@ -210,9 +218,9 @@ export default function Merge() {
         </ul>}
         {files.length > 1 && <p className="text-[11px] text-stone-500">Drag the cards to change the order. Use the checklist button on a card to take only some of its pages.</p>}
       </Card>
-      <aside className="space-y-4 self-start lg:sticky lg:top-0">
+      {files.length > 0 && <aside className="space-y-4 self-start lg:sticky lg:top-0">
         <Finish from="merge" extra={<ToolActions from="merge" file={files.length ? { name: made?.name ?? "merged.pdf", bytes: made?.bytes ?? files[0].bytes } : null} onClear={() => { setFiles([]); setMade(null); }} />} ready={files.length >= 1 && total > 0 && files.every((f) => countOf(f) > 0) && (files.length >= 2 || files.some((f) => f.pick))} busy={busy} label="Merge PDFs" onRun={run} made={made} onReset={() => setMade(null)} error={error} hint={files.length < 2 && !files.some((f) => f.pick) ? "Add at least two PDFs, or one PDF and choose some of its pages." : undefined} />
-      </aside>
+      </aside>}
       <PagePicker file={files.find((f) => f.id === picking) ?? null} doc={picking != null ? docs[picking] : undefined} onClose={() => setPicking(null)} onChange={(pick) => picking != null && setPick(picking, pick)} />
     </div>
   );
