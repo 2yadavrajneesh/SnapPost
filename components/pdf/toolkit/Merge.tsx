@@ -159,6 +159,9 @@ export default function Merge() {
           onDrop={(e) => { e.preventDefault(); setOver(false); void add(e.dataTransfer.files); }}
           className={`flex cursor-pointer flex-col items-center gap-1 border-2 border-dashed px-4 py-7 text-center ${over ? "border-accent bg-white" : "border-stone-300 bg-stone-50 hover:bg-white"}`}
         >
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden="true">
+            <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />
+          </svg>
           <strong className="text-sm text-stone-900">Drop PDFs here or click to choose</strong>
           <small className="text-[11px] text-stone-500">Joined in the order shown below. Works on your device.</small>
         </label>}
