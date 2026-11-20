@@ -100,7 +100,7 @@ export default function Watermark() {
   useCurrentFile(async () => made ?? (src ? { name: src.name, bytes: src.bytes } : null));
   if (!src) return <Open onFile={load} loading={loading} error={srcErr} title="Drop the PDF to watermark" />;
 
-  const W = 210;
+  const W = typeof window === "undefined" ? 420 : Math.max(200, Math.min(420, window.innerWidth - 72));
   const [pw, ph] = src.sizes[0];
   const mw = prev ? (kind === "image" ? (picSize / 100) * pw : prev.w) : 0;
   const mh = prev ? (kind === "image" ? (mw * prev.h) / prev.w : prev.h) : 0;
@@ -130,7 +130,7 @@ export default function Watermark() {
     );
   };
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
       <Card title="Watermark options" chip={<span className="text-[11px] font-semibold text-stone-600">{src.name} · {src.count} pages</span>}>
         <Seg value={kind} onChange={touch(setKind)} options={[{ v: "text", l: "Place text" }, { v: "image", l: "Place image" }]} />
         {kind === "text" ? (
