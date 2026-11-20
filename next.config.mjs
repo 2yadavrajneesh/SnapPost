@@ -12,6 +12,15 @@ const nextConfig = {
       "./node_modules/@fontsource/noto-sans-devanagari/files/noto-sans-devanagari-devanagari-700-normal.woff",
     ],
   },
+  // Vercel runs glibc x64 only: leave out the musl and wasm builds of sharp and the unused UI fonts
+  outputFileTracingExcludes: {
+    "/api/pdf/process": [
+      "./node_modules/@img/sharp-libvips-linuxmusl-x64/**",
+      "./node_modules/@img/sharp-linuxmusl-x64/**",
+      "./node_modules/@img/sharp-wasm32/**",
+      "./node_modules/@fontsource/inter/**",
+    ],
+  },
   // ArchiveVault now lives inside LinkDesk
   async redirects() {
     return [

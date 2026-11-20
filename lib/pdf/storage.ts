@@ -16,7 +16,7 @@ export const storageMode = (): "blob" | "local" | "off" => {
   return process.env.NODE_ENV === "production" ? "off" : "local";
 };
 
-const LOCAL_DIR = process.env.PDF_LOCAL_DIR || path.join(os.tmpdir(), "papernest-local");
+const LOCAL_DIR = process.env.PDF_LOCAL_DIR || path.join(/*turbopackIgnore: true*/ os.tmpdir(), "papernest-local");
 const BLOB_HOST = /^[a-z0-9-]+\.public\.blob\.vercel-storage\.com$/i;
 const LOCAL_URL = "/api/pdf/file/";
 
@@ -40,15 +40,15 @@ export function ownUrl(url: string, kind: Kind): boolean {
   }
 }
 
-const localPath = (kind: Kind, id: string, name: string) => path.join(LOCAL_DIR, kind, id, name);
+const localPath = (kind: Kind, id: string, name: string) => path.join(/*turbopackIgnore: true*/ LOCAL_DIR, kind, id, name);
 
 export async function saveFile(kind: Kind, name: string, bytes: Uint8Array, type: string): Promise<{ url: string }> {
   const id = randomUUID();
   const file = cleanName(name);
   if (storageMode() === "local") {
     const p = localPath(kind, id, file);
-    await fs.mkdir(path.dirname(p), { recursive: true });
-    await fs.writeFile(p, bytes);
+    await fs.mkdir(path.dirname(/*turbopackIgnore: true*/ p), { recursive: true });
+    await fs.writeFile(/*turbopackIgnore: true*/ p, bytes);
     return { url: `${LOCAL_URL}${kind}/${id}/${encodeURIComponent(file)}` };
   }
   const r = await put(`papernest/${kind}/${id}/${file}`, Buffer.from(bytes), { access: "public", addRandomSuffix: false, contentType: type, cacheControlMaxAge: 60 });
@@ -88,7 +88,7 @@ export async function deleteFiles(urls: string[]): Promise<void> {
   for (const url of urls) {
     if (url.startsWith(LOCAL_URL)) {
       const [, , , , k, id] = url.split("/");
-      if (/^[\w-]{36}$/.test(id) && (k === "in" || k === "out")) await fs.rm(path.join(LOCAL_DIR, k, id), { recursive: true, force: true }).catch(() => {});
+      if (/^[\w-]{36}$/.test(id) && (k === "in" || k === "out")) await fs.rm(path.join(/*turbopackIgnore: true*/ LOCAL_DIR, k, id), { recursive: true, force: true }).catch(() => {});
     } else if (ownUrl(url, "in") || ownUrl(url, "out")) blobs.push(url);
   }
   if (blobs.length) await del(blobs).catch(() => {});
@@ -104,10 +104,10 @@ export async function sweepOld(): Promise<void> {
   try {
     if (storageMode() === "local") {
       for (const kind of ["in", "out"]) {
-        const base = path.join(LOCAL_DIR, kind);
-        for (const id of await fs.readdir(base).catch(() => [] as string[])) {
-          const st = await fs.stat(path.join(base, id)).catch(() => null);
-          if (st && st.mtimeMs < cutoff) await fs.rm(path.join(base, id), { recursive: true, force: true });
+        const base = path.join(/*turbopackIgnore: true*/ LOCAL_DIR, kind);
+        for (const id of await fs.readdir(/*turbopackIgnore: true*/ base).catch(() => [] as string[])) {
+          const st = await fs.stat(path.join(/*turbopackIgnore: true*/ base, id)).catch(() => null);
+          if (st && st.mtimeMs < cutoff) await fs.rm(path.join(/*turbopackIgnore: true*/ base, id), { recursive: true, force: true });
         }
       }
     } else if (storageMode() === "blob") {
