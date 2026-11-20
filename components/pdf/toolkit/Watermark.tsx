@@ -157,9 +157,12 @@ export default function Watermark() {
             <Field label={`Size: ${picSize}% of the page width`}><input type="range" min={5} max={100} value={picSize} onChange={(e) => touch(setPicSize)(Number(e.target.value))} className="w-full" /></Field>
           </>
         )}
-        <div className="flex flex-wrap items-start gap-6">
+        <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
           <Field label="Position"><PosGrid value={pos} onChange={touch(setPos)} disabled={mosaic} /></Field>
-          <label className="mt-6 flex items-center gap-2 text-xs font-semibold text-stone-700"><input type="checkbox" checked={mosaic} onChange={(e) => touch(setMosaic)(e.target.checked)} />Mosaic (repeat across the page)</label>
+          <div className="min-w-56 flex-1 space-y-3">
+            <Field label="Layer"><Seg value={below ? "b" : "o"} onChange={(v) => touch(setBelow)(v === "b")} options={[{ v: "o", l: "Over content" }, { v: "b", l: "Below content" }]} /></Field>
+            <label className="flex items-center gap-2 text-xs font-semibold text-stone-700"><input type="checkbox" checked={mosaic} onChange={(e) => touch(setMosaic)(e.target.checked)} />Mosaic (repeat across the page)</label>
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Transparency">
@@ -175,7 +178,6 @@ export default function Watermark() {
           <Field label="From page"><input type="number" min={1} max={src.count} className={sel} value={from} onChange={(e) => touch(setFrom)(Math.max(1, Math.floor(Number(e.target.value)) || 1))} /></Field>
           <Field label="To page"><input type="number" min={1} max={src.count} className={sel} value={to} onChange={(e) => touch(setTo)(Math.min(src.count, Math.floor(Number(e.target.value)) || src.count))} /></Field>
         </div>
-        <Field label="Layer"><Seg value={below ? "b" : "o"} onChange={(v) => touch(setBelow)(v === "b")} options={[{ v: "o", l: "Over the PDF content" }, { v: "b", l: "Below the PDF content" }]} /></Field>
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
         <Card title="Preview, page 1" chip={<button type="button" onClick={() => setBig(true)} aria-label="Enlarge the preview" title="Enlarge the preview" className="ml-auto flex h-7 w-7 items-center justify-center border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"><Maximize2 size={14} /></button>}>
