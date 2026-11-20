@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { Maximize2, X } from "lucide-react";
 import { NativeSelect } from "@/components/ui/native-select";
 import { SwitchRow } from "@/components/ui";
 import { Card, btnPlain } from "@/components/linkdesk/ui";
@@ -88,15 +90,21 @@ export default function Watermark() {
   }
   const touch = <T,>(fn: (v: T) => void) => (v: T) => { setMade(null); fn(v); };
 
+  const [big, setBig] = useState(false);
+  useEffect(() => {
+    if (!big) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setBig(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [big]);
   useCurrentFile(async () => made ?? (src ? { name: src.name, bytes: src.bytes } : null));
   if (!src) return <Open onFile={load} loading={loading} error={srcErr} title="Drop the PDF to watermark" />;
 
   const W = 210;
   const [pw, ph] = src.sizes[0];
-  const k = W / pw;
   const mw = prev ? (kind === "image" ? (picSize / 100) * pw : prev.w) : 0;
   const mh = prev ? (kind === "image" ? (mw * prev.h) / prev.w : prev.h) : 0;
-  const markStyle = (cx: number, cy: number): React.CSSProperties => ({ position: "absolute", left: cx * k - (mw * k) / 2, top: cy * k - (mh * k) / 2, width: mw * k, height: mh * k, opacity, transform: `rotate(${-rotation}deg)`, pointerEvents: "none" });
+  const markStyle = (cx: number, cy: number, k: number): React.CSSProperties => ({ position: "absolute", left: cx * k - (mw * k) / 2, top: cy * k - (mh * k) / 2, width: mw * k, height: mh * k, opacity, transform: `rotate(${-rotation}deg)`, pointerEvents: "none" });
   const marks: [number, number][] = [];
   if (mosaic) {
     const gx = mw * 1.5 + 30, gy = mh * 2.4 + 40;
@@ -107,6 +115,20 @@ export default function Watermark() {
     marks.push([c === 0 ? pad + mw / 2 : c === 1 ? pw / 2 : pw - pad - mw / 2, r === 0 ? pad + mh / 2 : r === 1 ? ph / 2 : ph - pad - mh / 2]);
   }
 
+  const pageView = (w: number) => {
+    const k = w / pw;
+    const show = prev && from <= 1 && to >= 1;
+    const layer = marks.map(([x, y], i) => /* eslint-disable-next-line @next/next/no-img-element */ <img key={i} src={prev?.url} alt="" style={markStyle(x, y, k)} />);
+    return (
+      <div className="mx-auto" style={{ width: w }}>
+        <div className="relative overflow-hidden shadow ring-1 ring-stone-300" style={{ width: w, height: ph * k }}>
+          {below && show && layer}
+          <Thumb doc={src.doc} index={0} width={w} className={below ? "mix-blend-multiply" : ""} />
+          {!below && show && layer}
+        </div>
+      </div>
+    );
+  };
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
       <Card title="Watermark options" chip={<span className="text-[11px] font-semibold text-stone-600">{src.name} · {src.count} pages</span>}>
@@ -156,17 +178,19 @@ export default function Watermark() {
         <Field label="Layer"><Seg value={below ? "b" : "o"} onChange={(v) => touch(setBelow)(v === "b")} options={[{ v: "o", l: "Over the PDF content" }, { v: "b", l: "Below the PDF content" }]} /></Field>
       </Card>
       <aside className="space-y-4 self-start lg:sticky lg:top-0">
-        <Card title="Preview, page 1">
-          <div className="mx-auto" style={{ width: W }}>
-            <div className="relative overflow-hidden shadow ring-1 ring-stone-300" style={{ width: W, height: ph * k }}>
-              {below && prev && from <= 1 && to >= 1 && marks.map(([x, y], i) => /* eslint-disable-next-line @next/next/no-img-element */ <img key={i} src={prev.url} alt="" style={markStyle(x, y)} />)}
-              <Thumb doc={src.doc} index={0} width={W} className={below ? "mix-blend-multiply" : ""} />
-              {!below && prev && from <= 1 && to >= 1 && marks.map(([x, y], i) => /* eslint-disable-next-line @next/next/no-img-element */ <img key={i} src={prev.url} alt="" style={markStyle(x, y)} />)}
-            </div>
-          </div>
+        <Card title="Preview, page 1" chip={<button type="button" onClick={() => setBig(true)} aria-label="Enlarge the preview" title="Enlarge the preview" className="ml-auto flex h-7 w-7 items-center justify-center border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"><Maximize2 size={14} /></button>}>
+          {pageView(W)}
         </Card>
         <Finish from="watermark" extra={<ToolActions from="watermark" file={src ? { name: src.name, bytes: src.bytes } : null} onClear={clear} />} ready busy={busy} label="Add watermark" onRun={run} made={made} onReset={() => setMade(null)} error={error} />
       </aside>
+      {big && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/60 p-4" role="dialog" aria-modal="true" aria-label="Preview, page 1" onClick={() => setBig(false)}>
+          <div className="relative my-auto bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => setBig(false)} aria-label="Close" className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center border border-stone-300 bg-white text-stone-700 hover:bg-stone-100"><X size={16} /></button>
+            {pageView(typeof window === "undefined" ? 680 : Math.max(240, Math.min(680, window.innerWidth - 72, ((window.innerHeight - 110) * pw) / ph)))}
+          </div>
+        </div>
+      , document.body)}
     </div>
   );
 }
