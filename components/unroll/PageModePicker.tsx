@@ -80,10 +80,11 @@ const MODES: { id: PageMode; label: string; note: string; icon: React.ReactNode 
 
 /** Picks how pages are made up. Each mode has a small picture of the page it gives. */
 export default function PageModePicker({ value, onChange }: { value: PageMode; onChange: (m: PageMode) => void }) {
-  return (
+  const group = (title: string, ids: PageMode[]) => (
     <div>
-      <div role="radiogroup" aria-label="Page mode" className="grid grid-cols-3 gap-1.5">
-        {MODES.map((m) => (
+      <div className="mb-1 text-xs font-medium text-stone-600">{title}</div>
+      <div role="radiogroup" aria-label={title} className="grid grid-cols-3 gap-1.5">
+        {MODES.filter((m) => ids.includes(m.id)).map((m) => (
           <button
             key={m.id}
             type="button"
@@ -98,7 +99,13 @@ export default function PageModePicker({ value, onChange }: { value: PageMode; o
           </button>
         ))}
       </div>
-      <p className="mt-1 text-[11px] text-stone-500">{MODES.find((m) => m.id === value)?.note}</p>
+    </div>
+  );
+  return (
+    <div className="space-y-3">
+      {group("Page mode", ["single", "facing", "poster"])}
+      {group("Image mode", ["one", "two", "auto"])}
+      <p className="text-[11px] text-stone-500">{MODES.find((m) => m.id === value)?.note}</p>
     </div>
   );
 }

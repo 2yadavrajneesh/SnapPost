@@ -670,10 +670,7 @@ export default function Unroller() {
                 ))}
               </div>
             </div>
-            <div>
-              <Label>Page mode</Label>
-              <PageModePicker value={pageMode} onChange={setPageMode} />
-            </div>
+            <PageModePicker value={pageMode} onChange={setPageMode} />
             <div>
               <Label>Page number position</Label>
               <NumPosPicker value={numPos} onChange={setNumPos} />
