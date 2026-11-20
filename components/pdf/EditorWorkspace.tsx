@@ -564,6 +564,9 @@ export default function EditorWorkspace() {
           className={`flex cursor-pointer flex-col items-center gap-1.5 border-2 border-dashed px-4 py-12 text-center transition ${over ? "border-accent bg-white" : "border-stone-300 bg-stone-50 hover:bg-white"}`}
         >
           <input type="file" hidden accept="application/pdf,.pdf" onChange={(e) => { if (e.target.files?.[0]) open(e.target.files[0]); e.target.value = ""; }} />
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden="true">
+            <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />
+          </svg>
           <strong className="text-sm text-stone-900">{loading ? "Opening…" : "Drop a PDF here, or click to choose"}</strong>
           <small className="text-[11px] text-stone-500">Up to {size(cfg?.maxFileBytes ?? 100 * 1048576)}. The pages open here in your browser; the file is only sent to the server when you press Save.</small>
         </label>
